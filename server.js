@@ -237,6 +237,9 @@ app.get('/api/top-productos', async (req, res) => {
   }
 });
 
+// Health check simple — NO requiere DB
+app.get('/', (req, res) => res.json({ status: 'ok' }));
+
 // ── PING ─────────────────────────────────────────────────────────────────────
 app.get('/api/ping', async (req, res) => {
   try {
