@@ -175,10 +175,11 @@
             <input list="mis-clientes" id="cot-cli-name" placeholder="CLIENTE">
             <datalist id="mis-clientes"></datalist>
             <div style="display:grid; grid-template-columns:2fr 1fr 1.2fr; gap:8px;">
-                <input type="text" id="p-sku" placeholder="SKU" oninput="quickSearch(this)">
+                <input type="text" id="p-sku" placeholder="SKU / CÓDIGO" oninput="quickSearch(this)">
                 <input type="number" id="p-qty" value="1">
                 <input type="number" id="p-prc" placeholder="$">
             </div>
+            <div id="sku-stock" style="font-size:0.72rem; min-height:18px; margin-bottom:6px; padding: 0 4px;"></div>
             <button class="btn" style="background:#333; margin:10px 0; box-shadow:0 4px 0 #000;" onclick="addCot()">AÑADIR A LISTA</button>
             <div id="cot-resumen" style="flex:1; overflow-y:auto; font-size:0.75rem; color:#aaa; border:1px dashed #444; padding:10px; margin-bottom:10px;"></div>
             <button class="btn" style="background:#25d366; box-shadow:0 4px 0 #128c7e;" onclick="sendQuote()">ENVIAR WHATSAPP</button>
@@ -329,14 +330,22 @@
             const prods = await apiFetch(`/api/top-productos?vendedor=${nombre}`);
             list.innerHTML = '';
             prods.forEach((p, i) => {
-                const qty = parseInt(p.Existencia) || 0;
+                const vendidas = parseInt(p.Unidades_Vendidas) || 0;
+                const stock    = parseInt(p.Existencia) || 0;
                 list.innerHTML += `
-                    <div class="client-item" style="padding:10px; background:rgba(255,255,255,0.03); margin-bottom:4px; border-radius:10px;">
-                        <div style="display:flex; align-items:center;">
-                            <b style="color:var(--gold); margin-right:8px;">#${i + 1}</b>
-                            <div><b>${p.Parte}</b><br><small>${p.Cantidad} unidades</small></div>
+                    <div class="client-item" style="padding:10px; background:rgba(255,255,255,0.03); margin-bottom:4px; border-radius:10px; align-items:flex-start;">
+                        <div style="display:flex; align-items:flex-start; flex:1;">
+                            <b style="color:var(--gold); margin-right:8px; margin-top:2px;">#${i+1}</b>
+                            <div>
+                                <b style="font-size:0.85rem;">${p.Parte}</b>
+                                <br><small style="color:#aaa;">${p.Descripcion || ''}</small>
+                                <br><small style="color:#555;">En almacén: <span style="color:${stock <= 5 ? 'var(--red)' : 'var(--grass)'}">${stock} pz</span></small>
+                            </div>
                         </div>
-                        <b style="color:${qty <= 5 ? 'var(--red)' : 'var(--grass)'}">${qty} pz</b>
+                        <div style="text-align:right; white-space:nowrap;">
+                            <b style="color:var(--blue); font-size:1rem;">${vendidas}</b>
+                            <br><small style="color:#555;">vendidas</small>
+                        </div>
                     </div>`;
             });
             if (prods.length === 0) list.innerHTML = '<div class="loading">Sin ventas este mes</div>';
@@ -349,10 +358,21 @@
     let skuTimer;
     async function quickSearch(input) {
         clearTimeout(skuTimer);
+        const stockEl = document.getElementById('sku-stock');
         skuTimer = setTimeout(async () => {
             try {
                 const data = await apiFetch(`/api/productos?sku=${encodeURIComponent(input.value)}`);
-                if (data.length > 0) document.getElementById('p-prc').value = data[0].Precio || '';
+                if (data.length > 0) {
+                    const prod  = data[0];
+                    const stock = parseInt(prod.Existencia) || 0;
+                    document.getElementById('p-prc').value = prod.Precio || '';
+                    stockEl.innerHTML = `<span style="color:${stock <= 0 ? 'var(--red)' : 'var(--grass)'}">
+                        ${stock <= 0 ? '❌ SIN STOCK' : '✅ ' + stock + ' pz en almacén'}
+                    </span> <small style="color:#888;">${prod.Descripcion || ''}</small>`;
+                } else {
+                    stockEl.innerHTML = input.value ? '<span style="color:#555;">Producto no encontrado</span>' : '';
+                    document.getElementById('p-prc').value = '';
+                }
             } catch (_) {}
         }, 400);
     }
