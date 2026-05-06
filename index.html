@@ -351,7 +351,7 @@
             clientes.forEach(c => {
                 const d   = parseInt(c.Dias) || 0;
                 const col = d > 60 ? 'rojo' : (d > 14 ? 'ambar' : 'verde');
-                const nom = c.Cliente || c.Codigo || '—';
+                const nom = c.Cliente || c.NombreCompleto || c.Codigo || '—';
                 lc.innerHTML += `
                     <div class="client-item">
                         <div>
@@ -380,27 +380,28 @@
             const d   = parseInt(c.Dias) || 0;
             const col = d > 60 ? 'rojo' : (d > 14 ? 'ambar' : 'verde');
             const nom = c.Cliente || c.Codigo || '—';
-            const dir = c.Direccion ? encodeURIComponent(c.Direccion + ', ' + (c.Ciudad || '')) : '';
-            const tel = c.Telefono ? c.Telefono.replace(/\D/g,'') : '';
+            // Armar dirección con nuevas columnas
+            const dirParts = [c.Direccion, c.Colonia, c.CP, c.Ciudad, c.Estado, c.Pais].filter(Boolean);
+            const dirTexto = dirParts.join(', ');
+            const dirEnc   = dirTexto ? encodeURIComponent(dirTexto) : '';
 
             ml.innerHTML += `
                 <div class="mapa-item ${col}">
                     <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-                        <div>
+                        <div style="flex:1; min-width:0;">
                             <b style="font-size:0.85rem;">${nom}</b><br>
-                            <small style="color:#888;">${c.NombreCompleto || ''}</small><br>
-                            <small style="color:#555;">${c.Direccion || 'Sin dirección registrada'}</small>
+                            ${c.NombreCompleto && c.NombreCompleto !== nom ? `<small style="color:#888;">${c.NombreCompleto}</small><br>` : ''}
+                            <small style="color:#555;">${dirTexto || 'Sin dirección registrada'}</small>
                         </div>
-                        <div style="text-align:right; white-space:nowrap;">
+                        <div style="text-align:right; white-space:nowrap; margin-left:8px;">
                             <b style="color:var(--grass); font-size:0.8rem;">${fM(c.Venta_Mes)}</b><br>
                             <small style="color:#888;">${d} días</small>
                         </div>
                     </div>
-                    ${dir ? `
+                    ${dirEnc ? `
                     <div class="mapa-btns">
-                        <button class="btn-maps google" onclick="window.open('https://www.google.com/maps/search/?api=1&query=${dir}','_blank')">📍 Maps</button>
-                        <button class="btn-maps waze"   onclick="window.open('https://waze.com/ul?q=${dir}&navigate=yes','_blank')">🚗 Waze</button>
-                        ${tel ? `<button class="btn-maps wa" onclick="window.open('https://api.whatsapp.com/send?phone=52${tel}','_blank')">💬 WA</button>` : ''}
+                        <button class="btn-maps google" onclick="window.open('https://www.google.com/maps/search/?api=1&query=${dirEnc}','_blank')">📍 Maps</button>
+                        <button class="btn-maps waze"   onclick="window.open('https://waze.com/ul?q=${dirEnc}&navigate=yes','_blank')">🚗 Waze</button>
                     </div>` : ''}
                 </div>`;
         });
