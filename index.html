@@ -81,8 +81,8 @@
 
         /* CALCULADORA */
         .cal-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; overflow-y: auto; flex: 1; }
-        .day-box { background: #000; border: 1px solid #222; border-radius: 6px; padding: 5px; text-align: center; }
-        .day-in { width: 100%; background: transparent; border: none; color: var(--grass); font-size: 0.9rem; text-align: center; outline: none; font-weight: bold; }
+        .day-box { background: #000; border: 1px solid #1a1a1a; border-radius: 6px; padding: 5px; text-align: center; transition: all 0.3s; }
+        .day-in  { color: #333; font-size: 0.75rem; text-align: center; font-weight: bold; min-height: 18px; }
 
         /* BOTONES */
         .btn { padding: 15px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; color: #fff; background: linear-gradient(to bottom, #2ecc71, #27ae60); text-transform: uppercase; width: 100%; box-shadow: 0 4px 0 #1e8449; }
@@ -91,6 +91,21 @@
         input, select { width: 100%; background: #000; border: 1px solid #333; padding: 12px; border-radius: 8px; color: #fff; margin-bottom: 10px; box-sizing: border-box; }
         ::-webkit-scrollbar { width: 5px; }
         ::-webkit-scrollbar-thumb { background: var(--grass); border-radius: 10px; }
+
+        /* FILTROS MAPA */
+        .btn-filtro { flex:1; padding:8px; border-radius:8px; border:1px solid #333; background:#000; color:#888; font-size:0.65rem; font-weight:bold; cursor:pointer; }
+        .btn-filtro.activo { background:var(--grass); color:#000; border-color:var(--grass); }
+
+        /* TARJETA CLIENTE MAPA */
+        .mapa-item { background:rgba(255,255,255,0.03); border-radius:10px; padding:12px; margin-bottom:8px; border-left:3px solid #333; }
+        .mapa-item.verde { border-left-color: #0f0; }
+        .mapa-item.ambar { border-left-color: #ff0; }
+        .mapa-item.rojo  { border-left-color: #f00; }
+        .mapa-btns { display:flex; gap:6px; margin-top:8px; }
+        .btn-maps  { flex:1; padding:7px; border-radius:6px; border:none; font-size:0.65rem; font-weight:bold; cursor:pointer; }
+        .btn-maps.google { background:#4285f4; color:#fff; }
+        .btn-maps.waze   { background:#33ccff; color:#000; }
+        .btn-maps.wa     { background:#25d366; color:#fff; }
 
         /* LOADING */
         .loading { text-align: center; color: #555; font-size: 0.75rem; padding: 20px; }
@@ -125,7 +140,7 @@
 
     <div class="top-stats">
         <div class="top-card"><span>Goles Reales</span><b id="k-v">$0.00</b></div>
-        <div class="top-card"><span>Challenge Prov.</span><b id="k-f-prov">$0.00</b></div>
+        <div class="top-card"><span>Litros Aceite Mes</span><b id="k-f-prov">-- L</b></div>
         <div class="top-card"><span>Avance Ind.</span><b id="k-pp">0%</b></div>
         <div class="top-card"><span>Avance Sede</span><b id="k-po">0%</b></div>
     </div>
@@ -144,7 +159,7 @@
         <div id="truck-grp" class="truck" style="filter:invert(1) hue-rotate(150deg);"></div>
     </div>
 
-    <span class="race-label" style="color:var(--purple)">🌟 CHALLENGE PROVEEDOR</span>
+    <span class="race-label" id="prov-label" style="color:var(--purple)">🌟 CHALLENGE ACEITE MOTOR</span>
     <div class="race-track" style="background:linear-gradient(90deg,#2e1065 50%,#4c1d95 50%); background-size:40px 100%; border-color:var(--purple);">
         <div class="porteria" style="border-left-color:var(--purple);">🏆</div>
         <div class="line-meta" style="left:50%; border-left:1px dashed var(--purple);"></div>
@@ -156,33 +171,48 @@
     </button>
 
     <div class="grid">
-        <div class="card">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                <h2 style="margin:0;">💰 PROYECCIÓN PREMIOS</h2>
-                <b id="metal" style="font-size:0.6rem; padding:4px 10px; border-radius:4px; background:#444;">--</b>
+        <div class="card" style="min-height:auto;">
+            <h2 style="margin-bottom:12px;">💰 PROYECCIÓN DE PREMIOS</h2>
+
+            <!-- Nivel actual grande -->
+            <div id="premio-nivel" style="text-align:center; padding:16px; border-radius:14px; background:#111; margin-bottom:12px; border:2px solid #333; transition: all 0.5s;">
+                <div id="premio-emoji" style="font-size:2.5rem;">⏳</div>
+                <div id="premio-titulo" style="font-size:1.1rem; font-weight:900; letter-spacing:2px; margin:4px 0;">CARGANDO...</div>
+                <div id="premio-monto" style="font-size:1.8rem; font-weight:900; color:var(--grass);">$0</div>
+                <div id="premio-sub" style="font-size:0.65rem; color:#888; margin-top:4px;">-- de venta acumulada</div>
             </div>
-            <div style="display:flex; justify-content:space-between; font-weight:bold; font-size:1rem; margin-bottom:15px;">
-                <span id="r-v" style="color:var(--grass)">VTA: $0</span>
-                <span id="r-c" style="color:var(--blue)">PREMIO: $0</span>
+
+            <!-- Barra de niveles -->
+            <div style="position:relative; height:28px; border-radius:10px; background:#111; overflow:hidden; margin-bottom:8px; border:1px solid #333;">
+                <div id="premio-barra" style="height:100%; width:0%; border-radius:10px; transition:width 1s ease; background:linear-gradient(90deg, var(--bronze), var(--silver), var(--gold));"></div>
+                <!-- Marcadores -->
+                <div style="position:absolute; top:0; bottom:0; left:62.5%; width:1px; background:var(--bronze); opacity:0.7;"></div>
+                <div style="position:absolute; top:0; bottom:0; left:91.6%; width:1px; background:var(--silver); opacity:0.7;"></div>
+                <div style="position:absolute; top:50%; left:10px; transform:translateY(-50%); font-size:0.5rem; color:#888; font-weight:bold;">FUERA</div>
+                <div style="position:absolute; top:50%; left:64%; transform:translateY(-50%); font-size:0.5rem; color:var(--bronze); font-weight:bold;">BRONCE</div>
+                <div style="position:absolute; top:50%; left:93%; transform:translateY(-50%); font-size:0.5rem; color:var(--silver); font-weight:bold;">PLATA</div>
             </div>
-            <div class="cal-grid" id="cal-grid"></div>
+            <div style="display:flex; justify-content:space-between; font-size:0.55rem; color:#555; margin-bottom:14px; padding:0 2px;">
+                <span>0%</span><span style="color:var(--bronze);">75%</span><span style="color:var(--silver);">110%</span><span style="color:var(--gold);">120% ORO</span>
+            </div>
+
+            <!-- Grid de días -->
+            <div style="font-size:0.6rem; color:#888; margin-bottom:6px; text-transform:uppercase;">Venta diaria del mes</div>
+            <div class="cal-grid" id="cal-grid" style="flex:1; overflow-y:auto;"></div>
         </div>
+
 
         <div class="card"><h2>👥 ALINEACIÓN (CLIENTES)</h2><div id="lista-cli" style="flex:1; overflow-y:auto;"><div class="loading">Cargando clientes...</div></div></div>
 
         <div class="card">
-            <h2>📑 COTIZADOR RÁPIDO</h2>
-            <input list="mis-clientes" id="cot-cli-name" placeholder="CLIENTE">
-            <datalist id="mis-clientes"></datalist>
-            <div style="display:grid; grid-template-columns:2fr 1fr 1.2fr; gap:8px;">
-                <input type="text" id="p-sku" placeholder="SKU / CÓDIGO" oninput="quickSearch(this)">
-                <input type="number" id="p-qty" value="1">
-                <input type="number" id="p-prc" placeholder="$">
+            <h2>📍 CARTERA DE CLIENTES</h2>
+            <input type="text" id="mapa-buscar" placeholder="🔍 BUSCAR CLIENTE..." oninput="filtrarMapa()" style="margin-bottom:10px;">
+            <div style="display:flex; gap:8px; margin-bottom:12px;">
+                <button onclick="filtroMapa('todos')" id="f-todos" class="btn-filtro activo">TODOS</button>
+                <button onclick="filtroMapa('activo')" id="f-activo" class="btn-filtro">ACTIVOS</button>
+                <button onclick="filtroMapa('inactivo')" id="f-inactivo" class="btn-filtro">INACTIVOS</button>
             </div>
-            <div id="sku-stock" style="font-size:0.72rem; min-height:18px; margin-bottom:6px; padding: 0 4px;"></div>
-            <button class="btn" style="background:#333; margin:10px 0; box-shadow:0 4px 0 #000;" onclick="addCot()">AÑADIR A LISTA</button>
-            <div id="cot-resumen" style="flex:1; overflow-y:auto; font-size:0.75rem; color:#aaa; border:1px dashed #444; padding:10px; margin-bottom:10px;"></div>
-            <button class="btn" style="background:#25d366; box-shadow:0 4px 0 #128c7e;" onclick="sendQuote()">ENVIAR WHATSAPP</button>
+            <div id="mapa-lista" style="flex:1; overflow-y:auto;"><div class="loading">Cargando cartera...</div></div>
         </div>
 
         <div class="card"><h2>🔥 TOP 10 PRODUCTOS</h2><div id="v-top-list" style="flex:1; overflow-y:auto;"><div class="loading">Cargando...</div></div></div>
@@ -208,11 +238,14 @@
 
     // ─── CARGA INICIAL ──────────────────────────────────────────────────────
     window.onload = async () => {
-        // Construir calculadora
+        // Construir grid de días (solo visual, datos vienen del servidor)
         const cg = document.getElementById('cal-grid');
-        for (let i = 1; i <= 31; i++) {
-            const s = localStorage.getItem('day_' + i) || '';
-            cg.innerHTML += `<div class="day-box"><span style="font-size:0.5rem;color:#555;">${i}</span><input type="number" class="day-in" id="in_day_${i}" value="${s}" placeholder="0" oninput="saveAndSum(${i})"></div>`;
+        const diasMes = new Date(new Date().getFullYear(), new Date().getMonth()+1, 0).getDate();
+        for (let i = 1; i <= diasMes; i++) {
+            cg.innerHTML += `<div class="day-box" id="dbox_${i}">
+                <span style="font-size:0.5rem;color:#555;">${i}</span>
+                <div class="day-in" id="in_day_${i}" style="color:#333;">—</div>
+            </div>`;
         }
 
         // Cargar vendedores desde la API
@@ -251,7 +284,7 @@
         renderApp();
         loadClientes();
         loadTopProductos();
-        sumCal();
+        loadVentasDiarias();
     }
 
     // ─── RENDER PRINCIPAL ────────────────────────────────────────────────────
@@ -259,67 +292,136 @@
         const vr = parseFloat(user.Ventas) || 0;
         const vm = parseFloat(user.Meta) || 1;
         const pctInd = (vr / vm) * 100;
-
-        const vProv = parseFloat(user.Venta_Prov) || 0;
-        const mProv = parseFloat(user.Meta_Prov) || 50000;
-        const pctProv = (vProv / mProv) * 100;
-
-        // Desempeño sucursal (todos los del mismo ALMACEN)
         const sucData = dbV.filter(v => v.Sucursal === user.Sucursal);
         let sV = 0, sM = 0;
         sucData.forEach(v => { sV += parseFloat(v.Ventas) || 0; sM += parseFloat(v.Meta) || 0; });
         const pctGrp = sM > 0 ? (sV / sM) * 100 : 0;
 
-        // Fechas
         const hoy = new Date();
         const uDia = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0).getDate();
         document.getElementById('val-hoy').innerText = hoy.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' }).toUpperCase();
         document.getElementById('val-dias').innerText = (uDia - hoy.getDate() + 1) + ' DÍAS';
         document.getElementById('val-falta-oro').innerText = fM(Math.max(0, (vm * 1.20) - vr));
 
-        // KPIs
         document.getElementById('k-v').innerText = fM(vr);
-        document.getElementById('k-f-prov').innerText = fM(vProv);
         document.getElementById('k-pp').innerText = pctInd.toFixed(1) + '%';
         document.getElementById('k-po').innerText = pctGrp.toFixed(1) + '%';
 
-        // Trucks
         document.getElementById('truck-ind').style.left = `calc(${Math.min(100, (pctInd / 120) * 100)}% - 32px)`;
         document.getElementById('truck-ind').className = 'truck ' + (pctInd >= 120 ? 'oro' : '');
         document.getElementById('truck-grp').style.left = `calc(${Math.min(100, (pctGrp / 120) * 100)}% - 32px)`;
         document.getElementById('truck-grp').className = 'truck ' + (pctGrp >= 120 ? 'oro' : '');
-        document.getElementById('truck-prov').style.left = `calc(${Math.min(100, pctProv)}% - 32px)`;
+
+        // Carga reto de aceite
+        loadAceite();
+    }
+
+    async function loadAceite() {
+        try {
+            const nombre = encodeURIComponent(user.Nombre.split(' ')[0]);
+            const a = await apiFetch(`/api/aceite?vendedor=${nombre}`);
+
+            document.getElementById('k-f-prov').innerText = a.litrosTotal + ' L';
+            document.getElementById('truck-prov').style.left = `calc(${Math.min(100, a.pctBarra)}% - 32px)`;
+
+            // Info detallada en el label de challenge proveedor
+            const premio = a.premioTotal > 0 ? ` | 💰 $${a.premioTotal} ganados` : '';
+            const intlPct = parseFloat(a.pctIntl) >= 30 ? ' ✅ +30% Intl' : ` (${a.pctIntl}% Intl)`;
+            document.getElementById('prov-label').innerHTML =
+                `🌟 CHALLENGE ACEITE MOTOR &nbsp;|&nbsp; ${a.litrosIncrementales}L incrementales` +
+                `${intlPct} &nbsp;|&nbsp; Bloque ${a.bloques}/∞ × $${a.premioPorBloque}${premio}`;
+        } catch(e) {
+            document.getElementById('prov-label').innerText = '🌟 CHALLENGE ACEITE MOTOR';
+        }
     }
 
     // ─── CLIENTES ────────────────────────────────────────────────────────────
+    let todosClientes = [];
+
     async function loadClientes() {
         const lc = document.getElementById('lista-cli');
+        const ml = document.getElementById('mapa-lista');
         try {
             const nombre = encodeURIComponent(user.Nombre.split(' ')[0]);
             const clientes = await apiFetch(`/api/clientes?vendedor=${nombre}`);
-            const dl = document.getElementById('mis-clientes');
-            lc.innerHTML = '';
-            dl.innerHTML = '';
+            todosClientes = clientes;
 
+            // ── Tabla alineación ──
+            lc.innerHTML = '';
             clientes.forEach(c => {
-                const d = parseInt(c.Dias) || 0;
+                const d   = parseInt(c.Dias) || 0;
                 const col = d > 60 ? 'rojo' : (d > 14 ? 'ambar' : 'verde');
+                const nom = c.Cliente || c.Codigo || '—';
                 lc.innerHTML += `
                     <div class="client-item">
                         <div>
                             <span class="dot ${col}"></span>
-                            <b>${c.Cliente}</b><br>
+                            <b>${nom}</b><br>
                             <small>${d} días inactivo</small>
                         </div>
                         <b style="color:var(--grass)">${fM(c.Venta_Mes)}</b>
                     </div>`;
-                dl.innerHTML += `<option value="${c.Cliente}">`;
             });
-
             if (clientes.length === 0) lc.innerHTML = '<div class="loading">Sin clientes registrados</div>';
+
+            // ── Mapa cartera ──
+            renderMapa(clientes);
         } catch (err) {
             lc.innerHTML = `<div class="error-msg">❌ Error cargando clientes<br><small>${err.message}</small></div>`;
+            document.getElementById('mapa-lista').innerHTML = `<div class="error-msg">❌ ${err.message}</div>`;
         }
+    }
+
+    function renderMapa(lista) {
+        const ml = document.getElementById('mapa-lista');
+        if (!lista.length) { ml.innerHTML = '<div class="loading">Sin clientes en cartera</div>'; return; }
+        ml.innerHTML = '';
+        lista.forEach(c => {
+            const d   = parseInt(c.Dias) || 0;
+            const col = d > 60 ? 'rojo' : (d > 14 ? 'ambar' : 'verde');
+            const nom = c.Cliente || c.Codigo || '—';
+            const dir = c.Direccion ? encodeURIComponent(c.Direccion + ', ' + (c.Ciudad || '')) : '';
+            const tel = c.Telefono ? c.Telefono.replace(/\D/g,'') : '';
+
+            ml.innerHTML += `
+                <div class="mapa-item ${col}">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                        <div>
+                            <b style="font-size:0.85rem;">${nom}</b><br>
+                            <small style="color:#888;">${c.NombreCompleto || ''}</small><br>
+                            <small style="color:#555;">${c.Direccion || 'Sin dirección registrada'}</small>
+                        </div>
+                        <div style="text-align:right; white-space:nowrap;">
+                            <b style="color:var(--grass); font-size:0.8rem;">${fM(c.Venta_Mes)}</b><br>
+                            <small style="color:#888;">${d} días</small>
+                        </div>
+                    </div>
+                    ${dir ? `
+                    <div class="mapa-btns">
+                        <button class="btn-maps google" onclick="window.open('https://www.google.com/maps/search/?api=1&query=${dir}','_blank')">📍 Maps</button>
+                        <button class="btn-maps waze"   onclick="window.open('https://waze.com/ul?q=${dir}&navigate=yes','_blank')">🚗 Waze</button>
+                        ${tel ? `<button class="btn-maps wa" onclick="window.open('https://api.whatsapp.com/send?phone=52${tel}','_blank')">💬 WA</button>` : ''}
+                    </div>` : ''}
+                </div>`;
+        });
+    }
+
+    let filtroActual = 'todos';
+
+    function filtroMapa(tipo) {
+        filtroActual = tipo;
+        document.querySelectorAll('.btn-filtro').forEach(b => b.classList.remove('activo'));
+        document.getElementById('f-' + tipo).classList.add('activo');
+        filtrarMapa();
+    }
+
+    function filtrarMapa() {
+        const q = (document.getElementById('mapa-buscar').value || '').toUpperCase();
+        let lista = todosClientes;
+        if (filtroActual === 'activo')   lista = lista.filter(c => (parseInt(c.Dias)||0) <= 14);
+        if (filtroActual === 'inactivo') lista = lista.filter(c => (parseInt(c.Dias)||0) > 14);
+        if (q) lista = lista.filter(c => (c.Cliente||'').toUpperCase().includes(q) || (c.NombreCompleto||'').toUpperCase().includes(q));
+        renderMapa(lista);
     }
 
     // ─── TOP PRODUCTOS ───────────────────────────────────────────────────────
@@ -354,75 +456,96 @@
         }
     }
 
-    // ─── BÚSQUEDA RÁPIDA SKU ─────────────────────────────────────────────────
-    let skuTimer;
-    async function quickSearch(input) {
-        clearTimeout(skuTimer);
-        const stockEl = document.getElementById('sku-stock');
-        skuTimer = setTimeout(async () => {
-            try {
-                const data = await apiFetch(`/api/productos?sku=${encodeURIComponent(input.value)}`);
-                if (data.length > 0) {
-                    const prod  = data[0];
-                    const stock = parseInt(prod.Existencia) || 0;
-                    document.getElementById('p-prc').value = prod.Precio || '';
-                    stockEl.innerHTML = `<span style="color:${stock <= 0 ? 'var(--red)' : 'var(--grass)'}">
-                        ${stock <= 0 ? '❌ SIN STOCK' : '✅ ' + stock + ' pz en almacén'}
-                    </span> <small style="color:#888;">${prod.Descripcion || ''}</small>`;
+
+
+    // ─── CALCULADORA AUTOMÁTICA ──────────────────────────────────────────────
+    async function loadVentasDiarias() {
+        try {
+            const nombre = encodeURIComponent(user.Nombre.split(' ')[0]);
+            const dias   = await apiFetch(`/api/ventas-diarias?vendedor=${nombre}`);
+            const hoy    = new Date().getDate();
+            const vm     = parseFloat(user.Meta) || 1;
+            let total    = 0;
+
+            // Llenar grid de días
+            const diasMes = new Date(new Date().getFullYear(), new Date().getMonth()+1, 0).getDate();
+            for (let i = 1; i <= diasMes; i++) {
+                const venta  = dias[i] || 0;
+                const box    = document.getElementById('dbox_' + i);
+                const valEl  = document.getElementById('in_day_' + i);
+                if (!box || !valEl) continue;
+
+                if (i > hoy) {
+                    // Días futuros — gris
+                    box.style.borderColor = '#1a1a1a';
+                    valEl.style.color     = '#333';
+                    valEl.innerText       = '—';
+                } else if (venta > 0) {
+                    // Día con venta — verde
+                    box.style.borderColor = 'var(--grass)';
+                    box.style.background  = 'rgba(0,255,136,0.05)';
+                    valEl.style.color     = 'var(--grass)';
+                    valEl.innerText       = '$' + (venta >= 1000 ? (venta/1000).toFixed(1)+'k' : Math.round(venta));
+                    total += venta;
                 } else {
-                    stockEl.innerHTML = input.value ? '<span style="color:#555;">Producto no encontrado</span>' : '';
-                    document.getElementById('p-prc').value = '';
+                    // Día sin venta pasado — rojo tenue
+                    box.style.borderColor = 'rgba(255,75,43,0.3)';
+                    valEl.style.color     = '#444';
+                    valEl.innerText       = '$0';
                 }
-            } catch (_) {}
-        }, 400);
+            }
+
+            actualizarPremio(total, vm);
+        } catch(err) {
+            console.error('Error ventas diarias:', err);
+        }
     }
 
-    // ─── CALCULADORA ─────────────────────────────────────────────────────────
-    function sumCal() {
-        if (!user) return;
-        let s = 0;
-        document.querySelectorAll('.day-in').forEach(i => s += parseFloat(i.value) || 0);
-        const vm = parseFloat(user.Meta) || 1;
-        const pctProy = (s / vm) * 100;
+    function actualizarPremio(ventaTotal, vm) {
+        const pct    = (ventaTotal / vm) * 100;
+        const canal  = (user.Canal || 'CALLE').toUpperCase();
+
+        // Determinar nivel
+        let nivel, color, emoji, fInd;
+        if (pct >= 120) {
+            nivel = 'ORO'; color = 'var(--gold)'; emoji = '🥇'; fInd = canal === 'MOSTRADOR' ? 1.46 : 1.65;
+        } else if (pct >= 110) {
+            nivel = 'PLATA'; color = 'var(--silver)'; emoji = '🥈'; fInd = canal === 'MOSTRADOR' ? 1.31 : 1.50;
+        } else if (pct >= 75) {
+            nivel = 'BRONCE'; color = 'var(--bronze)'; emoji = '🥉'; fInd = canal === 'MOSTRADOR' ? 1.31 : 1.50;
+        } else {
+            nivel = 'FUERA'; color = 'var(--red)'; emoji = '⚽'; fInd = 1.10;
+        }
+
+        // Bono sucursal
         const sucData = dbV.filter(v => v.Sucursal === user.Sucursal);
         let sV = 0, sM = 0;
-        sucData.forEach(v => { sV += parseFloat(v.Ventas) || 0; sM += parseFloat(v.Meta) || 0; });
-        const pctGrp = sM > 0 ? (sV / sM) * 100 : 0;
+        sucData.forEach(v => { sV += parseFloat(v.Ventas)||0; sM += parseFloat(v.Meta)||0; });
+        const pctGrp = sM > 0 ? (sV/sM)*100 : 0;
+        const fGrp   = pctGrp >= 110 ? (canal === 'MOSTRADOR' ? 0.34 : 0.15) : 0;
 
-        const canal = (user.Canal || 'CALLE').toUpperCase();
-        let fInd = pctProy < 75 ? 1.10 : (canal === 'MOSTRADOR' ? (pctProy < 110 ? 1.31 : 1.46) : (pctProy < 110 ? 1.50 : 1.65));
-        let fGrp = pctGrp < 110 ? 0 : (canal === 'MOSTRADOR' ? 0.34 : 0.15);
+        const premio = ventaTotal * ((fInd + fGrp) / 100);
 
-        document.getElementById('r-v').innerText = 'VTA: ' + fM(s);
-        document.getElementById('r-c').innerText = 'PREMIO: ' + fM(s * ((fInd + fGrp) / 100));
+        // Actualizar UI
+        const nivelEl = document.getElementById('premio-nivel');
+        nivelEl.style.borderColor  = color;
+        nivelEl.style.background   = `linear-gradient(135deg, #111, ${color}22)`;
+        document.getElementById('premio-emoji').innerText   = emoji;
+        document.getElementById('premio-titulo').innerText  = nivel;
+        document.getElementById('premio-titulo').style.color = color;
+        document.getElementById('premio-monto').innerText   = fM(premio);
+        document.getElementById('premio-monto').style.color = color;
+        document.getElementById('premio-sub').innerText     = fM(ventaTotal) + ' de venta acumulada · ' + pct.toFixed(1) + '%';
 
-        const b = document.getElementById('metal');
-        b.innerText = pctProy >= 120 ? 'ORO' : (pctProy >= 110 ? 'PLATA' : (pctProy >= 75 ? 'BRONCE' : 'FUERA'));
-        b.style.background = pctProy >= 120 ? 'var(--gold)' : (pctProy >= 110 ? 'var(--silver)' : (pctProy >= 75 ? 'var(--bronze)' : 'var(--red)'));
-        if (pctProy >= 120 && !cnf) { confetti({ particleCount: 150, spread: 60, origin: { y: 0.7 } }); cnf = true; }
+        // Barra — mapear 0-120% a 0-100% del ancho
+        const anchoBarra = Math.min(100, (pct / 120) * 100);
+        document.getElementById('premio-barra').style.width = anchoBarra + '%';
+
+        // Confetti si llega a ORO
+        if (pct >= 120 && !cnf) { confetti({ particleCount: 150, spread: 60, origin: { y: 0.7 } }); cnf = true; }
     }
 
-    function saveAndSum(day) { localStorage.setItem('day_' + day, document.getElementById('in_day_' + day).value); sumCal(); }
 
-    // ─── COTIZADOR ───────────────────────────────────────────────────────────
-    function addCot() {
-        const s = document.getElementById('p-sku').value.toUpperCase();
-        const q = parseInt(document.getElementById('p-qty').value);
-        const p = parseFloat(document.getElementById('p-prc').value);
-        if (!s || isNaN(p)) return;
-        cotList.push({ s, q, p, t: q * p });
-        const b = document.getElementById('cot-resumen');
-        b.innerHTML = cotList.map(i => `⚽ ${i.s} (${i.q} pz) - ${fM(i.p)}`).join('<br>');
-    }
-
-    function sendQuote() {
-        const cli = document.getElementById('cot-cli-name').value || 'Cliente';
-        let total = 0;
-        let t = `*COTIZACIÓN WORLD CUP CATOSA*\n*Cliente:* ${cli}\n------------------\n`;
-        cotList.forEach(i => { t += `⚽ ${i.s} | Cant: ${i.q} | Unit: ${fM(i.p)}\n`; total += i.t; });
-        t += `------------------\n*TOTAL: ${fM(total)}*`;
-        window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(t)}`, '_blank');
-    }
 </script>
 </body>
 </html>
