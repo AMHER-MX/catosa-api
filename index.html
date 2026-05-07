@@ -202,7 +202,7 @@
         </div>
 
 
-        <div class="card"><h2>👥 ALINEACIÓN (CLIENTES)</h2><div id="lista-cli" style="flex:1; overflow-y:auto;"><div class="loading">Cargando clientes...</div></div></div>
+        <div id="lista-cli" style="display:none;"></div>
 
         <div class="card">
             <h2>📍 CARTERA DE CLIENTES</h2>
@@ -318,7 +318,7 @@
 
     async function loadAceite() {
         try {
-            const nombre = encodeURIComponent(user.Nombre.split(' ')[0]);
+            const nombre = encodeURIComponent(user.Nombre);
             const a = await apiFetch(`/api/aceite?vendedor=${nombre}`);
 
             document.getElementById('k-f-prov').innerText = a.litrosTotal + ' L';
@@ -342,7 +342,7 @@
         const lc = document.getElementById('lista-cli');
         const ml = document.getElementById('mapa-lista');
         try {
-            const nombre = encodeURIComponent(user.Nombre.split(' ')[0]);
+            const nombre = encodeURIComponent(user.Nombre);
             const clientes = await apiFetch(`/api/clientes?vendedor=${nombre}`);
             todosClientes = clientes;
 
@@ -380,8 +380,16 @@
             const d   = parseInt(c.Dias) || 0;
             const col = d > 60 ? 'rojo' : (d > 14 ? 'ambar' : 'verde');
             const nom = c.Cliente || c.Codigo || '—';
-            // Armar dirección con nuevas columnas
-            const dirParts = [c.Direccion, c.Colonia, c.CP, c.Ciudad, c.Estado, c.Pais].filter(Boolean);
+            // Armar dirección evitando duplicados
+            const partes = [];
+            if (c.Direccion)  partes.push(c.Direccion);
+            if (c.Colonia)    partes.push(c.Colonia);
+            if (c.CP)         partes.push(c.CP);
+            if (c.Ciudad)     partes.push(c.Ciudad);
+            if (c.Estado)     partes.push(c.Estado);
+            if (c.Pais)       partes.push(c.Pais);
+            // Eliminar duplicados consecutivos
+            const dirParts = partes.filter((v, i, arr) => v && arr.indexOf(v) === i);
             const dirTexto = dirParts.join(', ');
             const dirEnc   = dirTexto ? encodeURIComponent(dirTexto) : '';
 
@@ -429,7 +437,7 @@
     async function loadTopProductos() {
         const list = document.getElementById('v-top-list');
         try {
-            const nombre = encodeURIComponent(user.Nombre.split(' ')[0]);
+            const nombre = encodeURIComponent(user.Nombre);
             const prods = await apiFetch(`/api/top-productos?vendedor=${nombre}`);
             list.innerHTML = '';
             prods.forEach((p, i) => {
@@ -462,7 +470,7 @@
     // ─── CALCULADORA AUTOMÁTICA ──────────────────────────────────────────────
     async function loadVentasDiarias() {
         try {
-            const nombre = encodeURIComponent(user.Nombre.split(' ')[0]);
+            const nombre = encodeURIComponent(user.Nombre);
             const dias   = await apiFetch(`/api/ventas-diarias?vendedor=${nombre}`);
             const hoy    = new Date().getDate();
             const vm     = parseFloat(user.Meta) || 1;
