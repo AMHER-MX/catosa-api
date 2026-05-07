@@ -22,11 +22,6 @@
         body { 
             font-family: 'Segoe UI', system-ui, sans-serif; 
             background: #0d1117;
-            background-image: url('https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/PAPEL%20TAPIZ%20COPA%20DEL%20MUNDO.png');
-            background-size: cover;
-            background-position: center;
-            background-attachment: fixed;
-            background-blend-mode: overlay;
             color: var(--text); 
             margin: 0; 
             padding: 10px; 
@@ -34,8 +29,15 @@
         }
 
         /* LOGIN */
-        #login-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 1000; display: flex; align-items: center; justify-content: center; }
-        .login-box { background: var(--card); padding: 35px; border-radius: 20px; border: 2px solid var(--gold); text-align: center; width: 300px; box-shadow: 0 0 30px rgba(255,215,0,0.2); }
+        #login-screen { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: #000 url('https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/PAPEL%20TAPIZ%20COPA%20DEL%20MUNDO.png') center/cover no-repeat;
+            z-index: 1000; display: flex; align-items: center; justify-content: center; 
+        }
+        #login-screen::before {
+            content: ''; position: absolute; inset: 0; background: rgba(0,0,0,0.78);
+        }
+        .login-box { position: relative; z-index: 1; background: var(--card); padding: 35px; border-radius: 20px; border: 2px solid var(--gold); text-align: center; width: 300px; box-shadow: 0 0 30px rgba(255,215,0,0.2); }
         #main-app { display: none; max-width: 1600px; margin: 0 auto; }
 
         .logo-login { height: 60px; margin-bottom: 25px; filter: drop-shadow(0 0 10px white); }
