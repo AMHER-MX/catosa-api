@@ -250,6 +250,8 @@
 
         <div id="lista-cli" style="display:none;"></div>
 
+        <div class="card"><h2>🔥 TOP 10 PRODUCTOS</h2><div id="v-top-list" style="flex:1; overflow-y:auto;"><div class="loading">Cargando...</div></div></div>
+
         <div class="card">
             <h2>📍 CARTERA DE CLIENTES</h2>
             <input type="text" id="mapa-buscar" placeholder="🔍 BUSCAR CLIENTE..." oninput="filtrarMapa()" style="margin-bottom:10px;">
@@ -260,8 +262,6 @@
             </div>
             <div id="mapa-lista" style="flex:1; overflow-y:auto;"><div class="loading">Cargando cartera...</div></div>
         </div>
-
-        <div class="card"><h2>🔥 TOP 10 PRODUCTOS</h2><div id="v-top-list" style="flex:1; overflow-y:auto;"><div class="loading">Cargando...</div></div></div>
     </div>
 </div>
 
@@ -541,7 +541,6 @@
                             <div>
                                 <b style="font-size:0.85rem;">${p.Parte}</b>
                                 <br><small style="color:#aaa;">${p.Descripcion || ''}</small>
-                                <br><small style="color:#555;">En almacén: <span style="color:${stock <= 5 ? 'var(--red)' : 'var(--grass)'}">${stock} pz</span></small>
                             </div>
                         </div>
                         <div style="text-align:right; white-space:nowrap;">
