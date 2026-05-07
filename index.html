@@ -100,7 +100,7 @@
         .etapa-num { font-size:0.55rem; font-weight:900; color:#888; padding:4px 6px; text-align:center; }
         .etapa-card.activa .etapa-num { color:var(--gold); }
         .etapa-card.ganada .etapa-num { color:var(--grass); }
-        .etapa-img { width:100%; height:80px; object-fit:cover; display:block; }
+        .etapa-img { width:100%; aspect-ratio:1/1; object-fit:contain; background:#111; display:block; }
         .btn-filtro { flex:1; padding:8px; border-radius:8px; border:1px solid #333; background:#000; color:#888; font-size:0.65rem; font-weight:bold; cursor:pointer; }
         .btn-filtro.activo { background:var(--grass); color:#000; border-color:var(--grass); }
 
@@ -189,11 +189,11 @@
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
                     <div style="background:rgba(255,215,0,0.08); border:1px solid var(--gold); border-radius:14px; overflow:hidden; position:relative;">
                         <div style="position:absolute; top:6px; left:6px; background:var(--gold); color:#000; font-size:0.5rem; font-weight:900; padding:2px 8px; border-radius:20px; z-index:1;">120%</div>
-                        <img src="https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/PREMIO%20BALON.png" style="width:100%; height:160px; object-fit:cover;" alt="Balón">
+                        <img src="https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/PREMIO%20BALON.png" style="width:100%; aspect-ratio:1/1; object-fit:contain; background:#222; display:block;" alt="Balón">
                     </div>
                     <div style="background:rgba(0,255,136,0.08); border:1px solid var(--grass); border-radius:14px; overflow:hidden; position:relative;">
                         <div style="position:absolute; top:6px; left:6px; background:var(--grass); color:#000; font-size:0.5rem; font-weight:900; padding:2px 8px; border-radius:20px; z-index:1;">125%</div>
-                        <img src="https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/PREMIO%20JERSEY.png" style="width:100%; height:160px; object-fit:cover;" alt="Jersey">
+                        <img src="https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/PREMIO%20JERSEY.png" style="width:100%; aspect-ratio:1/1; object-fit:contain; background:#222; display:block;" alt="Jersey">
                     </div>
                 </div>
             </div>
