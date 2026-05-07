@@ -366,6 +366,37 @@
         <div class="premios-content">
             <div class="premios-title">🏆 LA FIEBRE DEL ORO</div>
             <div class="premios-sub">Estado de premios por asesor — Mayo 2026</div>
+
+            <!-- Imágenes premios Mundial -->
+            <div style="display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-bottom:16px;">
+                <div style="background:rgba(255,215,0,0.08); border:1px solid var(--gold); border-radius:14px; overflow:hidden; position:relative;">
+                    <div style="position:absolute; top:6px; left:6px; background:var(--gold); color:#000; font-size:0.5rem; font-weight:900; padding:2px 8px; border-radius:20px; z-index:1;">120% — BALÓN</div>
+                    <img src="https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/PREMIO%20BALON.png" style="width:100%; aspect-ratio:1/1; object-fit:contain; background:#1a1a1a; display:block;">
+                </div>
+                <div style="background:rgba(0,255,136,0.08); border:1px solid var(--grass); border-radius:14px; overflow:hidden; position:relative;">
+                    <div style="position:absolute; top:6px; left:6px; background:var(--grass); color:#000; font-size:0.5rem; font-weight:900; padding:2px 8px; border-radius:20px; z-index:1;">125% — JERSEY</div>
+                    <img src="https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/PREMIO%20JERSEY.png" style="width:100%; aspect-ratio:1/1; object-fit:contain; background:#1a1a1a; display:block;">
+                </div>
+            </div>
+            <div style="font-size:0.55rem; color:var(--blue); text-transform:uppercase; font-weight:bold; letter-spacing:2px; margin-bottom:10px; text-align:center;">🎯 PREMIOS POR ETAPA</div>
+            <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:16px;">
+                <div style="background:rgba(255,255,255,0.04); border:1px solid #333; border-radius:10px; overflow:hidden; text-align:center;">
+                    <div style="font-size:0.55rem; color:var(--gold); padding:4px; font-weight:900;">1ª VEZ</div>
+                    <img src="https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/PREMIO%20CINE.png" style="width:100%; aspect-ratio:1/1; object-fit:contain; background:#111; display:block;">
+                </div>
+                <div style="background:rgba(255,255,255,0.04); border:1px solid #333; border-radius:10px; overflow:hidden; text-align:center;">
+                    <div style="font-size:0.55rem; color:var(--gold); padding:4px; font-weight:900;">2ª VEZ</div>
+                    <img src="https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/PREMIO%20HIELERA.png" style="width:100%; aspect-ratio:1/1; object-fit:contain; background:#111; display:block;">
+                </div>
+                <div style="background:rgba(255,255,255,0.04); border:1px solid #333; border-radius:10px; overflow:hidden; text-align:center;">
+                    <div style="font-size:0.55rem; color:var(--gold); padding:4px; font-weight:900;">3ª VEZ</div>
+                    <img src="https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/PREMIO%20CELULAR.png" style="width:100%; aspect-ratio:1/1; object-fit:contain; background:#111; display:block;">
+                </div>
+                <div style="background:rgba(255,255,255,0.04); border:1px solid #333; border-radius:10px; overflow:hidden; text-align:center;">
+                    <div style="font-size:0.55rem; color:var(--gold); padding:4px; font-weight:900;">4ª VEZ</div>
+                    <img src="https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/PREMIO%20SMART%20TV.png" style="width:100%; aspect-ratio:1/1; object-fit:contain; background:#111; display:block;">
+                </div>
+            </div>
             <div style="overflow-x:auto;">
                 <table class="premios-table">
                     <thead>
@@ -410,23 +441,30 @@
         <div class="card">
             <div class="card-title">
                 📋 Últimos Prospectos (Refacciones)
-                <span id="bbd-count" style="font-size:0.55rem; color:#555; font-weight:400;"></span>
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span id="bbd-count" style="font-size:0.55rem; color:#555; font-weight:400;"></span>
+                    <a href="https://docs.google.com/spreadsheets/d/1vUYJz5r1kgMNDel9-6LqaiKAeb3g_n0JwS5_Hs59yeM/edit" target="_blank" style="font-size:0.55rem; color:var(--blue); text-decoration:none; border:1px solid var(--blue); padding:2px 8px; border-radius:10px; white-space:nowrap;">Ver completo →</a>
+                </div>
             </div>
             <div class="scroll-list" id="bbd-list"><div class="loading">Cargando...</div></div>
         </div>
 
-        <!-- CARTERA SEMÁFORO -->
+        <!-- CARTERA CLIENTES -->
         <div class="card" style="grid-column: 1 / -1;">
-            <div class="card-title">👥 Cartera Semáforo</div>
+            <div class="card-title">📍 Cartera de Clientes
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <span id="cartera-stats" style="font-size:0.55rem; color:#555; font-weight:400;"></span>
+                </div>
+            </div>
             <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:12px;">
                 <select class="filter-select" id="f-color" onchange="renderCartera()">
                     <option value="TODOS">Todos</option>
-                    <option value="VERDE">Al día (&lt;14 días)</option>
-                    <option value="AMBAR">Inactivo (14-60)</option>
-                    <option value="ROJO">Crítico (&gt;60 días)</option>
+                    <option value="VERDE">Activos (&lt;14 días)</option>
+                    <option value="AMBAR">Inactivos (14-60)</option>
+                    <option value="ROJO">Críticos (&gt;60 días)</option>
                 </select>
                 <input type="text" id="f-cli" class="filter-select" placeholder="🔍 Buscar cliente..." oninput="renderCartera()" style="padding:10px 14px;">
-                <div id="cartera-stats" style="font-size:0.6rem; color:#555; display:flex; align-items:center; justify-content:center; text-align:center;"></div>
+                <button onclick="renderCartera()" style="background:var(--card); border:1px solid var(--border); color:var(--grass); border-radius:10px; font-size:0.7rem; font-weight:700; cursor:pointer; padding:10px;">🔄 Actualizar</button>
             </div>
             <div class="scroll-list" id="cli-list"><div class="loading">Cargando...</div></div>
         </div>
@@ -437,7 +475,7 @@
 <script>
 // ── CONFIG ────────────────────────────────────────────────────────────────────
 const API = 'https://api.catosaapps.lat';
-const SHEETS_BBD = 'https://docs.google.com/spreadsheets/d/1vUYJz5r1kgMNDel9-6LqaiKAeb3g_n0JwS5_Hs59yeM/pub?gid=0&single=true&output=csv';
+const SHEETS_BBD = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTXRBcfvzRWWgd4GI6OZ2CI4fPXdDzkQIucSNCb_1lZhKW9kmBVcXCFx19L5kdTCMEy0d9Yy5GOttRH/pub?gid=349527356&single=true&output=csv';
 
 const USUARIOS = {
     'GERENTE':   'CATOSA2026',
@@ -448,6 +486,11 @@ const USUARIOS = {
 let dbV = [], dbC = [], dbTop = [], dbBBD = [], myChart = null, userRole = '';
 
 // ── UTILS ─────────────────────────────────────────────────────────────────────
+const formatPct = n => {
+    const v = parseFloat(n) || 0;
+    if (v >= 100) return v.toFixed(0);
+    return v.toFixed(1);
+};
 const fM = n => new Intl.NumberFormat('es-MX', { style:'currency', currency:'MXN', minimumFractionDigits:0 }).format(n||0);
 
 async function apiFetch(endpoint) {
@@ -461,6 +504,8 @@ window.onload = async () => {
     try {
         document.getElementById('login-status').textContent = 'Conectando con servidor...';
         dbV = await apiFetch('/api/ventas');
+        // Solo asesores con meta asignada (los demás no comisionan)
+        dbV = dbV.filter(v => parseFloat(v.Meta) > 0);
         document.getElementById('login-status').textContent = `✅ ${dbV.length} asesores cargados`;
         document.getElementById('btn-login').disabled = false;
         document.getElementById('btn-login').textContent = 'ENTRAR';
@@ -547,8 +592,8 @@ function renderKPIs(lista) {
     lista.forEach(v => { tv += parseFloat(v.Ventas)||0; tm += parseFloat(v.Meta)||1; });
     document.getElementById('k-venta').textContent  = fM(tv);
     document.getElementById('k-falta').textContent  = fM(Math.max(0, tm - tv));
-    document.getElementById('k-avance').textContent = ((tv/tm)*100).toFixed(1) + '%';
-    document.getElementById('k-oro').textContent    = ((tv/(tm*1.20))*100).toFixed(1) + '%';
+    document.getElementById('k-avance').textContent = formatPct((tv/tm)*100);
+    document.getElementById('k-oro').textContent    = formatPct((tv/(tm*1.20))*100);
 }
 
 function renderPista(lista) {
@@ -590,7 +635,7 @@ function renderPremios(lista) {
             <tr>
                 <td style="font-weight:600;">${v.Nombre}</td>
                 <td style="color:#666; font-size:0.65rem;">${v.Sucursal||'—'}</td>
-                <td style="color:${pct>=120?'var(--gold)':pct>=75?'var(--grass)':'var(--red)'}; font-weight:700;">${pct.toFixed(1)}%</td>
+                <td style="color:${pct>=120?'var(--gold)':pct>=75?'var(--grass)':'var(--red)'}; font-weight:700;">${formatPct(pct)}%</td>
                 <td><span class="nivel-badge ${cls}">${nivel}</span></td>
                 <td style="color:var(--grass); font-size:0.65rem;">${pct>=120 ? premio : '—'}</td>
                 <td style="font-size:0.65rem; color:${pct>=120?'var(--grass)':'#555'};">${balon}</td>
@@ -736,22 +781,32 @@ function loadBBD() {
         download: true, header: true,
         complete: r => {
             const refacciones = r.data.filter(row =>
-                (row['Departamento']||'').toLowerCase().includes('refacciones') && row['Cliente']
+                (row['Departamento']||'').toLowerCase().includes('refacciones') &&
+                (row['Razón Social'] || row['Razon Social'] || row['Grupo Empresarial'])
             ).reverse().slice(0, 30);
 
             document.getElementById('bbd-count').textContent = `${refacciones.length} registros`;
             el.innerHTML = '';
             refacciones.forEach(p => {
+                const empresa  = p['Razón Social'] || p['Razon Social'] || '—';
+                const grupo    = p['Grupo Empresarial'] || '';
+                const ciudad   = p['Ciudad'] || '—';
+                const estado   = p['Estado'] || '';
+                const industria= p['Industria / Sector'] || p['Industria/Sector'] || '—';
+                const tipo     = p['Tipo de cliente'] || '—';
+                const flota    = p['Tamaño de flota (H...'] || p['Tamaño de flota'] || '—';
+                const fecha    = (p['Marca temporal']||'').split(' ')[0];
+
                 el.innerHTML += `
                     <div class="prospecto-item">
-                        <div class="prospecto-name">⚽ ${p['Cliente']||'—'}</div>
+                        <div class="prospecto-name">⚽ ${empresa}</div>
+                        <div class="prospecto-meta" style="color:#888; margin-bottom:2px;">${grupo ? `🏢 ${grupo}` : ''}</div>
                         <div class="prospecto-meta">
-                            👤 ${p['Nombre contacto']||p['Contacto']||'—'} &nbsp;|&nbsp;
-                            📞 ${p['Teléfono']||p['Telefono']||'—'}
+                            📍 ${ciudad}${estado ? ', '+estado : ''} &nbsp;|&nbsp;
+                            🏭 ${industria}
                         </div>
-                        <div class="prospecto-meta" style="color:#444;">
-                            Asesor: ${p['Asesor']||p['Vendedor']||'—'} &nbsp;|&nbsp;
-                            ${p['Fecha']||p['Timestamp']||''}
+                        <div class="prospecto-meta">
+                            👤 ${tipo} &nbsp;|&nbsp; 🚛 Flota: ${flota} &nbsp;|&nbsp; 📅 ${fecha}
                         </div>
                     </div>`;
             });
@@ -759,6 +814,77 @@ function loadBBD() {
         },
         error: () => { el.innerHTML = '<div class="error-msg">❌ Error cargando BBD</div>'; }
     });
+}
+
+// ── CARTERA CLIENTES ──────────────────────────────────────────────────────────
+async function loadClientes(vendedor) {
+    const el = document.getElementById('cli-list');
+    el.innerHTML = '<div class="loading">Cargando cartera...</div>';
+    try {
+        const nombre = encodeURIComponent(vendedor);
+        const clientes = await apiFetch(`/api/clientes?vendedor=${nombre}`);
+        dbC = clientes;
+        renderCartera();
+    } catch(err) {
+        el.innerHTML = `<div class="error-msg">❌ ${err.message}</div>`;
+    }
+}
+
+function renderCartera() {
+    const el   = document.getElementById('cli-list');
+    const col  = document.getElementById('f-color').value;
+    const q    = (document.getElementById('f-cli').value||'').toUpperCase();
+
+    let lista = dbC.filter(c => {
+        const d = parseInt(c.Dias)||0;
+        const colorOk = col==='TODOS' || (col==='VERDE'&&d<=14) || (col==='AMBAR'&&d>14&&d<=60) || (col==='ROJO'&&d>60);
+        const qOk = !q || (c.Cliente||'').toUpperCase().includes(q) || (c.NombreCompleto||'').toUpperCase().includes(q);
+        return colorOk && qOk;
+    });
+
+    // Stats
+    const stats = { verde:0, ambar:0, rojo:0 };
+    dbC.forEach(c => { const d=parseInt(c.Dias)||0; if(d<=14)stats.verde++; else if(d<=60)stats.ambar++; else stats.rojo++; });
+    document.getElementById('cartera-stats').innerHTML =
+        `<span style="color:#0f0">● ${stats.verde} activos</span> &nbsp;
+         <span style="color:#ff0">● ${stats.ambar} inactivos</span> &nbsp;
+         <span style="color:#f00">● ${stats.rojo} críticos</span>`;
+
+    el.innerHTML = '';
+    lista.slice(0, 150).forEach(c => {
+        const d    = parseInt(c.Dias)||0;
+        const col2 = d>60?'rojo':d>14?'ambar':'verde';
+        const nom  = c.Cliente || c.Codigo || '—';
+
+        // Armar dirección limpia
+        const partes = [];
+        if (c.Direccion) partes.push(c.Direccion);
+        if (c.Colonia && !(c.Direccion||'').toUpperCase().includes((c.Colonia||'').toUpperCase().split(' ')[0])) partes.push(c.Colonia);
+        if (c.CP)     partes.push(c.CP);
+        if (c.Pais)   partes.push(c.Pais);
+        const dirTexto  = partes.filter(Boolean).join(', ');
+        const dirEnc    = dirTexto ? encodeURIComponent(dirTexto) : '';
+
+        el.innerHTML += `
+            <div class="mapa-item ${col2}" style="background:rgba(255,255,255,0.03); border-radius:10px; padding:12px; margin-bottom:8px; border-left:3px solid ${col2==='verde'?'#0f0':col2==='ambar'?'#ff0':'#f00'};">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                    <div style="flex:1; min-width:0;">
+                        <b style="font-size:0.82rem;">${nom}</b>
+                        ${c.NombreCompleto && c.NombreCompleto !== nom ? `<br><small style="color:#888;">${c.NombreCompleto}</small>` : ''}
+                        <br><small style="color:#555;">${dirTexto || 'Sin dirección'}</small>
+                    </div>
+                    <div style="text-align:right; white-space:nowrap; margin-left:10px;">
+                        <b style="color:var(--grass); font-size:0.8rem;">${fM(c.Venta_Mes)}</b>
+                        <br><small style="color:#666;">${d} días</small>
+                    </div>
+                </div>
+                ${dirEnc ? `
+                <div style="display:flex; gap:6px; margin-top:8px;">
+                    <button onclick="window.open('https://www.google.com/maps/search/?api=1&query=${dirEnc}','_blank')" style="flex:1; padding:7px; border-radius:6px; border:none; background:#4285f4; color:#fff; font-size:0.65rem; font-weight:bold; cursor:pointer;">📍 Maps</button>
+                </div>` : ''}
+            </div>`;
+    });
+    if (!lista.length) el.innerHTML = '<div class="loading">Sin clientes</div>';
 }
 </script>
 </body>
