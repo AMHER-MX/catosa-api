@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Catosa GP — Executive Command Center 2026</title>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <style>
+        :root {
+            --gold: #ffd700;
+            --gold2: #ffaa00;
+            --grass: #00ff88;
+            --red: #ff4b2b;
+            --blue: #00d4ff;
+            --silver: #c0c0c0;
+            --bronze: #cd7f32;
+            --purple: #a855f7;
+            --card: #0d1117;
+            --card2: #161b22;
+            --border: rgba(255,255,255,0.07);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #060810;
+            background-image:
+                radial-gradient(ellipse at 20% 20%, rgba(255,215,0,0.04) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(0,212,255,0.04) 0%, transparent 50%);
+            color: #fff;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* ── LOGIN ─────────────────────────────────────────────────────── */
+        #login-screen {
+            position: fixed; inset: 0; z-index: 1000;
+            display: flex; align-items: center; justify-content: center;
+            background: #000;
+            background-image: url('https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/PAPEL%20TAPIZ%20COPA%20DEL%20MUNDO.png');
+            background-size: cover; background-position: center;
+        }
+        #login-screen::before {
+            content: ''; position: absolute; inset: 0;
+            background: rgba(0,0,0,0.82);
+        }
+        .login-box {
+            position: relative; z-index: 1;
+            background: rgba(13,17,23,0.95);
+            border: 1px solid rgba(255,215,0,0.3);
+            border-radius: 24px; padding: 40px 35px;
+            width: 340px; text-align: center;
+            box-shadow: 0 0 60px rgba(255,215,0,0.1), 0 0 120px rgba(0,0,0,0.8);
+            backdrop-filter: blur(10px);
+        }
+        .login-logo { height: 45px; margin-bottom: 8px; }
+        .login-title { font-family: 'Bebas Neue', sans-serif; font-size: 2rem; color: var(--gold); letter-spacing: 3px; margin-bottom: 4px; }
+        .login-sub { font-size: 0.65rem; color: #666; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 28px; }
+        .login-input {
+            width: 100%; background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 14px 16px; border-radius: 10px; color: #fff;
+            font-size: 0.85rem; margin-bottom: 12px;
+            transition: border-color 0.2s;
+        }
+        .login-input:focus { outline: none; border-color: var(--gold); }
+        .login-btn {
+            width: 100%; padding: 15px; border-radius: 10px; border: none;
+            background: linear-gradient(135deg, var(--gold), var(--gold2));
+            color: #000; font-weight: 900; font-size: 0.85rem;
+            letter-spacing: 2px; cursor: pointer; text-transform: uppercase;
+            transition: opacity 0.2s;
+        }
+        .login-btn:hover { opacity: 0.9; }
+        #login-status { font-size: 0.65rem; color: #555; margin-bottom: 14px; min-height: 16px; }
+
+        /* ── MAIN APP ───────────────────────────────────────────────────── */
+        #main-app { display: none; padding: 12px; max-width: 1600px; margin: 0 auto; }
+
+        /* TOP BAR */
+        .top-bar {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 12px 18px; margin-bottom: 14px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--border); border-radius: 14px;
+        }
+        .top-bar-left { display: flex; align-items: center; gap: 12px; }
+        .logo-bar { height: 30px; }
+        .role-pill {
+            font-size: 0.6rem; font-weight: 700; letter-spacing: 2px;
+            padding: 4px 12px; border-radius: 20px;
+            background: linear-gradient(135deg, var(--gold), var(--gold2));
+            color: #000; text-transform: uppercase;
+        }
+        .btn-salir {
+            background: none; border: 1px solid var(--red); color: var(--red);
+            padding: 6px 14px; border-radius: 6px; cursor: pointer;
+            font-size: 0.65rem; font-weight: 700; letter-spacing: 1px;
+        }
+
+        /* TIME PANEL */
+        .time-panel {
+            display: grid; grid-template-columns: repeat(3,1fr); gap: 10px;
+            margin-bottom: 14px;
+        }
+        .time-item {
+            background: var(--card); border-radius: 12px; padding: 14px;
+            text-align: center; border: 1px solid var(--border);
+        }
+        .time-label { font-size: 0.5rem; color: var(--grass); text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 5px; font-weight: 700; }
+        .time-value { font-family: 'Bebas Neue', sans-serif; font-size: 1.4rem; letter-spacing: 2px; }
+
+        /* FILTROS */
+        .filters-bar {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+            margin-bottom: 14px;
+        }
+        .filter-select {
+            background: var(--card2); border: 1px solid var(--border);
+            color: #fff; padding: 10px 14px; border-radius: 10px;
+            font-size: 0.75rem; cursor: pointer;
+        }
+
+        /* KPI GRID */
+        .kpi-grid {
+            display: grid; grid-template-columns: repeat(2,1fr); gap: 10px;
+            margin-bottom: 14px;
+        }
+        @media(min-width:600px) { .kpi-grid { grid-template-columns: repeat(4,1fr); } }
+        .kpi-card {
+            background: var(--card2); border-radius: 14px; padding: 14px 16px;
+            border: 1px solid var(--border); position: relative; overflow: hidden;
+        }
+        .kpi-card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0;
+            height: 3px;
+        }
+        .kpi-card.blue::before { background: var(--blue); }
+        .kpi-card.gold::before { background: var(--gold); }
+        .kpi-card.red::before  { background: var(--red); }
+        .kpi-card.grass::before { background: var(--grass); }
+        .kpi-label { font-size: 0.5rem; color: #666; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; display: block; }
+        .kpi-value { font-family: 'Bebas Neue', sans-serif; font-size: 1.5rem; letter-spacing: 1px; }
+
+        /* PISTA */
+        .race-section { margin-bottom: 14px; }
+        .race-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 8px;
+        }
+        .race-title { font-size: 0.6rem; color: var(--gold); font-weight: 700; text-transform: uppercase; letter-spacing: 2px; }
+        .race-legend { display: flex; gap: 12px; }
+        .legend-item { font-size: 0.5rem; color: #666; display: flex; align-items: center; gap: 4px; }
+        .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+        .race-track {
+            background: linear-gradient(90deg, #1a472a 50%, #2d5a3f 50%);
+            background-size: 50px 100%;
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 12px; position: relative; overflow: hidden;
+            padding: 6px 0;
+        }
+        .porteria {
+            position: absolute; right: 0; top: 0; bottom: 0; width: 36px;
+            background: rgba(255,255,255,0.08); border-left: 2px dashed rgba(255,255,255,0.4);
+            display: flex; align-items: center; justify-content: center; font-size: 1.2rem; z-index: 5;
+        }
+        .meta-line { position: absolute; top: 0; bottom: 0; width: 1px; z-index: 3; }
+        .meta-75  { left: 62.5%; border-left: 1px dashed var(--bronze); opacity: 0.6; }
+        .meta-110 { left: 91.6%; border-left: 1px dashed var(--silver); opacity: 0.6; }
+        .lane {
+            height: 36px; position: relative; display: flex; align-items: center;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+        }
+        .v-name {
+            width: 110px; font-size: 0.52rem; color: rgba(255,255,255,0.9);
+            padding-left: 10px; white-space: nowrap; overflow: hidden;
+            text-overflow: ellipsis; font-weight: 600; z-index: 6;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+        }
+        .v-pct {
+            position: absolute; right: 44px; font-size: 0.5rem;
+            color: rgba(255,255,255,0.5); z-index: 6;
+        }
+        .truck {
+            position: absolute; width: 28px; height: 28px;
+            background: url('https://cdn-icons-png.flaticon.com/512/53/53283.png') center/contain no-repeat;
+            filter: invert(1); transition: left 1.5s cubic-bezier(0.2,0,0.2,1); z-index: 10;
+        }
+        .truck.bronce { filter: drop-shadow(0 0 6px var(--bronze)) sepia(1); }
+        .truck.plata  { filter: drop-shadow(0 0 6px var(--silver)) brightness(2); }
+        .truck.oro    { filter: drop-shadow(0 0 10px var(--gold)) sepia(1) saturate(10); }
+
+        /* CARDS GRID */
+        .grid { display: grid; grid-template-columns: 1fr; gap: 14px; margin-bottom: 14px; }
+        @media(min-width:700px) { .grid-2 { grid-template-columns: 1fr 1fr; } }
+        .card {
+            background: var(--card2); border-radius: 16px; padding: 18px;
+            border: 1px solid var(--border);
+        }
+        .card-title {
+            font-size: 0.65rem; color: var(--grass); font-weight: 700;
+            text-transform: uppercase; letter-spacing: 2px;
+            border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 14px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .scroll-list { max-height: 280px; overflow-y: auto; }
+
+        /* VENDEDOR ROW */
+        .v-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 0.78rem;
+        }
+        .v-row-left { display: flex; flex-direction: column; gap: 2px; }
+        .v-row-name { font-weight: 600; }
+        .v-row-sub  { font-size: 0.6rem; color: #555; }
+
+        /* SEMAFORO */
+        .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; flex-shrink: 0; }
+        .dot.verde { background: #0f0; box-shadow: 0 0 6px #0f0; }
+        .dot.ambar { background: #ff0; box-shadow: 0 0 6px #ff0; }
+        .dot.rojo  { background: #f00; box-shadow: 0 0 6px #f00; }
+
+        /* PROSPECTOS */
+        .prospecto-item {
+            padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 0.75rem;
+        }
+        .prospecto-name { font-weight: 700; color: var(--blue); margin-bottom: 2px; }
+        .prospecto-meta { font-size: 0.6rem; color: #555; }
+
+        /* PREMIOS SECTION */
+        .premios-section {
+            position: relative; border-radius: 18px; overflow: hidden;
+            margin-bottom: 14px; border: 1px solid rgba(255,215,0,0.3);
+        }
+        .premios-bg {
+            position: absolute; inset: 0;
+            background: url('https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/PAPEL%20TAPIZ%20COPA%20DEL%20MUNDO.png') center/cover;
+            filter: brightness(0.18);
+        }
+        .premios-content { position: relative; padding: 20px; }
+        .premios-title {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 1.8rem; color: var(--gold);
+            text-shadow: 0 0 20px rgba(255,215,0,0.5);
+            letter-spacing: 4px; text-align: center; margin-bottom: 4px;
+        }
+        .premios-sub { font-size: 0.6rem; color: #888; text-align: center; margin-bottom: 16px; letter-spacing: 1px; }
+
+        /* TABLA PREMIOS VENDEDORES */
+        .premios-table { width: 100%; border-collapse: collapse; font-size: 0.72rem; }
+        .premios-table th { color: var(--gold); font-size: 0.55rem; text-transform: uppercase; letter-spacing: 1px; padding: 6px 8px; border-bottom: 1px solid rgba(255,215,0,0.2); text-align: left; }
+        .premios-table td { padding: 8px; border-bottom: 1px solid var(--border); }
+        .nivel-badge {
+            display: inline-block; padding: 2px 8px; border-radius: 20px;
+            font-size: 0.55rem; font-weight: 900; letter-spacing: 1px;
+        }
+        .nivel-oro    { background: var(--gold); color: #000; }
+        .nivel-plata  { background: var(--silver); color: #000; }
+        .nivel-bronce { background: var(--bronze); color: #fff; }
+        .nivel-fuera  { background: #222; color: #666; }
+
+        /* TOP 10 */
+        .top-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 9px 0; border-bottom: 1px solid var(--border); font-size: 0.75rem;
+        }
+        .top-num { color: var(--gold); font-family: 'Bebas Neue', sans-serif; font-size: 1rem; margin-right: 8px; }
+
+        /* RANKING */
+        .rank-item {
+            display: flex; align-items: center; padding: 9px 0;
+            border-bottom: 1px solid var(--border); gap: 10px; font-size: 0.75rem;
+        }
+        .rank-pos { font-family: 'Bebas Neue', sans-serif; font-size: 1.1rem; color: #444; width: 22px; }
+        .rank-pos.one   { color: var(--gold); }
+        .rank-pos.two   { color: var(--silver); }
+        .rank-pos.three { color: var(--bronze); }
+        .rank-bar-wrap  { flex: 1; height: 4px; background: #222; border-radius: 2px; }
+        .rank-bar       { height: 4px; border-radius: 2px; background: var(--grass); transition: width 1s; }
+
+        input, select { font-family: 'Inter', sans-serif; }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-thumb { background: var(--grass); border-radius: 4px; }
+
+        .loading { color: #444; font-size: 0.7rem; text-align: center; padding: 20px; }
+        .error-msg { color: var(--red); font-size: 0.7rem; text-align: center; padding: 10px; }
+    </style>
+</head>
+<body>
+
+<!-- ── LOGIN ──────────────────────────────────────────────────────────────── -->
+<div id="login-screen">
+    <div class="login-box">
+        <img src="https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/logo-international.png" class="login-logo" alt="International" onerror="this.style.display='none'">
+        <div class="login-title">COMMAND CENTER</div>
+        <div class="login-sub">World Cup Catosa 2026</div>
+        <div id="login-status">Iniciando...</div>
+        <input type="text" id="u-user" class="login-input" placeholder="USUARIO">
+        <input type="password" id="u-pass" class="login-input" placeholder="CONTRASEÑA">
+        <button class="login-btn" id="btn-login" onclick="login()" disabled>ENTRAR</button>
+    </div>
+</div>
+
+<!-- ── MAIN APP ────────────────────────────────────────────────────────────── -->
+<div id="main-app">
+
+    <!-- TOP BAR -->
+    <div class="top-bar">
+        <div class="top-bar-left">
+            <img src="https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/logo-catosa.png" class="logo-bar" alt="Catosa" onerror="this.style.display='none'">
+        </div>
+        <div id="role-display" class="role-pill">--</div>
+        <button class="btn-salir" onclick="location.reload()">SALIR</button>
+    </div>
+
+    <!-- TIME -->
+    <div class="time-panel">
+        <div class="time-item"><span class="time-label">Corte hoy</span><span class="time-value" id="val-hoy">--</span></div>
+        <div class="time-item"><span class="time-label">Días restantes</span><span class="time-value" id="val-dias" style="color:var(--red)">--</span></div>
+        <div class="time-item"><span class="time-label">Falta p/ Oro</span><span class="time-value" id="val-falta" style="color:var(--gold)">--</span></div>
+    </div>
+
+    <!-- FILTROS -->
+    <div class="filters-bar">
+        <select class="filter-select" id="f-suc" onchange="renderAll()">
+            <option value="TODAS">🏟️ Todas las sedes</option>
+        </select>
+        <select class="filter-select" id="f-vend" onchange="renderAll()">
+            <option value="TODOS">👤 Todos los asesores</option>
+        </select>
+    </div>
+
+    <!-- KPIs -->
+    <div class="kpi-grid">
+        <div class="kpi-card blue"><span class="kpi-label">Venta Total</span><div class="kpi-value" id="k-venta">$0</div></div>
+        <div class="kpi-card red"><span class="kpi-label">Faltante Meta</span><div class="kpi-value" id="k-falta" style="color:var(--red)">$0</div></div>
+        <div class="kpi-card grass"><span class="kpi-label">Avance Sede</span><div class="kpi-value" id="k-avance" style="color:var(--grass)">0%</div></div>
+        <div class="kpi-card gold"><span class="kpi-label">Avance Oro</span><div class="kpi-value" id="k-oro" style="color:var(--gold)">0%</div></div>
+    </div>
+
+    <!-- PISTA DE CARRERAS -->
+    <div class="race-section">
+        <div class="race-header">
+            <span class="race-title">🏆 Pista de carreras — Desempeño individual</span>
+            <div class="race-legend">
+                <div class="legend-item"><div class="legend-dot" style="background:var(--bronze)"></div>75%</div>
+                <div class="legend-item"><div class="legend-dot" style="background:var(--silver)"></div>110%</div>
+                <div class="legend-item"><div class="legend-dot" style="background:var(--gold)"></div>120%</div>
+            </div>
+        </div>
+        <div class="race-track" id="race-track">
+            <div class="porteria">🥅</div>
+            <div class="meta-line meta-75"></div>
+            <div class="meta-line meta-110"></div>
+            <div id="pista"></div>
+        </div>
+    </div>
+
+    <!-- PREMIOS WORLD CUP -->
+    <div class="premios-section">
+        <div class="premios-bg"></div>
+        <div class="premios-content">
+            <div class="premios-title">🏆 LA FIEBRE DEL ORO</div>
+            <div class="premios-sub">Estado de premios por asesor — Mayo 2026</div>
+            <div style="overflow-x:auto;">
+                <table class="premios-table">
+                    <thead>
+                        <tr>
+                            <th>Asesor</th>
+                            <th>Sede</th>
+                            <th>Avance</th>
+                            <th>Nivel</th>
+                            <th>Premio Mes</th>
+                            <th>⚽ Balón</th>
+                            <th>🎽 Jersey</th>
+                        </tr>
+                    </thead>
+                    <tbody id="premios-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- GRID DE CARDS -->
+    <div class="grid grid-2">
+
+        <!-- GRÁFICA -->
+        <div class="card">
+            <div class="card-title">📈 Rendimiento por asesor</div>
+            <canvas id="salesChart" style="max-height:260px;"></canvas>
+        </div>
+
+        <!-- RANKING -->
+        <div class="card">
+            <div class="card-title">🏅 Ranking de ventas</div>
+            <div class="scroll-list" id="ranking-list"><div class="loading">Cargando...</div></div>
+        </div>
+
+        <!-- TOP 10 PRODUCTOS -->
+        <div class="card">
+            <div class="card-title">🔥 Top 10 Productos</div>
+            <div class="scroll-list" id="top-list"><div class="loading">Cargando...</div></div>
+        </div>
+
+        <!-- PROSPECTOS BBD -->
+        <div class="card">
+            <div class="card-title">
+                📋 Últimos Prospectos (Refacciones)
+                <span id="bbd-count" style="font-size:0.55rem; color:#555; font-weight:400;"></span>
+            </div>
+            <div class="scroll-list" id="bbd-list"><div class="loading">Cargando...</div></div>
+        </div>
+
+        <!-- CARTERA SEMÁFORO -->
+        <div class="card" style="grid-column: 1 / -1;">
+            <div class="card-title">👥 Cartera Semáforo</div>
+            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:12px;">
+                <select class="filter-select" id="f-color" onchange="renderCartera()">
+                    <option value="TODOS">Todos</option>
+                    <option value="VERDE">Al día (&lt;14 días)</option>
+                    <option value="AMBAR">Inactivo (14-60)</option>
+                    <option value="ROJO">Crítico (&gt;60 días)</option>
+                </select>
+                <input type="text" id="f-cli" class="filter-select" placeholder="🔍 Buscar cliente..." oninput="renderCartera()" style="padding:10px 14px;">
+                <div id="cartera-stats" style="font-size:0.6rem; color:#555; display:flex; align-items:center; justify-content:center; text-align:center;"></div>
+            </div>
+            <div class="scroll-list" id="cli-list"><div class="loading">Cargando...</div></div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+// ── CONFIG ────────────────────────────────────────────────────────────────────
+const API = 'https://api.catosaapps.lat';
+const SHEETS_BBD = 'https://docs.google.com/spreadsheets/d/1vUYJz5r1kgMNDel9-6LqaiKAeb3g_n0JwS5_Hs59yeM/pub?gid=0&single=true&output=csv';
+
+const USUARIOS = {
+    'GERENTE':   'CATOSA2026',
+    'DIRECTOR':  'MASTER2026',
+};
+
+// ── ESTADO ────────────────────────────────────────────────────────────────────
+let dbV = [], dbC = [], dbTop = [], dbBBD = [], myChart = null, userRole = '';
+
+// ── UTILS ─────────────────────────────────────────────────────────────────────
+const fM = n => new Intl.NumberFormat('es-MX', { style:'currency', currency:'MXN', minimumFractionDigits:0 }).format(n||0);
+
+async function apiFetch(endpoint) {
+    const res = await fetch(API + endpoint);
+    if (!res.ok) throw new Error(`Error ${res.status}`);
+    return res.json();
+}
+
+// ── CARGA INICIAL ─────────────────────────────────────────────────────────────
+window.onload = async () => {
+    try {
+        document.getElementById('login-status').textContent = 'Conectando con servidor...';
+        dbV = await apiFetch('/api/ventas');
+        document.getElementById('login-status').textContent = `✅ ${dbV.length} asesores cargados`;
+        document.getElementById('btn-login').disabled = false;
+        document.getElementById('btn-login').textContent = 'ENTRAR';
+    } catch(err) {
+        document.getElementById('login-status').innerHTML = `<span style="color:var(--red)">❌ ${err.message}</span>`;
+        document.getElementById('btn-login').disabled = false;
+        document.getElementById('btn-login').textContent = 'REINTENTAR';
+        document.getElementById('btn-login').onclick = () => location.reload();
+    }
+};
+
+// ── LOGIN ─────────────────────────────────────────────────────────────────────
+async function login() {
+    const u = document.getElementById('u-user').value.toUpperCase().trim();
+    const p = document.getElementById('u-pass').value.toUpperCase().trim();
+
+    if (!USUARIOS[u] || USUARIOS[u] !== p) { alert('ACCESO DENEGADO'); return; }
+
+    userRole = u;
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('main-app').style.display = 'block';
+    document.getElementById('role-display').textContent = u === 'DIRECTOR' ? '⭐ DIRECTOR' : '🏟️ GERENTE';
+
+    fillFilters();
+    renderAll();
+    loadTopProductos();
+    loadBBD();
+};
+
+// ── FILTROS ───────────────────────────────────────────────────────────────────
+function fillFilters() {
+    const sEl = document.getElementById('f-suc');
+    const vEl = document.getElementById('f-vend');
+    [...new Set(dbV.map(v => v.Sucursal).filter(Boolean))].sort().forEach(s => {
+        sEl.innerHTML += `<option value="${s}">${s}</option>`;
+    });
+    dbV.filter(v => v.Nombre).forEach(v => {
+        vEl.innerHTML += `<option value="${v.Nombre}">${v.Nombre}</option>`;
+    });
+}
+
+function getFiltered() {
+    const fs = document.getElementById('f-suc').value;
+    const fv = document.getElementById('f-vend').value;
+    return dbV.filter(v =>
+        v.Nombre &&
+        (fs === 'TODAS' || v.Sucursal === fs) &&
+        (fv === 'TODOS' || v.Nombre === fv)
+    );
+}
+
+// ── RENDER PRINCIPAL ──────────────────────────────────────────────────────────
+async function renderAll() {
+    const lista = getFiltered();
+    renderTime(lista);
+    renderKPIs(lista);
+    renderPista(lista);
+    renderPremios(lista);
+    renderRanking(lista);
+    renderChart(lista);
+
+    // Recargar clientes si cambia el filtro
+    const fv = document.getElementById('f-vend').value;
+    if (fv !== 'TODOS') {
+        loadClientes(fv);
+    } else {
+        loadClientes('');
+    }
+}
+
+function renderTime(lista) {
+    const hoy = new Date();
+    const uDia = new Date(hoy.getFullYear(), hoy.getMonth()+1, 0).getDate();
+    document.getElementById('val-hoy').textContent = hoy.toLocaleDateString('es-MX', {day:'numeric', month:'short'}).toUpperCase();
+    document.getElementById('val-dias').textContent = (uDia - hoy.getDate() + 1) + ' DÍAS';
+
+    let tv = 0, tm = 0;
+    lista.forEach(v => { tv += parseFloat(v.Ventas)||0; tm += parseFloat(v.Meta)||1; });
+    document.getElementById('val-falta').textContent = fM(Math.max(0, (tm*1.20) - tv));
+}
+
+function renderKPIs(lista) {
+    let tv = 0, tm = 0;
+    lista.forEach(v => { tv += parseFloat(v.Ventas)||0; tm += parseFloat(v.Meta)||1; });
+    document.getElementById('k-venta').textContent  = fM(tv);
+    document.getElementById('k-falta').textContent  = fM(Math.max(0, tm - tv));
+    document.getElementById('k-avance').textContent = ((tv/tm)*100).toFixed(1) + '%';
+    document.getElementById('k-oro').textContent    = ((tv/(tm*1.20))*100).toFixed(1) + '%';
+}
+
+function renderPista(lista) {
+    const pista = document.getElementById('pista');
+    pista.innerHTML = '';
+    lista.sort((a,b) => (parseFloat(b.Ventas)||0) - (parseFloat(a.Ventas)||0)).forEach(v => {
+        const ven = parseFloat(v.Ventas)||0, met = parseFloat(v.Meta)||1;
+        const pct = (ven/met)*100;
+        const pos = Math.min(100, (pct/120)*100);
+        const cls = pct >= 120 ? 'oro' : (pct >= 110 ? 'plata' : (pct >= 75 ? 'bronce' : ''));
+        pista.innerHTML += `
+            <div class="lane">
+                <span class="v-name">${v.Nombre}</span>
+                <div class="truck ${cls}" style="left:calc(${pos}% - 30px)"></div>
+                <span class="v-pct">${pct.toFixed(0)}%</span>
+            </div>`;
+    });
+}
+
+function renderPremios(lista) {
+    const tbody = document.getElementById('premios-tbody');
+    tbody.innerHTML = '';
+    const mesWC = [5,6,7].includes(new Date().getMonth()+1);
+    const nombres = ['', 'Cine 🎬', 'Hielera ❄️', 'Celular 📱', 'Smart TV 📺'];
+
+    lista.sort((a,b) => (parseFloat(b.Ventas)||0) - (parseFloat(a.Ventas)||0)).forEach(v => {
+        const ven = parseFloat(v.Ventas)||0, met = parseFloat(v.Meta)||1;
+        const pct = (ven/met)*100;
+        let nivel, cls, premio;
+        if      (pct >= 120) { nivel='ORO';    cls='nivel-oro';    premio=nombres[1]; }
+        else if (pct >= 110) { nivel='PLATA';  cls='nivel-plata';  premio='—'; }
+        else if (pct >= 75)  { nivel='BRONCE'; cls='nivel-bronce'; premio='—'; }
+        else                 { nivel='FUERA';  cls='nivel-fuera';  premio='—'; }
+
+        const balon  = mesWC && pct >= 120  ? '✅' : (mesWC && pct >= 100 ? `${(120-pct).toFixed(0)}% falta` : '—');
+        const jersey = mesWC && pct >= 125  ? '✅' : (mesWC && pct >= 100 ? `${(125-pct).toFixed(0)}% falta` : '—');
+
+        tbody.innerHTML += `
+            <tr>
+                <td style="font-weight:600;">${v.Nombre}</td>
+                <td style="color:#666; font-size:0.65rem;">${v.Sucursal||'—'}</td>
+                <td style="color:${pct>=120?'var(--gold)':pct>=75?'var(--grass)':'var(--red)'}; font-weight:700;">${pct.toFixed(1)}%</td>
+                <td><span class="nivel-badge ${cls}">${nivel}</span></td>
+                <td style="color:var(--grass); font-size:0.65rem;">${pct>=120 ? premio : '—'}</td>
+                <td style="font-size:0.65rem; color:${pct>=120?'var(--grass)':'#555'};">${balon}</td>
+                <td style="font-size:0.65rem; color:${pct>=125?'var(--grass)':'#555'};">${jersey}</td>
+            </tr>`;
+    });
+}
+
+function renderRanking(lista) {
+    const el = document.getElementById('ranking-list');
+    const sorted = [...lista].sort((a,b) => (parseFloat(b.Ventas)||0) - (parseFloat(a.Ventas)||0));
+    const max = parseFloat(sorted[0]?.Ventas)||1;
+    el.innerHTML = '';
+    sorted.forEach((v, i) => {
+        const ven = parseFloat(v.Ventas)||0;
+        const pct = (ven/max)*100;
+        const posClass = i===0?'one':i===1?'two':i===2?'three':'';
+        el.innerHTML += `
+            <div class="rank-item">
+                <div class="rank-pos ${posClass}">${i+1}</div>
+                <div style="flex:1; min-width:0;">
+                    <div style="font-size:0.75rem; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${v.Nombre}</div>
+                    <div class="rank-bar-wrap"><div class="rank-bar" style="width:${pct}%"></div></div>
+                </div>
+                <div style="text-align:right; white-space:nowrap; margin-left:8px;">
+                    <div style="font-size:0.75rem; color:var(--grass); font-weight:700;">${fM(ven)}</div>
+                    <div style="font-size:0.55rem; color:#555;">${((ven/(parseFloat(v.Meta)||1))*100).toFixed(1)}%</div>
+                </div>
+            </div>`;
+    });
+}
+
+function renderChart(lista) {
+    const sorted = [...lista].sort((a,b) => (parseFloat(b.Ventas)||0) - (parseFloat(a.Ventas)||0)).slice(0,10);
+    const labels = sorted.map(v => v.Nombre.split(' ')[0]);
+    const ventas = sorted.map(v => parseFloat(v.Ventas)||0);
+    const metas  = sorted.map(v => parseFloat(v.Meta)||0);
+
+    if (myChart) myChart.destroy();
+    myChart = new Chart(document.getElementById('salesChart'), {
+        type: 'bar',
+        data: {
+            labels,
+            datasets: [
+                { label: 'Venta', data: ventas, backgroundColor: 'rgba(0,255,136,0.7)', borderRadius: 4 },
+                { label: 'Meta',  data: metas,  backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 4 }
+            ]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { labels: { color: '#888', font: { size: 10 } } } },
+            scales: {
+                x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#888', font: { size: 9 } } },
+                y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#888', font: { size: 9 }, callback: v => '$' + (v/1000).toFixed(0)+'k' }, beginAtZero: true }
+            }
+        }
+    });
+}
+
+// ── TOP 10 PRODUCTOS ──────────────────────────────────────────────────────────
+async function loadTopProductos() {
+    const el = document.getElementById('top-list');
+    try {
+        const prods = await apiFetch('/api/top-productos?vendedor=');
+        el.innerHTML = '';
+        prods.forEach((p, i) => {
+            el.innerHTML += `
+                <div class="top-item">
+                    <div style="display:flex; align-items:center; gap:4px;">
+                        <span class="top-num">#${i+1}</span>
+                        <div>
+                            <div style="font-weight:600;">${p.Parte}</div>
+                            <div style="font-size:0.6rem; color:#555;">${p.Descripcion||''}</div>
+                        </div>
+                    </div>
+                    <div style="text-align:right;">
+                        <div style="color:var(--blue); font-weight:700;">${p.Unidades_Vendidas}</div>
+                        <div style="font-size:0.55rem; color:#555;">vendidas</div>
+                    </div>
+                </div>`;
+        });
+    } catch(err) {
+        el.innerHTML = `<div class="error-msg">❌ ${err.message}</div>`;
+    }
+}
+
+// ── CLIENTES ──────────────────────────────────────────────────────────────────
+async function loadClientes(vendedor) {
+    const el = document.getElementById('cli-list');
+    el.innerHTML = '<div class="loading">Cargando cartera...</div>';
+    try {
+        const nombre = encodeURIComponent(vendedor);
+        const clientes = await apiFetch(`/api/clientes?vendedor=${nombre}`);
+        dbC = clientes;
+        renderCartera();
+    } catch(err) {
+        el.innerHTML = `<div class="error-msg">❌ ${err.message}</div>`;
+    }
+}
+
+function renderCartera() {
+    const el  = document.getElementById('cli-list');
+    const col = document.getElementById('f-color').value;
+    const q   = (document.getElementById('f-cli').value||'').toUpperCase();
+
+    let lista = dbC.filter(c => {
+        const d = parseInt(c.Dias)||0;
+        const colorOk = col==='TODOS' || (col==='VERDE'&&d<=14) || (col==='AMBAR'&&d>14&&d<=60) || (col==='ROJO'&&d>60);
+        const qOk = !q || (c.Cliente||'').toUpperCase().includes(q);
+        return colorOk && qOk;
+    });
+
+    const stats = { verde:0, ambar:0, rojo:0 };
+    dbC.forEach(c => { const d=parseInt(c.Dias)||0; if(d<=14)stats.verde++; else if(d<=60)stats.ambar++; else stats.rojo++; });
+    document.getElementById('cartera-stats').innerHTML =
+        `<span style="color:#0f0">●${stats.verde}</span>&nbsp;
+         <span style="color:#ff0">●${stats.ambar}</span>&nbsp;
+         <span style="color:#f00">●${stats.rojo}</span>`;
+
+    el.innerHTML = '';
+    lista.slice(0, 100).forEach(c => {
+        const d = parseInt(c.Dias)||0;
+        const col2 = d>60?'rojo':d>14?'ambar':'verde';
+        el.innerHTML += `
+            <div class="v-row">
+                <div class="v-row-left">
+                    <div class="v-row-name"><span class="dot ${col2}"></span>${c.Cliente||c.Codigo||'—'}</div>
+                    <div class="v-row-sub">${c.Direccion||''}</div>
+                </div>
+                <div style="text-align:right; white-space:nowrap;">
+                    <div style="color:var(--grass); font-weight:700; font-size:0.75rem;">${fM(c.Venta_Mes)}</div>
+                    <div style="font-size:0.55rem; color:#555;">${d} días</div>
+                </div>
+            </div>`;
+    });
+    if (!lista.length) el.innerHTML = '<div class="loading">Sin resultados</div>';
+}
+
+// ── BBD PROSPECTOS ────────────────────────────────────────────────────────────
+function loadBBD() {
+    const el = document.getElementById('bbd-list');
+    Papa.parse(SHEETS_BBD, {
+        download: true, header: true,
+        complete: r => {
+            const refacciones = r.data.filter(row =>
+                (row['Departamento']||'').toLowerCase().includes('refacciones') && row['Cliente']
+            ).reverse().slice(0, 30);
+
+            document.getElementById('bbd-count').textContent = `${refacciones.length} registros`;
+            el.innerHTML = '';
+            refacciones.forEach(p => {
+                el.innerHTML += `
+                    <div class="prospecto-item">
+                        <div class="prospecto-name">⚽ ${p['Cliente']||'—'}</div>
+                        <div class="prospecto-meta">
+                            👤 ${p['Nombre contacto']||p['Contacto']||'—'} &nbsp;|&nbsp;
+                            📞 ${p['Teléfono']||p['Telefono']||'—'}
+                        </div>
+                        <div class="prospecto-meta" style="color:#444;">
+                            Asesor: ${p['Asesor']||p['Vendedor']||'—'} &nbsp;|&nbsp;
+                            ${p['Fecha']||p['Timestamp']||''}
+                        </div>
+                    </div>`;
+            });
+            if (!refacciones.length) el.innerHTML = '<div class="loading">Sin prospectos registrados</div>';
+        },
+        error: () => { el.innerHTML = '<div class="error-msg">❌ Error cargando BBD</div>'; }
+    });
+}
+</script>
+</body>
+</html>
