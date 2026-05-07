@@ -92,7 +92,15 @@
         ::-webkit-scrollbar { width: 5px; }
         ::-webkit-scrollbar-thumb { background: var(--grass); border-radius: 10px; }
 
-        /* FILTROS MAPA */
+        /* PREMIOS ETAPA */
+        .etapa-card { background:rgba(255,255,255,0.04); border:1px solid #333; border-radius:10px; overflow:hidden; position:relative; transition:all 0.3s; }
+        .etapa-card.activa { border-color:var(--gold); box-shadow:0 0 16px rgba(255,215,0,0.4); transform:scale(1.05); }
+        .etapa-card.ganada { border-color:var(--grass); opacity:0.6; }
+        .etapa-card.bloqueada { opacity:0.3; filter:grayscale(1); }
+        .etapa-num { font-size:0.55rem; font-weight:900; color:#888; padding:4px 6px; text-align:center; }
+        .etapa-card.activa .etapa-num { color:var(--gold); }
+        .etapa-card.ganada .etapa-num { color:var(--grass); }
+        .etapa-img { width:100%; height:80px; object-fit:cover; display:block; }
         .btn-filtro { flex:1; padding:8px; border-radius:8px; border:1px solid #333; background:#000; color:#888; font-size:0.65rem; font-weight:bold; cursor:pointer; }
         .btn-filtro.activo { background:var(--grass); color:#000; border-color:var(--grass); }
 
@@ -164,6 +172,44 @@
         <div class="porteria" style="border-left-color:var(--purple);">🏆</div>
         <div class="line-meta" style="left:50%; border-left:1px dashed var(--purple);"></div>
         <div id="truck-prov" class="truck" style="filter:invert(1) hue-rotate(280deg);"></div>
+    </div>
+
+    <!-- ══ SECCIÓN PREMIOS WORLD CUP ══════════════════════════════════════ -->
+    <div id="premios-section" style="position:relative; border-radius:20px; overflow:hidden; margin-bottom:15px; border:2px solid var(--gold); box-shadow:0 0 40px rgba(255,215,0,0.15);">
+        <div style="position:absolute; inset:0; background:url('https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/PAPEL_TAPIZ_COPA_DEL_MUNDO.png') center/cover no-repeat; filter:brightness(0.25);"></div>
+        <div style="position:relative; padding:20px;">
+            <div style="text-align:center; margin-bottom:18px;">
+                <div style="font-size:0.6rem; color:var(--gold); letter-spacing:4px; text-transform:uppercase; margin-bottom:4px;">LA FIEBRE DEL</div>
+                <div style="font-size:2rem; font-weight:900; color:var(--gold); text-shadow:0 0 20px rgba(255,215,0,0.8); letter-spacing:6px;">🏆 ORO 🏆</div>
+                <div style="font-size:0.65rem; color:#aaa; margin-top:4px;">Llega al 120% y gana tu premio del mes</div>
+            </div>
+            <!-- Premios especiales Mundial -->
+            <div style="margin-bottom:16px;">
+                <div style="font-size:0.55rem; color:var(--grass); text-transform:uppercase; font-weight:bold; letter-spacing:2px; margin-bottom:10px; text-align:center;">⚽ EDICIÓN ESPECIAL MUNDIAL — MAYO · JUNIO · JULIO</div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                    <div style="background:rgba(255,215,0,0.08); border:1px solid var(--gold); border-radius:14px; overflow:hidden; position:relative;">
+                        <div style="position:absolute; top:6px; left:6px; background:var(--gold); color:#000; font-size:0.5rem; font-weight:900; padding:2px 8px; border-radius:20px; z-index:1;">120%</div>
+                        <img src="https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/PREMIO_BALON.png" style="width:100%; height:160px; object-fit:cover;" alt="Balón">
+                    </div>
+                    <div style="background:rgba(0,255,136,0.08); border:1px solid var(--grass); border-radius:14px; overflow:hidden; position:relative;">
+                        <div style="position:absolute; top:6px; left:6px; background:var(--grass); color:#000; font-size:0.5rem; font-weight:900; padding:2px 8px; border-radius:20px; z-index:1;">125%</div>
+                        <img src="https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/PREMIO_JERSEY.png" style="width:100%; height:160px; object-fit:cover;" alt="Jersey">
+                    </div>
+                </div>
+            </div>
+            <div style="border-top:1px solid rgba(255,255,255,0.1); margin-bottom:14px;"></div>
+            <!-- Premios por etapa -->
+            <div>
+                <div style="font-size:0.55rem; color:var(--blue); text-transform:uppercase; font-weight:bold; letter-spacing:2px; margin-bottom:10px; text-align:center;">🎯 PREMIOS POR ETAPA — CADA VEZ QUE LLEGUES AL 120%</div>
+                <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:8px;">
+                    <div id="premio-etapa-1" class="etapa-card"><div class="etapa-num">1ª</div><img src="https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/PREMIO_CINE.png" class="etapa-img" alt="Cine"></div>
+                    <div id="premio-etapa-2" class="etapa-card"><div class="etapa-num">2ª</div><img src="https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/PREMIO_HIELERA.png" class="etapa-img" alt="Hielera"></div>
+                    <div id="premio-etapa-3" class="etapa-card"><div class="etapa-num">3ª</div><img src="https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/PREMIO_CELULAR.png" class="etapa-img" alt="Celular"></div>
+                    <div id="premio-etapa-4" class="etapa-card"><div class="etapa-num">4ª</div><img src="https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/PREMIO_SMART_TV.png" class="etapa-img" alt="Smart TV"></div>
+                </div>
+                <div id="etapa-actual-txt" style="text-align:center; margin-top:10px; font-size:0.65rem; color:#888;">Cargando...</div>
+            </div>
+        </div>
     </div>
 
     <button class="btn-forms" onclick="window.open('https://docs.google.com/forms/d/e/1FAIpQLSfWF2AutcLCDhfBL6hoABmWVv4OKDvorCNB2CJTgY5QlrPrwA/viewform?usp=dialog','_blank')">
@@ -380,17 +426,13 @@
             const d   = parseInt(c.Dias) || 0;
             const col = d > 60 ? 'rojo' : (d > 14 ? 'ambar' : 'verde');
             const nom = c.Cliente || c.Codigo || '—';
-            // Armar dirección evitando duplicados
+            // Armar dirección evitando duplicados — DIRECCION ya incluye ciudad/estado
             const partes = [];
             if (c.Direccion)  partes.push(c.Direccion);
-            if (c.Colonia)    partes.push(c.Colonia);
+            if (c.Colonia && !c.Direccion.toUpperCase().includes((c.Colonia||'').toUpperCase().split(' ')[0])) partes.push(c.Colonia);
             if (c.CP)         partes.push(c.CP);
-            if (c.Ciudad)     partes.push(c.Ciudad);
-            if (c.Estado)     partes.push(c.Estado);
             if (c.Pais)       partes.push(c.Pais);
-            // Eliminar duplicados consecutivos
-            const dirParts = partes.filter((v, i, arr) => v && arr.indexOf(v) === i);
-            const dirTexto = dirParts.join(', ');
+            const dirTexto = partes.filter(Boolean).join(', ');
             const dirEnc   = dirTexto ? encodeURIComponent(dirTexto) : '';
 
             ml.innerHTML += `
@@ -409,13 +451,52 @@
                     ${dirEnc ? `
                     <div class="mapa-btns">
                         <button class="btn-maps google" onclick="window.open('https://www.google.com/maps/search/?api=1&query=${dirEnc}','_blank')">📍 Maps</button>
-                        <button class="btn-maps waze"   onclick="window.open('https://waze.com/ul?q=${dirEnc}&navigate=yes','_blank')">🚗 Waze</button>
+                        <button class="btn-maps wa" onclick="enviarWA('${encodeURIComponent(c.Cliente || c.Codigo || '')}')">💬 WhatsApp</button>
                     </div>` : ''}
                 </div>`;
         });
     }
 
-    let filtroActual = 'todos';
+    // ─── PREMIOS ─────────────────────────────────────────────────────────────
+    function updatePremios(pct) {
+        const key    = 'etapas_' + (user ? user.Nombre : '');
+        let etapas   = parseInt(localStorage.getItem(key) || '0');
+        const mesKey = 'mes120_' + (user ? user.Nombre : '') + '_' + new Date().getFullYear() + '_' + new Date().getMonth();
+
+        if (pct >= 120 && !localStorage.getItem(mesKey)) {
+            localStorage.setItem(mesKey, '1');
+            etapas = Math.min(etapas + 1, 4);
+            localStorage.setItem(key, etapas);
+        }
+
+        for (let i = 1; i <= 4; i++) {
+            const card = document.getElementById('premio-etapa-' + i);
+            if (!card) continue;
+            if (i < etapas)                       card.className = 'etapa-card ganada';
+            else if (i === etapas && pct >= 120)  card.className = 'etapa-card activa';
+            else if (i === etapas + 1 && pct < 120) card.className = 'etapa-card activa';
+            else                                  card.className = 'etapa-card bloqueada';
+        }
+
+        const txt       = document.getElementById('etapa-actual-txt');
+        if (!txt) return;
+        const mes       = new Date().toLocaleString('es-MX', {month:'long'}).toUpperCase();
+        const nombres   = ['', 'ENTRADAS AL CINE 🎬', 'HIELERA ❄️', 'CELULAR 📱', 'SMART TV 📺'];
+        const esWC      = [5,6,7].includes(new Date().getMonth() + 1);
+        const nextEtapa = Math.min(etapas + 1, 4);
+
+        if (pct >= 125 && esWC) {
+            txt.innerHTML = `<span style="color:var(--grass);font-weight:bold;">🎽 ¡JERSEY + ${nombres[Math.min(etapas,4)]} este mes!</span>`;
+        } else if (pct >= 120) {
+            const bono = esWC ? '⚽ BALÓN + ' : '';
+            txt.innerHTML = `<span style="color:var(--gold);font-weight:bold;">🏆 ¡GANASTE ${bono}${nombres[Math.min(etapas,4)]} en ${mes}!</span>`;
+        } else {
+            const bono = esWC ? ' + ⚽ BALÓN' : '';
+            txt.innerHTML = `Tu próximo premio al 120%: <b style="color:var(--gold);">${nombres[nextEtapa]}${bono}</b>`;
+        }
+    }
+
+        let filtroActual = 'todos';
 
     function filtroMapa(tipo) {
         filtroActual = tipo;
@@ -424,7 +505,15 @@
         filtrarMapa();
     }
 
-    function filtrarMapa() {
+    function enviarWA(clienteEnc) {
+        const cliente = decodeURIComponent(clienteEnc);
+        const asesor  = user.Nombre.split(' ')[0];
+        const msg = `Buen día, le saluda *${asesor}* de *Catosa Refacciones*. 🙌\n\n` +
+            `Espero se encuentre muy bien. Me pongo en contacto para saber si este mes han necesitado alguna refacción o insumo para sus camiones — ` +
+            `con gusto le ayudo a conseguirlo al mejor precio y con entrega rápida.\n\n` +
+            `Quedo a sus órdenes. ¡Que tenga excelente día! 🚛`;
+        window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`, '_blank');
+    }
         const q = (document.getElementById('mapa-buscar').value || '').toUpperCase();
         let lista = todosClientes;
         if (filtroActual === 'activo')   lista = lista.filter(c => (parseInt(c.Dias)||0) <= 14);
@@ -552,6 +641,7 @@
 
         // Confetti si llega a ORO
         if (pct >= 120 && !cnf) { confetti({ particleCount: 150, spread: 60, origin: { y: 0.7 } }); cnf = true; }
+        updatePremios(pct);
     }
 
 
