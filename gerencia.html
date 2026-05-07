@@ -416,6 +416,58 @@
         </div>
     </div>
 
+    <!-- RETO PROVEEDOR TOGGLE -->
+    <div style="margin-bottom:14px;">
+        <button id="btn-reto" onclick="toggleReto()" style="
+            width:100%; padding:16px 20px; border-radius:14px;
+            background:linear-gradient(135deg, #2e1065, #4c1d95);
+            border:1px solid var(--purple); color:#fff;
+            font-family:'Bebas Neue',sans-serif; font-size:1.1rem;
+            letter-spacing:3px; cursor:pointer;
+            display:flex; justify-content:space-between; align-items:center;
+            box-shadow: 0 0 20px rgba(168,85,247,0.2);
+        ">
+            <span>🌟 RETO PROVEEDOR — ACEITE MOTOR INTERNATIONAL & FLEETRITE</span>
+            <span id="reto-chevron" style="font-size:1.2rem; transition:transform 0.3s;">▼</span>
+        </button>
+
+        <div id="reto-panel" style="display:none; margin-top:10px;">
+            <!-- PISTA DE ACEITE -->
+            <div style="background:var(--card2); border:1px solid rgba(168,85,247,0.3); border-radius:14px; padding:18px; margin-bottom:12px;">
+                <div style="font-size:0.6rem; color:var(--purple); font-weight:700; text-transform:uppercase; letter-spacing:2px; margin-bottom:12px;">
+                    ⚽ Avance al siguiente bloque de 500L incrementales
+                </div>
+                <div id="reto-pista" style="background:linear-gradient(90deg,#2e1065 50%,#4c1d95 50%); background-size:40px 100%; border:1px solid rgba(168,85,247,0.4); border-radius:10px; position:relative; overflow:hidden; padding:6px 0;">
+                    <div style="position:absolute; right:0; top:0; bottom:0; width:36px; background:rgba(168,85,247,0.2); border-left:2px dashed var(--purple); display:flex; align-items:center; justify-content:center; font-size:1.2rem; z-index:5;">🏆</div>
+                    <div id="reto-lanes"></div>
+                </div>
+            </div>
+
+            <!-- TABLA DETALLE -->
+            <div style="background:var(--card2); border:1px solid rgba(168,85,247,0.3); border-radius:14px; padding:18px;">
+                <div style="font-size:0.6rem; color:var(--purple); font-weight:700; text-transform:uppercase; letter-spacing:2px; margin-bottom:12px;">
+                    📊 Detalle por asesor
+                </div>
+                <div style="overflow-x:auto;">
+                    <table style="width:100%; border-collapse:collapse; font-size:0.72rem;">
+                        <thead>
+                            <tr style="border-bottom:1px solid rgba(168,85,247,0.3);">
+                                <th style="color:var(--purple); font-size:0.55rem; text-transform:uppercase; letter-spacing:1px; padding:6px 8px; text-align:left;">Asesor</th>
+                                <th style="color:var(--purple); font-size:0.55rem; text-transform:uppercase; letter-spacing:1px; padding:6px 8px; text-align:right;">Base 2025</th>
+                                <th style="color:var(--purple); font-size:0.55rem; text-transform:uppercase; letter-spacing:1px; padding:6px 8px; text-align:right;">Litros Mes</th>
+                                <th style="color:var(--purple); font-size:0.55rem; text-transform:uppercase; letter-spacing:1px; padding:6px 8px; text-align:right;">Incrementales</th>
+                                <th style="color:var(--purple); font-size:0.55rem; text-transform:uppercase; letter-spacing:1px; padding:6px 8px; text-align:right;">% Intl</th>
+                                <th style="color:var(--purple); font-size:0.55rem; text-transform:uppercase; letter-spacing:1px; padding:6px 8px; text-align:right;">Bloques</th>
+                                <th style="color:var(--purple); font-size:0.55rem; text-transform:uppercase; letter-spacing:1px; padding:6px 8px; text-align:right;">Premio</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reto-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- GRID DE CARDS -->
     <div class="grid grid-2">
 
@@ -774,7 +826,73 @@ function renderCartera() {
     if (!lista.length) el.innerHTML = '<div class="loading">Sin resultados</div>';
 }
 
-// ── BBD PROSPECTOS ────────────────────────────────────────────────────────────
+// ── RETO PROVEEDOR ────────────────────────────────────────────────────────────
+let retoLoaded = false;
+
+function toggleReto() {
+    const panel   = document.getElementById('reto-panel');
+    const chevron = document.getElementById('reto-chevron');
+    const open    = panel.style.display === 'none';
+    panel.style.display  = open ? 'block' : 'none';
+    chevron.style.transform = open ? 'rotate(180deg)' : 'rotate(0deg)';
+    if (open && !retoLoaded) { loadReto(); retoLoaded = true; }
+}
+
+async function loadReto() {
+    const lanes  = document.getElementById('reto-lanes');
+    const tbody  = document.getElementById('reto-tbody');
+    const lista  = getFiltered();
+
+    lanes.innerHTML  = '<div style="color:#555; font-size:0.65rem; text-align:center; padding:10px;">Cargando...</div>';
+    tbody.innerHTML  = '<tr><td colspan="7" style="color:#555; text-align:center; padding:10px;">Cargando...</td></tr>';
+
+    // Fetch aceite data for each vendor
+    const results = await Promise.allSettled(
+        lista.map(v => apiFetch(`/api/aceite?vendedor=${encodeURIComponent(v.Nombre)}`).then(d => ({ ...d, Nombre: v.Nombre, Sucursal: v.Sucursal })))
+    );
+
+    const datos = results
+        .filter(r => r.status === 'fulfilled')
+        .map(r => r.value)
+        .sort((a, b) => b.litrosIncrementales - a.litrosIncrementales);
+
+    const maxLitros = Math.max(...datos.map(d => d.litrosIncrementales), 1);
+
+    // Pista
+    lanes.innerHTML = '';
+    datos.forEach(d => {
+        const pct = Math.min(100, (d.litrosIncrementales / Math.max(d.litrosIncrementales + (500 - d.litrosIncrementales % 500), 500)) * 100);
+        const pctBarra = d.pctBarra || 0;
+        lanes.innerHTML += `
+            <div style="height:34px; position:relative; display:flex; align-items:center; border-bottom:1px solid rgba(255,255,255,0.04);">
+                <span style="width:120px; font-size:0.52rem; color:rgba(255,255,255,0.85); padding-left:10px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:600; z-index:6; text-shadow:0 1px 3px rgba(0,0,0,0.8);">${d.Nombre}</span>
+                <div style="position:absolute; left:120px; right:40px; height:10px; background:rgba(0,0,0,0.3); border-radius:5px; overflow:hidden;">
+                    <div style="height:100%; width:${pctBarra}%; background:linear-gradient(90deg,var(--purple),#c084fc); border-radius:5px; transition:width 1s;"></div>
+                </div>
+                <span style="position:absolute; right:44px; font-size:0.5rem; color:rgba(255,255,255,0.4);">${d.litrosIncrementales}L</span>
+            </div>`;
+    });
+
+    // Tabla
+    tbody.innerHTML = '';
+    datos.forEach(d => {
+        const incColor = d.litrosIncrementales >= 500 ? 'var(--grass)' : d.litrosIncrementales > 0 ? 'var(--gold)' : '#555';
+        const intlColor = parseFloat(d.pctIntl) >= 30 ? 'var(--grass)' : '#888';
+        tbody.innerHTML += `
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                <td style="padding:8px; font-weight:600;">${d.Nombre}</td>
+                <td style="padding:8px; text-align:right; color:#555;">${d.basePromedio}L</td>
+                <td style="padding:8px; text-align:right; color:var(--blue);">${d.litrosTotal}L</td>
+                <td style="padding:8px; text-align:right; color:${incColor}; font-weight:700;">${d.litrosIncrementales}L</td>
+                <td style="padding:8px; text-align:right; color:${intlColor};">${d.pctIntl}%</td>
+                <td style="padding:8px; text-align:right; color:var(--purple); font-weight:700;">${d.bloques}</td>
+                <td style="padding:8px; text-align:right; color:var(--gold); font-weight:700;">${d.premioTotal > 0 ? '$'+d.premioTotal.toLocaleString('es-MX') : '—'}</td>
+            </tr>`;
+    });
+    if (!datos.length) tbody.innerHTML = '<tr><td colspan="7" style="color:#555; text-align:center; padding:10px;">Sin datos</td></tr>';
+}
+
+
 function loadBBD() {
     const el = document.getElementById('bbd-list');
     Papa.parse(SHEETS_BBD, {
