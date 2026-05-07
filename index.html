@@ -514,6 +514,8 @@
             `Quedo a sus órdenes. ¡Que tenga excelente día! 🚛`;
         window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`, '_blank');
     }
+
+    function filtrarMapa() {
         const q = (document.getElementById('mapa-buscar').value || '').toUpperCase();
         let lista = todosClientes;
         if (filtroActual === 'activo')   lista = lista.filter(c => (parseInt(c.Dias)||0) <= 14);
