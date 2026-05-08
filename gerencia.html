@@ -613,19 +613,32 @@ function getFiltered() {
 async function renderAll() {
     const lista = getFiltered();
     renderTime(lista);
-    renderKPIs(lista);
     renderPista(lista);
     renderPremios(lista);
     renderRanking(lista);
     renderChart(lista);
 
-    // Recargar clientes si cambia el filtro
-    const fv = document.getElementById('f-vend').value;
-    if (fv !== 'TODOS') {
-        loadClientes(fv);
-    } else {
-        loadClientes('');
+    // KPIs usan totales reales (todos los vendedores)
+    try {
+        const totales = await apiFetch('/api/ventas-totales');
+        const fs = document.getElementById('f-suc').value;
+        let ventaReal = 0;
+        if (fs === 'TODAS') {
+            ventaReal = totales.total;
+        } else {
+            const suc = totales.porSucursal.find(s => s.Sucursal === fs);
+            ventaReal = suc ? parseFloat(suc.Ventas) : 0;
+        }
+        // Meta viene de los vendedores con meta asignada
+        let tm = 0;
+        lista.forEach(v => { tm += parseFloat(v.Meta)||0; });
+        renderKPIsConTotal(ventaReal, tm);
+    } catch(e) {
+        renderKPIs(lista);
     }
+
+    const fv = document.getElementById('f-vend').value;
+    loadClientes(fv !== 'TODOS' ? fv : '');
 }
 
 function renderTime(lista) {
@@ -637,6 +650,16 @@ function renderTime(lista) {
     let tv = 0, tm = 0;
     lista.forEach(v => { tv += parseFloat(v.Ventas)||0; tm += parseFloat(v.Meta)||1; });
     document.getElementById('val-falta').textContent = fM(Math.max(0, (tm*1.20) - tv));
+}
+
+function renderKPIsConTotal(ventaReal, metaTotal) {
+    const mt = metaTotal || 1;
+    document.getElementById('k-venta').textContent  = fM(ventaReal);
+    document.getElementById('k-falta').textContent  = fM(Math.max(0, mt - ventaReal));
+    document.getElementById('k-avance').textContent = formatPct((ventaReal/mt)*100) + '%';
+    document.getElementById('k-oro').textContent    = formatPct((ventaReal/(mt*1.20))*100) + '%';
+    // Actualizar también el faltante para oro en time panel
+    document.getElementById('val-falta').textContent = fM(Math.max(0, (mt*1.20) - ventaReal));
 }
 
 function renderKPIs(lista) {
