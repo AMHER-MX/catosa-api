@@ -92,6 +92,38 @@ app.get('/api/ping', async (req, res) => {
 });
 
 // ── VENTAS + METAS ────────────────────────────────────────────────────────────
+// ── VENTAS TOTALES REALES (todos los vendedores, para KPIs de suma) ───────────
+app.get('/api/ventas-totales', async (req, res) => {
+  try {
+    const db  = await getPool();
+    const hoy = new Date();
+    const ini = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-01`;
+    const fin = hoy.toISOString().split('T')[0];
+
+    const result = await db.request()
+      .input('ini', sql.Date, ini)
+      .input('fin', sql.Date, fin)
+      .query(`
+        SELECT
+          s.NOM_ALMACEN_LIN            AS Sucursal,
+          SUM(s.IMP_TOTAL_LINEA)       AS Ventas
+        FROM FTSABI_PR s
+        WHERE s.FECHA >= @ini AND s.FECHA <= @fin
+          AND s.DES_TIPO_VENTA NOT IN (${TIPOS_EXCL})
+          AND s.NOM_ALMACEN_LIN IN (${SUCURSALES})
+        GROUP BY s.NOM_ALMACEN_LIN
+        ORDER BY Ventas DESC
+      `);
+
+    // Total global
+    const total = result.recordset.reduce((sum, r) => sum + (parseFloat(r.Ventas)||0), 0);
+    res.json({ total, porSucursal: result.recordset });
+  } catch (err) {
+    console.error('Error /api/ventas-totales:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.get('/api/ventas', async (req, res) => {
   try {
     const db  = await getPool();
@@ -255,8 +287,9 @@ app.get('/api/top-productos', async (req, res) => {
 });
 
 // ── CHALLENGE ACEITE MOTOR ────────────────────────────────────────────────────
-// Números de parte participantes (anteriores y nuevos) con su conversión a litros
-const ACEITE_NPS = {
+// Números de parte participantes con prefijos 0/ y 1/ como aparecen en FTSABI_PR
+const ACEITE_NPS = {};
+const _NPS_BASE = {
   // Terminación BK = 1 litro
   'FLRTASCI4PLUSBK':1,'INTLCI4PBLK':1,'FLRTCI4BK':1,'FLRT15W40CK4BK':1,'INTLCK4BK':1,
   'INT15W40CI4PBLK':1,'INT15W40CK4BLK':1,'FLRT3460BK':1,'FLRTCK4BK':1,
@@ -269,16 +302,22 @@ const ACEITE_NPS = {
   // Terminación TL = 1000 litros
   'FLRTASCI4PLUSTL':1000,'INTLCI4PTL':1000,'FLRT15W40CI4TL':1000,'FLRT15W40CK4TL':1000,'INTLCK4TL':1000,
   'INT15W40CI4PTT':1000,'INT15W40CK4TT':1000,'FLRT3460TL':1000,'FLRTCK4TL':1000,
-  // Terminación GA = 4 litros (garrafa 5L → usamos 4 por conversión real)
+  // Terminación GA = 4 litros
   'FLRT15W40CI4G':4,'FLRT3460GA':4,'INT71231305G':4,
 };
-
-// Números de marca International (para el bono extra del 30%)
-const NPS_INTL = new Set(['INTLCI4PBLK','INTLCI4PDR','INTLCI4PPL','INTLCI4PTL',
+// Agrega prefijos 0/ y 1/ a cada NP
+for (const [np, lts] of Object.entries(_NPS_BASE)) {
+  ACEITE_NPS[np]       = lts;
+  ACEITE_NPS['0/'+np]  = lts;
+  ACEITE_NPS['1/'+np]  = lts;
+}
+// Números de marca International (con prefijos)
+const _INTL_BASE = ['INTLCI4PBLK','INTLCI4PDR','INTLCI4PPL','INTLCI4PTL',
   'INTLCK4BK','INTLCK4DR','INTLCK4PL','INTLCK4TL',
   'INT15W40CI4PBLK','INT15W40CI4PDR','INT15W40CI4PPL','INT15W40CI4PTT',
   'INT15W40CK4BLK','INT15W40CK4DR','INT15W40CK4PL','INT15W40CK4TT',
-  'INT71231305G','INT71231319P','INT71231328D']);
+  'INT71231305G','INT71231319P','INT71231328D'];
+const NPS_INTL = new Set([..._INTL_BASE, ..._INTL_BASE.map(n=>'0/'+n), ..._INTL_BASE.map(n=>'1/'+n)]);
 
 app.get('/api/aceite', async (req, res) => {
   try {
@@ -294,14 +333,14 @@ app.get('/api/aceite', async (req, res) => {
     const result = await db.request()
       .input('ini',  sql.Date, ini)
       .input('fin',  sql.Date, fin)
-      .input('vend', sql.VarChar, `%${vendedor}%`)
+      .input('vend', sql.VarChar, vendedor)
       .query(`
         SELECT s.ARTICULO, SUM(s.CANTIDAD) AS Cantidad
         FROM FTSABI_PR s
         WHERE s.FECHA >= @ini AND s.FECHA <= @fin
           AND s.ARTICULO IN (${npsLista})
           AND s.NOM_ALMACEN_LIN IN (${SUCURSALES})
-          AND s.NOM_VENDEDOR LIKE @vend
+          AND s.NOM_VENDEDOR = @vend
           AND s.DES_TIPO_VENTA NOT IN (${TIPOS_EXCL})
         GROUP BY s.ARTICULO
       `);
@@ -315,14 +354,9 @@ app.get('/api/aceite', async (req, res) => {
       if (NPS_INTL.has(row.ARTICULO)) litrosIntl += litros;
     });
 
-    // Base 2025 del vendedor
+    // Base 2025 del vendedor — match exacto con nombres SQL
     const vKey = nombreKey(vendedor);
-    let basePromedio = 0;
-    for (const [k, v] of Object.entries(aceiteBaseMap)) {
-      if (vKey.includes(k.split(' ')[0]) || k.includes(vKey.split(' ')[0])) {
-        basePromedio = v; break;
-      }
-    }
+    const basePromedio = aceiteBaseMap[vKey] || 0;
 
     const litrosIncrementales = Math.max(0, litrosTotal - basePromedio);
     const bloques             = Math.floor(litrosIncrementales / 500);
@@ -381,6 +415,45 @@ app.get('/api/ventas-diarias', async (req, res) => {
     res.json(dias);
   } catch (err) {
     console.error('Error /api/ventas-diarias:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── CORES (Remisiones pendientes de pago por vendedor) ────────────────────────
+app.get('/api/cores', async (req, res) => {
+  try {
+    const db      = await getPool();
+    const vendedor = decodeURIComponent(req.query.vendedor || '');
+    const cartera  = carteraMap[nombreKey(vendedor)] || [];
+
+    if (cartera.length === 0) {
+      return res.json([]);
+    }
+
+    const clientesIn = cartera.map(c => `'${c.replace(/'/g,"''")}'`).join(',');
+
+    const result = await db.request().query(`
+      SELECT
+        p.REFERENCIA                                    AS Referencia,
+        p.CTA_CLIENTE                                   AS Codigo,
+        p.DES_ARTICULO                                  AS Articulo,
+        p.DES_TIPO_VENTA                                AS TipoVenta,
+        CONVERT(varchar(10), p.FECHA, 23)               AS FechaFactura,
+        p.P_VENTA                                       AS Monto,
+        p.CANTIDAD_PEDIDA                               AS CantidadPedida,
+        p.CANTIDAD_RECIBIDA                             AS CantidadRecibida,
+        DATEDIFF(day, p.FECHA, GETDATE())               AS DiasSinPagar
+      FROM FTPDCBI_PR p
+      WHERE p.DES_TIPO_VENTA IN ('VENTA REMISIONES CORES', 'VENTA REMISIONES CORES 8%')
+        AND (p.FEC_CANCELACION IS NULL OR LTRIM(RTRIM(CONVERT(varchar, p.FEC_CANCELACION))) = '')
+        AND (p.PEDIDO_CANCELADO IS NULL OR p.PEDIDO_CANCELADO = 0)
+        AND p.CTA_CLIENTE IN (${clientesIn})
+      ORDER BY DiasSinPagar DESC
+    `);
+
+    res.json(result.recordset);
+  } catch (err) {
+    console.error('Error /api/cores:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
