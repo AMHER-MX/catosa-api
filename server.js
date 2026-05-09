@@ -419,44 +419,5 @@ app.get('/api/ventas-diarias', async (req, res) => {
   }
 });
 
-// ── CORES (Remisiones pendientes de pago por vendedor) ────────────────────────
-app.get('/api/cores', async (req, res) => {
-  try {
-    const db      = await getPool();
-    const vendedor = decodeURIComponent(req.query.vendedor || '');
-    const cartera  = carteraMap[nombreKey(vendedor)] || [];
-
-    if (cartera.length === 0) {
-      return res.json([]);
-    }
-
-    const clientesIn = cartera.map(c => `'${c.replace(/'/g,"''")}'`).join(',');
-
-    const result = await db.request().query(`
-      SELECT
-        p.REFERENCIA                                    AS Referencia,
-        p.CTA_CLIENTE                                   AS Codigo,
-        p.DES_ARTICULO                                  AS Articulo,
-        p.DES_TIPO_VENTA                                AS TipoVenta,
-        CONVERT(varchar(10), p.FECHA, 23)               AS FechaFactura,
-        p.P_VENTA                                       AS Monto,
-        p.CANTIDAD_PEDIDA                               AS CantidadPedida,
-        p.CANTIDAD_RECIBIDA                             AS CantidadRecibida,
-        DATEDIFF(day, p.FECHA, GETDATE())               AS DiasSinPagar
-      FROM FTPDCBI_PR p
-      WHERE p.DES_TIPO_VENTA IN ('VENTA REMISIONES CORES', 'VENTA REMISIONES CORES 8%')
-        AND (p.FEC_CANCELACION IS NULL OR LTRIM(RTRIM(CONVERT(varchar, p.FEC_CANCELACION))) = '')
-        AND (p.PEDIDO_CANCELADO IS NULL OR p.PEDIDO_CANCELADO = 0)
-        AND p.CTA_CLIENTE IN (${clientesIn})
-      ORDER BY DiasSinPagar DESC
-    `);
-
-    res.json(result.recordset);
-  } catch (err) {
-    console.error('Error /api/cores:', err.message);
-    res.status(500).json({ error: err.message });
-  }
-});
-
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, '0.0.0.0', () => console.log(`Catosa API en http://localhost:${PORT}`));
