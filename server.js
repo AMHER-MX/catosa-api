@@ -451,6 +451,7 @@ app.get('/api/cores', async (req, res) => {
           s.REFERENCIA                          AS Referencia,
           s.NUM_FACTURA                         AS NumFactura,
           s.CLIENTE                             AS Codigo,
+          s.NOM_VENDEDOR                        AS Vendedor,
           s.DES_ARTICULO                        AS Articulo,
           s.DES_TIPO_VENTA                      AS TipoVenta,
           CONVERT(varchar(10), s.FECHA, 23)     AS FechaFactura,
@@ -471,6 +472,81 @@ app.get('/api/cores', async (req, res) => {
     res.json(result.recordset);
   } catch (err) {
     console.error('Error /api/cores:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── TORNEO WORLD CUP — Clasificación real desde SQL ──────────────────────────
+app.get('/api/torneo', async (req, res) => {
+  try {
+    const db   = await getPool();
+    const anio = new Date().getFullYear();
+
+    // Ventas Mayo 18–31
+    const rMayo = await db.request().query(`
+      SELECT NOM_VENDEDOR, SUM(IMP_TOTAL_LINEA) AS VentaMayo
+      FROM FTSABI_PR
+      WHERE FECHA >= '${anio}-05-18' AND FECHA <= '${anio}-05-31'
+        AND DES_TIPO_VENTA NOT IN (${TIPOS_EXCL})
+        AND NOM_ALMACEN_LIN IN (${SUCURSALES})
+      GROUP BY NOM_VENDEDOR
+    `);
+    const ventaMayo = {};
+    rMayo.recordset.forEach(r => { ventaMayo[nombreKey(r.NOM_VENDEDOR)] = parseFloat(r.VentaMayo)||0; });
+
+    // Ventas Junio completo
+    const rJunio = await db.request().query(`
+      SELECT NOM_VENDEDOR, SUM(IMP_TOTAL_LINEA) AS VentaJunio
+      FROM FTSABI_PR
+      WHERE FECHA >= '${anio}-06-01' AND FECHA <= '${anio}-06-30'
+        AND DES_TIPO_VENTA NOT IN (${TIPOS_EXCL})
+        AND NOM_ALMACEN_LIN IN (${SUCURSALES})
+      GROUP BY NOM_VENDEDOR
+    `);
+    const ventaJunio = {};
+    rJunio.recordset.forEach(r => { ventaJunio[nombreKey(r.NOM_VENDEDOR)] = parseFloat(r.VentaJunio)||0; });
+
+    // Ventas Julio 1–17 (fase final)
+    const rJulio = await db.request().query(`
+      SELECT NOM_VENDEDOR, SUM(IMP_TOTAL_LINEA) AS VentaJulio
+      FROM FTSABI_PR
+      WHERE FECHA >= '${anio}-07-01' AND FECHA <= '${anio}-07-17'
+        AND DES_TIPO_VENTA NOT IN (${TIPOS_EXCL})
+        AND NOM_ALMACEN_LIN IN (${SUCURSALES})
+      GROUP BY NOM_VENDEDOR
+    `);
+    const ventaJulio = {};
+    rJulio.recordset.forEach(r => { ventaJulio[nombreKey(r.NOM_VENDEDOR)] = parseFloat(r.VentaJulio)||0; });
+
+    // Armar resultado por vendedor
+    const resultado = Object.entries(metasMap).map(([nombre, datos]) => {
+      const meta     = datos.meta || 1;
+      const vMayo    = ventaMayo[nombre]  || 0;
+      const vJunio   = ventaJunio[nombre] || 0;
+      const vJulio   = ventaJulio[nombre] || 0;
+      const pctMayo  = (vMayo  / meta) * 100;
+      const pctJunio = (vJunio / meta) * 100;
+      const pctJulio = (vJulio / meta) * 100;
+      const clasificado = pctMayo >= 120 || pctJunio >= 120;
+      return {
+        Nombre:       nombre,
+        Sucursal:     datos.sucursal,
+        Meta:         meta,
+        VentaMayo:    vMayo,
+        VentaJunio:   vJunio,
+        VentaJulio:   vJulio,
+        PctMayo:      parseFloat(pctMayo.toFixed(2)),
+        PctJunio:     parseFloat(pctJunio.toFixed(2)),
+        PctJulio:     parseFloat(pctJulio.toFixed(2)),
+        Clasificado:  clasificado,
+        ClasifMayo:   pctMayo  >= 120,
+        ClasifJunio:  pctJunio >= 120,
+      };
+    });
+
+    res.json(resultado.sort((a, b) => (b.Clasificado - a.Clasificado) || b.PctMayo - a.PctMayo));
+  } catch (err) {
+    console.error('Error /api/torneo:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
