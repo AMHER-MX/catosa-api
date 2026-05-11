@@ -99,15 +99,11 @@
         ::-webkit-scrollbar { width: 5px; }
         ::-webkit-scrollbar-thumb { background: var(--grass); border-radius: 10px; }
 
-        /* PREMIOS ETAPA */
-        .etapa-card { background:rgba(255,255,255,0.04); border:1px solid #333; border-radius:10px; overflow:hidden; position:relative; transition:all 0.3s; }
-        .etapa-card.activa { border-color:var(--gold); box-shadow:0 0 16px rgba(255,215,0,0.4); transform:scale(1.05); }
-        .etapa-card.ganada { border-color:var(--grass); opacity:0.6; }
-        .etapa-card.bloqueada { opacity:0.3; filter:grayscale(1); }
-        .etapa-num { font-size:0.55rem; font-weight:900; color:#888; padding:4px 6px; text-align:center; }
-        .etapa-card.activa .etapa-num { color:var(--gold); }
-        .etapa-card.ganada .etapa-num { color:var(--grass); }
-        .etapa-img { width:100%; aspect-ratio:1/1; object-fit:contain; background:#111; display:block; }
+        /* WORLD CUP BADGES */
+        .wc-fase-badge { display:inline-block; padding:3px 12px; border-radius:20px; font-size:0.6rem; font-weight:900; letter-spacing:2px; text-transform:uppercase; }
+        .wc-clasificado { background:rgba(0,255,136,0.15); color:var(--grass); border:1px solid var(--grass); }
+        .wc-pendiente   { background:rgba(255,215,0,0.1);  color:var(--gold);  border:1px solid var(--gold); }
+        .wc-fuera       { background:rgba(255,75,43,0.1);  color:var(--red);   border:1px solid var(--red); }
         .btn-filtro { flex:1; padding:8px; border-radius:8px; border:1px solid #333; background:#000; color:#888; font-size:0.65rem; font-weight:bold; cursor:pointer; }
         .btn-filtro.activo { background:var(--grass); color:#000; border-color:var(--grass); }
 
@@ -199,36 +195,53 @@
     <div id="premios-section" style="position:relative; border-radius:20px; overflow:hidden; margin-bottom:15px; border:2px solid var(--gold); box-shadow:0 0 40px rgba(255,215,0,0.15);">
         <div style="position:absolute; inset:0; background:url('https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/PAPEL%20TAPIZ%20COPA%20DEL%20MUNDO.png') center/cover no-repeat; filter:brightness(0.25);"></div>
         <div style="position:relative; padding:20px;">
-            <div style="text-align:center; margin-bottom:18px;">
-                <div style="font-size:0.6rem; color:var(--gold); letter-spacing:4px; text-transform:uppercase; margin-bottom:4px;">LA FIEBRE DEL</div>
-                <div style="font-size:2rem; font-weight:900; color:var(--gold); text-shadow:0 0 20px rgba(255,215,0,0.8); letter-spacing:6px;">🏆 ORO 🏆</div>
-                <div style="font-size:0.65rem; color:#aaa; margin-top:4px;">Llega al 120% y gana tu premio del mes</div>
+            <div style="text-align:center; margin-bottom:16px;">
+                <div style="font-size:0.55rem; color:var(--gold); letter-spacing:4px; text-transform:uppercase; margin-bottom:4px;">TORNEO</div>
+                <div style="font-size:1.8rem; font-weight:900; color:var(--gold); text-shadow:0 0 20px rgba(255,215,0,0.8); letter-spacing:4px;">🏆 WORLD CUP CATOSA 🏆</div>
+                <div style="font-size:0.6rem; color:#aaa; margin-top:4px;">Entrega de premios: <b style="color:var(--gold);">18 de Julio 2026</b> · Un día antes de la Final 🌍</div>
             </div>
-            <!-- Premios especiales Mundial -->
-            <div style="margin-bottom:16px;">
-                <div style="font-size:0.55rem; color:var(--grass); text-transform:uppercase; font-weight:bold; letter-spacing:2px; margin-bottom:10px; text-align:center;">⚽ EDICIÓN ESPECIAL MUNDIAL — MAYO · JUNIO · JULIO</div>
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-                    <div style="background:rgba(255,215,0,0.08); border:1px solid var(--gold); border-radius:14px; overflow:hidden; position:relative;">
-                        <div style="position:absolute; top:6px; left:6px; background:var(--gold); color:#000; font-size:0.5rem; font-weight:900; padding:2px 8px; border-radius:20px; z-index:1;">120%</div>
-                        <img src="https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/PREMIO%20BALON.png" style="width:100%; aspect-ratio:1/1; object-fit:contain; background:#222; display:block;" alt="Balón">
-                    </div>
-                    <div style="background:rgba(0,255,136,0.08); border:1px solid var(--grass); border-radius:14px; overflow:hidden; position:relative;">
-                        <div style="position:absolute; top:6px; left:6px; background:var(--grass); color:#000; font-size:0.5rem; font-weight:900; padding:2px 8px; border-radius:20px; z-index:1;">125%</div>
-                        <img src="https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/PREMIO%20JERSEY.png" style="width:100%; aspect-ratio:1/1; object-fit:contain; background:#222; display:block;" alt="Jersey">
-                    </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px;">
+                <div style="background:rgba(0,255,136,0.06); border:1px solid rgba(0,255,136,0.3); border-radius:12px; padding:12px; text-align:center;">
+                    <div style="font-size:0.5rem; color:var(--grass); text-transform:uppercase; font-weight:bold; letter-spacing:2px; margin-bottom:6px;">⚽ FASE DE GRUPOS</div>
+                    <div style="font-size:0.7rem; color:#fff; font-weight:bold;">18 Mayo — 30 Junio</div>
+                    <div style="font-size:0.6rem; color:#aaa; margin-top:4px;">Llega al <b style="color:var(--gold);">ORO (120%)</b> en Mayo o Junio para clasificar</div>
+                </div>
+                <div style="background:rgba(255,215,0,0.06); border:1px solid rgba(255,215,0,0.3); border-radius:12px; padding:12px; text-align:center;">
+                    <div style="font-size:0.5rem; color:var(--gold); text-transform:uppercase; font-weight:bold; letter-spacing:2px; margin-bottom:6px;">🏆 FASE FINAL</div>
+                    <div style="font-size:0.7rem; color:#fff; font-weight:bold;">1 — 17 Julio</div>
+                    <div style="font-size:0.6rem; color:#aaa; margin-top:4px;">Solo clasificados. El <b style="color:var(--gold);">mayor % de meta en Julio</b> gana</div>
                 </div>
             </div>
-            <div style="border-top:1px solid rgba(255,255,255,0.1); margin-bottom:14px;"></div>
-            <!-- Premios por etapa -->
-            <div>
-                <div style="font-size:0.55rem; color:var(--blue); text-transform:uppercase; font-weight:bold; letter-spacing:2px; margin-bottom:10px; text-align:center;">🎯 PREMIOS POR ETAPA — CADA VEZ QUE LLEGUES AL 120%</div>
+            <div id="wc-estado" style="text-align:center; margin-bottom:16px; padding:12px; background:rgba(0,0,0,0.3); border-radius:12px;">
+                <div style="font-size:0.55rem; color:#888; text-transform:uppercase; margin-bottom:6px;">TU ESTADO</div>
+                <span id="wc-badge" class="wc-fase-badge wc-pendiente">⏳ CARGANDO...</span>
+                <div id="wc-estado-txt" style="font-size:0.65rem; color:#aaa; margin-top:8px;"></div>
+            </div>
+            <div style="border-top:1px solid rgba(255,255,255,0.1); padding-top:14px;">
+                <div style="font-size:0.55rem; color:var(--blue); text-transform:uppercase; font-weight:bold; letter-spacing:2px; margin-bottom:10px; text-align:center;">🎁 PREMIOS FINALES + COMBO BOTANAS 🍿</div>
                 <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:8px;">
-                    <div id="premio-etapa-1" class="etapa-card"><div class="etapa-num">1ª</div><img src="https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/PREMIO%20CINE.png" class="etapa-img" alt="Cine"></div>
-                    <div id="premio-etapa-2" class="etapa-card"><div class="etapa-num">2ª</div><img src="https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/PREMIO%20HIELERA.png" class="etapa-img" alt="Hielera"></div>
-                    <div id="premio-etapa-3" class="etapa-card"><div class="etapa-num">3ª</div><img src="https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/PREMIO%20CELULAR.png" class="etapa-img" alt="Celular"></div>
-                    <div id="premio-etapa-4" class="etapa-card"><div class="etapa-num">4ª</div><img src="https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/PREMIO%20SMART%20TV.png" class="etapa-img" alt="Smart TV"></div>
+                    <div style="border-radius:14px; overflow:hidden; position:relative; background:rgba(255,215,0,0.08); border:1px solid var(--gold);">
+                        <div style="position:absolute; top:6px; left:6px; background:var(--gold); color:#000; font-size:0.55rem; font-weight:900; padding:2px 8px; border-radius:20px; z-index:1;">🥇 1°</div>
+                        <img src="https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/PREMIO%20SMART%20TV.png" style="width:100%; aspect-ratio:1/1; object-fit:contain; background:#111; display:block;" alt="Smart TV">
+                        <div style="font-size:0.6rem; text-align:center; padding:5px 4px; font-weight:bold; color:var(--gold);">Smart TV 📺</div>
+                    </div>
+                    <div style="border-radius:14px; overflow:hidden; position:relative; background:rgba(192,192,192,0.08); border:1px solid var(--silver);">
+                        <div style="position:absolute; top:6px; left:6px; background:var(--silver); color:#000; font-size:0.55rem; font-weight:900; padding:2px 8px; border-radius:20px; z-index:1;">🥈 2°</div>
+                        <img src="https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/PREMIO%20JERSEY.png" style="width:100%; aspect-ratio:1/1; object-fit:contain; background:#111; display:block;" alt="Jersey">
+                        <div style="font-size:0.6rem; text-align:center; padding:5px 4px; font-weight:bold; color:var(--silver);">Jersey 🎽</div>
+                    </div>
+                    <div style="border-radius:14px; overflow:hidden; position:relative; background:rgba(205,127,50,0.08); border:1px solid var(--bronze);">
+                        <div style="position:absolute; top:6px; left:6px; background:var(--bronze); color:#000; font-size:0.55rem; font-weight:900; padding:2px 8px; border-radius:20px; z-index:1;">🥉 3°</div>
+                        <img src="https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/PREMIO%20HIELERA.png" style="width:100%; aspect-ratio:1/1; object-fit:contain; background:#111; display:block;" alt="Hielera">
+                        <div style="font-size:0.6rem; text-align:center; padding:5px 4px; font-weight:bold; color:var(--bronze);">Hielera ❄️</div>
+                    </div>
+                    <div style="border-radius:14px; overflow:hidden; position:relative; background:rgba(255,255,255,0.04); border:1px solid #444;">
+                        <div style="position:absolute; top:6px; left:6px; background:#555; color:#fff; font-size:0.55rem; font-weight:900; padding:2px 8px; border-radius:20px; z-index:1;">4°</div>
+                        <img src="https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/PREMIO%20BALON.png" style="width:100%; aspect-ratio:1/1; object-fit:contain; background:#111; display:block;" alt="Balón">
+                        <div style="font-size:0.6rem; text-align:center; padding:5px 4px; font-weight:bold; color:#aaa;">Balón ⚽</div>
+                    </div>
                 </div>
-                <div id="etapa-actual-txt" style="text-align:center; margin-top:10px; font-size:0.65rem; color:#888;">Cargando...</div>
+                <div style="text-align:center; margin-top:8px; font-size:0.55rem; color:#666;">Empates comparten el mismo premio</div>
             </div>
         </div>
     </div>
@@ -301,11 +314,12 @@
 
         <div class="card">
             <h2>📍 CARTERA DE CLIENTES</h2>
-            <input type="text" id="mapa-buscar" placeholder="🔍 BUSCAR CLIENTE..." oninput="filtrarMapa()" style="margin-bottom:10px;">
-            <div style="display:flex; gap:8px; margin-bottom:12px;">
+            <input type="text" id="mapa-buscar" placeholder="🔍 BUSCAR CLIENTE..." oninput="filtrarMapa()" style="margin-bottom:8px;">
+            <div style="display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap;">
                 <button onclick="filtroMapa('todos')" id="f-todos" class="btn-filtro activo">TODOS</button>
-                <button onclick="filtroMapa('activo')" id="f-activo" class="btn-filtro">ACTIVOS</button>
-                <button onclick="filtroMapa('inactivo')" id="f-inactivo" class="btn-filtro">INACTIVOS</button>
+                <button onclick="filtroMapa('verde')" id="f-verde" class="btn-filtro" style="border-color:#0f0; color:#0f0;">🟢 ≤7 días</button>
+                <button onclick="filtroMapa('ambar')" id="f-ambar" class="btn-filtro" style="border-color:#ff0; color:#ff0;">🟡 8-21 días</button>
+                <button onclick="filtroMapa('rojo')"  id="f-rojo"  class="btn-filtro" style="border-color:#f00; color:#f00;">🔴 +21 días</button>
             </div>
             <div id="mapa-lista" style="flex:1; overflow-y:auto;"><div class="loading">Cargando cartera...</div></div>
         </div>
@@ -466,30 +480,32 @@
         }
     }
 
+    function colorSemaforo(dias) {
+        if (dias <= 7)  return 'verde';
+        if (dias <= 21) return 'ambar';
+        return 'rojo';
+    }
+
     function renderMapa(lista) {
         const ml = document.getElementById('mapa-lista');
-        if (!lista.length) { ml.innerHTML = '<div class="loading">Sin clientes en cartera</div>'; return; }
+        if (!lista.length) { ml.innerHTML = '<div class="loading">Sin clientes</div>'; return; }
         ml.innerHTML = '';
         lista.forEach(c => {
             const d   = parseInt(c.Dias) || 0;
-            const col = d > 60 ? 'rojo' : (d > 14 ? 'ambar' : 'verde');
+            const col = colorSemaforo(d);
             const nom = c.Cliente || c.Codigo || '—';
-            // Armar dirección evitando duplicados — DIRECCION ya incluye ciudad/estado
-            const partes = [];
-            if (c.Direccion)  partes.push(c.Direccion);
-            if (c.Colonia && !c.Direccion.toUpperCase().includes((c.Colonia||'').toUpperCase().split(' ')[0])) partes.push(c.Colonia);
-            if (c.CP)         partes.push(c.CP);
-            if (c.Pais)       partes.push(c.Pais);
-            const dirTexto = partes.filter(Boolean).join(', ');
-            const dirEnc   = dirTexto ? encodeURIComponent(dirTexto) : '';
-
+            const dir    = (c.Direccion || '').trim();
+            const dirEnc = dir ? encodeURIComponent(dir) : '';
+            const badgeHTML = c.EsCartera
+                ? `<span style="display:inline-block;font-size:0.5rem;font-weight:900;padding:1px 6px;border-radius:10px;margin-left:6px;background:rgba(0,212,255,0.15);color:var(--blue);border:1px solid rgba(0,212,255,0.3);">⭐ CARTERA</span>`
+                : `<span style="display:inline-block;font-size:0.5rem;font-weight:900;padding:1px 6px;border-radius:10px;margin-left:6px;background:rgba(255,255,255,0.06);color:#666;border:1px solid #333;">VISITADO</span>`;
             ml.innerHTML += `
                 <div class="mapa-item ${col}">
                     <div style="display:flex; justify-content:space-between; align-items:flex-start;">
                         <div style="flex:1; min-width:0;">
-                            <b style="font-size:0.85rem;">${nom}</b><br>
+                            <b style="font-size:0.85rem;">${nom}</b>${badgeHTML}<br>
                             ${c.NombreCompleto && c.NombreCompleto !== nom ? `<small style="color:#888;">${c.NombreCompleto}</small><br>` : ''}
-                            <small style="color:#555;">${dirTexto || 'Sin dirección registrada'}</small>
+                            <small style="color:#555;">${dir || 'Sin dirección registrada'}</small>
                         </div>
                         <div style="text-align:right; white-space:nowrap; margin-left:8px;">
                             <b style="color:var(--grass); font-size:0.8rem;">${fM(c.Venta_Mes)}</b><br>
@@ -505,43 +521,64 @@
         });
     }
 
-    // ─── PREMIOS ─────────────────────────────────────────────────────────────
+    // ─── WORLD CUP TORNEO ────────────────────────────────────────────────────
     function updatePremios(pct) {
-        const key    = 'etapas_' + (user ? user.Nombre : '');
-        let etapas   = parseInt(localStorage.getItem(key) || '0');
-        const mesKey = 'mes120_' + (user ? user.Nombre : '') + '_' + new Date().getFullYear() + '_' + new Date().getMonth();
-
-        if (pct >= 120 && !localStorage.getItem(mesKey)) {
-            localStorage.setItem(mesKey, '1');
-            etapas = Math.min(etapas + 1, 4);
-            localStorage.setItem(key, etapas);
+        const hoy  = new Date();
+        const mes  = hoy.getMonth() + 1;
+        const dia  = hoy.getDate();
+        const anio = hoy.getFullYear();
+        const enGrupos  = (mes === 5 && dia >= 18) || mes === 6;
+        const enFinal   = mes === 7 && dia >= 1 && dia <= 17;
+        const terminado = (mes === 7 && dia >= 18) || mes > 7;
+        const keyMayo  = `wc_oro_mayo_${anio}_${user.Nombre}`;
+        const keyJunio = `wc_oro_junio_${anio}_${user.Nombre}`;
+        if (pct >= 120) {
+            if (mes === 5 && dia >= 18) localStorage.setItem(keyMayo,  '1');
+            if (mes === 6)              localStorage.setItem(keyJunio, '1');
         }
-
-        for (let i = 1; i <= 4; i++) {
-            const card = document.getElementById('premio-etapa-' + i);
-            if (!card) continue;
-            if (i < etapas)                       card.className = 'etapa-card ganada';
-            else if (i === etapas && pct >= 120)  card.className = 'etapa-card activa';
-            else if (i === etapas + 1 && pct < 120) card.className = 'etapa-card activa';
-            else                                  card.className = 'etapa-card bloqueada';
-        }
-
-        const txt       = document.getElementById('etapa-actual-txt');
-        if (!txt) return;
-        const mes       = new Date().toLocaleString('es-MX', {month:'long'}).toUpperCase();
-        const nombres   = ['', 'ENTRADAS AL CINE 🎬', 'HIELERA ❄️', 'CELULAR 📱', 'SMART TV 📺'];
-        const esWC      = [5,6,7].includes(new Date().getMonth() + 1);
-        const nextEtapa = Math.min(etapas + 1, 4);
-
-        if (pct >= 125 && esWC) {
-            txt.innerHTML = `<span style="color:var(--grass);font-weight:bold;">🎽 ¡JERSEY + ${nombres[Math.min(etapas,4)]} este mes!</span>`;
-        } else if (pct >= 120) {
-            const bono = esWC ? '⚽ BALÓN + ' : '';
-            txt.innerHTML = `<span style="color:var(--gold);font-weight:bold;">🏆 ¡GANASTE ${bono}${nombres[Math.min(etapas,4)]} en ${mes}!</span>`;
+        const clasificado = localStorage.getItem(keyMayo) === '1' || localStorage.getItem(keyJunio) === '1';
+        const badge = document.getElementById('wc-badge');
+        const texto = document.getElementById('wc-estado-txt');
+        if (!badge || !texto) return;
+        if (terminado) {
+            badge.className = clasificado ? 'wc-fase-badge wc-clasificado' : 'wc-fase-badge wc-fuera';
+            badge.innerText = clasificado ? '🏆 CLASIFICADO' : '❌ NO CLASIFICADO';
+            texto.innerHTML = clasificado ? `Revisa tu posición con tu gerente. ¡Gracias por competir! 🎉` : `No alcanzaste el ORO en Mayo/Junio.`;
+        } else if (enFinal) {
+            if (!clasificado) {
+                badge.className = 'wc-fase-badge wc-fuera';
+                badge.innerText = '❌ NO CLASIFICADO';
+                texto.innerHTML = `No llegaste al ORO en Fase de Grupos.`;
+            } else {
+                const ranking  = dbV.filter(v => parseFloat(v.Meta) > 0)
+                    .map(v => ({ nombre: v.Nombre, pct: (parseFloat(v.Ventas) / parseFloat(v.Meta)) * 100 }))
+                    .sort((a, b) => b.pct - a.pct);
+                const posicion = ranking.findIndex(v => v.nombre === user.Nombre) + 1;
+                const premios  = ['', '📺 Smart TV', '🎽 Jersey', '❄️ Hielera', '⚽ Balón'];
+                const miPremio = posicion <= 4 ? premios[posicion] : '—';
+                badge.className = 'wc-fase-badge wc-clasificado';
+                badge.innerText = `🏆 EN LA FINAL — #${posicion}`;
+                texto.innerHTML = `Tu % en Julio: <b style="color:var(--gold)">${pct.toFixed(1)}%</b> &nbsp;|&nbsp; Premio proyectado: <b style="color:var(--grass)">${miPremio} + 🍿</b><br>
+                    <small style="color:#666;">Quedan ${17 - dia} días de competencia.</small>`;
+            }
+        } else if (enGrupos) {
+            if (clasificado) {
+                badge.className = 'wc-fase-badge wc-clasificado';
+                badge.innerText = '✅ ¡CLASIFICADO!';
+                texto.innerHTML = `Ya tienes tu lugar en la Final (Jul 1–17). ¡Sigue fuerte! 💪`;
+            } else {
+                const falta = ((parseFloat(user.Meta) || 0) * 1.20) - (parseFloat(user.Ventas) || 0);
+                badge.className = 'wc-fase-badge wc-pendiente';
+                badge.innerText = '⏳ EN FASE DE GRUPOS';
+                texto.innerHTML = `Necesitas el <b style="color:var(--gold)">ORO (120%)</b> en Mayo o Junio para clasificar.<br>
+                    <small style="color:#aaa;">Te faltan <b style="color:var(--red)">${fM(Math.max(0, falta))}</b> este mes.</small>`;
+            }
         } else {
-            const bono = esWC ? ' + ⚽ BALÓN' : '';
-            txt.innerHTML = `Tu próximo premio al 120%: <b style="color:var(--gold);">${nombres[nextEtapa]}${bono}</b>`;
+            badge.className = 'wc-fase-badge wc-pendiente';
+            badge.innerText = '⏳ TORNEO PRÓXIMO';
+            texto.innerHTML = `El torneo comienza el <b style="color:var(--gold)">18 de Mayo</b>. ¡Prepárate!`;
         }
+        if (pct >= 120 && !cnf) { confetti({ particleCount: 150, spread: 60, origin: { y: 0.7 } }); cnf = true; }
     }
 
         let filtroActual = 'todos';
@@ -549,7 +586,8 @@
     function filtroMapa(tipo) {
         filtroActual = tipo;
         document.querySelectorAll('.btn-filtro').forEach(b => b.classList.remove('activo'));
-        document.getElementById('f-' + tipo).classList.add('activo');
+        const btn = document.getElementById('f-' + tipo);
+        if (btn) btn.classList.add('activo');
         filtrarMapa();
     }
 
@@ -566,8 +604,9 @@
     function filtrarMapa() {
         const q = (document.getElementById('mapa-buscar').value || '').toUpperCase();
         let lista = todosClientes;
-        if (filtroActual === 'activo')   lista = lista.filter(c => (parseInt(c.Dias)||0) <= 14);
-        if (filtroActual === 'inactivo') lista = lista.filter(c => (parseInt(c.Dias)||0) > 14);
+        if (filtroActual === 'verde') lista = lista.filter(c => colorSemaforo(parseInt(c.Dias)||0) === 'verde');
+        if (filtroActual === 'ambar') lista = lista.filter(c => colorSemaforo(parseInt(c.Dias)||0) === 'ambar');
+        if (filtroActual === 'rojo')  lista = lista.filter(c => colorSemaforo(parseInt(c.Dias)||0) === 'rojo');
         if (q) lista = lista.filter(c => (c.Cliente||'').toUpperCase().includes(q) || (c.NombreCompleto||'').toUpperCase().includes(q));
         renderMapa(lista);
     }
