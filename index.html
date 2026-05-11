@@ -237,6 +237,32 @@
         📝 REGISTRAR NUEVO PROSPECTO
     </button>
 
+    <div style="background:var(--card); border-radius:20px; padding:20px; border:1px solid #333; margin-bottom:15px;">
+        <h2 style="font-size:0.8rem; border-bottom:1px solid var(--grass); padding-bottom:10px; margin-bottom:16px; color:var(--grass); text-transform:uppercase;">🔄 CORES PENDIENTES DE PAGO</h2>
+        <div class="cores-kpis">
+            <div class="cores-kpi"><span>Total CORES</span><b id="cores-total">—</b></div>
+            <div class="cores-kpi"><span>Monto Pendiente</span><b id="cores-monto" style="color:var(--red);">—</b></div>
+            <div class="cores-kpi"><span>Máx. Días</span><b id="cores-maxdias" style="color:var(--gold);">—</b></div>
+        </div>
+        <div style="overflow-x:auto; overflow-y:auto; max-height:420px;">
+            <table class="cores-table">
+                <thead><tr>
+                    <th>Referencia</th>
+                    <th>Cliente</th>
+                    <th>Artículo</th>
+                    <th>Fecha Factura</th>
+                    <th>Cant. Pedida</th>
+                    <th>Cant. Recibida</th>
+                    <th>Monto</th>
+                    <th>Días Sin Pagar</th>
+                </tr></thead>
+                <tbody id="cores-tbody">
+                    <tr><td colspan="8" class="loading">Cargando CORES...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
     <div class="grid">
         <div class="card" style="min-height:auto;">
             <h2 style="margin-bottom:12px;">💰 PROYECCIÓN DE PREMIOS</h2>
@@ -272,32 +298,6 @@
         <div id="lista-cli" style="display:none;"></div>
 
         <div class="card"><h2>🔥 TOP 10 PRODUCTOS</h2><div id="v-top-list" style="flex:1; overflow-y:auto;"><div class="loading">Cargando...</div></div></div>
-
-        <div class="card" style="grid-column:1/-1;">
-            <h2>🔄 CORES PENDIENTES DE PAGO</h2>
-            <div class="cores-kpis">
-                <div class="cores-kpi"><span>Total CORES</span><b id="cores-total">—</b></div>
-                <div class="cores-kpi"><span>Monto Pendiente</span><b id="cores-monto" style="color:var(--red);">—</b></div>
-                <div class="cores-kpi"><span>Máx. Días</span><b id="cores-maxdias" style="color:var(--gold);">—</b></div>
-            </div>
-            <div style="overflow-x:auto; overflow-y:auto; max-height:420px;">
-                <table class="cores-table">
-                    <thead><tr>
-                        <th>Referencia</th>
-                        <th>Cliente</th>
-                        <th>Artículo</th>
-                        <th>Fecha Factura</th>
-                        <th>Cant. Pedida</th>
-                        <th>Cant. Recibida</th>
-                        <th>Monto</th>
-                        <th>Días Sin Pagar</th>
-                    </tr></thead>
-                    <tbody id="cores-tbody">
-                        <tr><td colspan="8" class="loading">Cargando CORES...</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
 
         <div class="card">
             <h2>📍 CARTERA DE CLIENTES</h2>
