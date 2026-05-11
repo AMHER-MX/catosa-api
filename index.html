@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Catosa GP - World Cup Edition v2026</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        :root { 
+            --pitch: #1a472a; 
+            --pitch-light: #2d5a3f; 
+            --gold: #ffd700; 
+            --grass: #00ff88; 
+            --card: #161b22; 
+            --text: #ffffff; 
+            --red: #ff4b2b; 
+            --blue: #00d4ff;
+            --silver: #c0c0c0;
+            --bronze: #cd7f32;
+            --purple: #a855f7;
+        }
+        body { 
+            font-family: 'Segoe UI', system-ui, sans-serif; 
+            background: #0d1117;
+            color: var(--text); 
+            margin: 0; 
+            padding: 10px; 
+            overflow-x: hidden; 
+        }
+
+        /* LOGIN */
+        #login-screen { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: #000 url('https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/PAPEL%20TAPIZ%20COPA%20DEL%20MUNDO.png') center/cover no-repeat;
+            z-index: 1000; display: flex; align-items: center; justify-content: center; 
+        }
+        #login-screen::before {
+            content: ''; position: absolute; inset: 0; background: rgba(0,0,0,0.78);
+        }
+        .login-box { position: relative; z-index: 1; background: var(--card); padding: 35px; border-radius: 20px; border: 2px solid var(--gold); text-align: center; width: 300px; box-shadow: 0 0 30px rgba(255,215,0,0.2); }
+        #main-app { display: none; max-width: 1600px; margin: 0 auto; }
+
+        .logo-login { height: 60px; margin-bottom: 25px; filter: drop-shadow(0 0 10px white); }
+        .logo-top { height: 35px; }
+
+        /* TOP BAR */
+        .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 15px; background: rgba(0,0,0,0.4); border-radius: 15px; margin-bottom: 15px; border: 1px solid #333; }
+        .btn-salir { background: none; border: 1px solid var(--red); color: var(--red); padding: 6px 16px; border-radius: 6px; cursor: pointer; font-size: 0.7rem; font-weight: 900; }
+        .header-info b { font-size: 1.1rem; color: var(--gold); text-transform: uppercase; display: block; }
+        .header-info small { color: var(--blue); font-size: 0.75rem; font-weight: bold; letter-spacing: 1px; }
+
+        /* PANEL TIEMPO */
+        .time-panel { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; background: #000; border-radius: 12px; padding: 15px; margin-bottom: 15px; border-bottom: 3px solid var(--grass); }
+        .time-item { text-align: center; }
+        .time-label { font-size: 0.55rem; color: var(--grass); display: block; text-transform: uppercase; font-weight: bold; }
+        .time-value { font-family: 'Courier New', monospace; font-size: 1rem; font-weight: bold; }
+
+        /* KPIS */
+        .top-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 15px; }
+        .top-card { background: var(--card); padding: 12px; border-radius: 15px; text-align: left; border-left: 4px solid var(--blue); }
+        .top-card span { font-size: 0.5rem; color: #888; display: block; text-transform: uppercase; margin-bottom: 5px; }
+        .top-card b { font-size: 0.85rem; color: #fff; }
+
+        /* CANCHAS */
+        .race-label { font-size: 0.65rem; color: var(--gold); font-weight: bold; text-transform: uppercase; margin: 12px 0 4px 5px; display: block; }
+        .race-track { background: linear-gradient(90deg, var(--pitch) 50%, var(--pitch-light) 50%); background-size: 40px 100%; border: 2px solid #fff; border-radius: 8px; height: 42px; position: relative; overflow: hidden; margin-bottom: 8px; }
+        .race-track::before { content: ""; position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: rgba(255,255,255,0.3); }
+        .porteria { position: absolute; right: 0; top: 0; bottom: 0; width: 30px; background: rgba(255,255,255,0.1); border-left: 2px dashed #fff; display: flex; align-items: center; justify-content: center; font-size: 1rem; }
+        .line-meta { position: absolute; top: 0; bottom: 0; width: 1px; opacity: 0.5; z-index: 1; }
+        .l-75 { left: 62.5%; border-left: 1px dashed var(--bronze); }
+        .l-110 { left: 91.6%; border-left: 1px dashed var(--silver); }
+        .truck { position: absolute; bottom: 4px; width: 32px; height: 32px; background-image: url('https://cdn-icons-png.flaticon.com/512/53/53283.png'); background-size: contain; background-repeat: no-repeat; filter: invert(1); transition: 3s cubic-bezier(0.2,0,0.2,1); z-index: 10; }
+        .truck.oro { filter: drop-shadow(0 0 12px var(--gold)) sepia(1) saturate(10); animation: spin 2s infinite linear; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+        /* SEMÁFORO */
+        .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 8px; vertical-align: middle; }
+        .dot.verde { background: #0f0; box-shadow: 0 0 10px #0f0; }
+        .dot.ambar { background: #ff0; box-shadow: 0 0 10px #ff0; }
+        .dot.rojo { background: #f00; box-shadow: 0 0 10px #f00; }
+
+        .btn-forms { background: #fff; color: #000; border-radius: 50px; border: none; padding: 14px; font-weight: 900; width: 100%; cursor: pointer; font-size: 0.8rem; margin-bottom: 20px; }
+
+        /* GRID */
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 15px; }
+        .card { background: var(--card); border-radius: 20px; padding: 20px; border: 1px solid #333; min-height: 400px; display: flex; flex-direction: column; }
+        h2 { font-size: 0.8rem; border-bottom: 1px solid var(--grass); padding-bottom: 10px; margin-bottom: 20px; color: var(--grass); text-transform: uppercase; }
+
+        /* CALCULADORA */
+        .cal-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; overflow-y: auto; flex: 1; }
+        .day-box { background: #000; border: 1px solid #1a1a1a; border-radius: 6px; padding: 5px; text-align: center; transition: all 0.3s; }
+        .day-in  { color: #333; font-size: 0.75rem; text-align: center; font-weight: bold; min-height: 18px; }
+
+        /* BOTONES */
+        .btn { padding: 15px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; color: #fff; background: linear-gradient(to bottom, #2ecc71, #27ae60); text-transform: uppercase; width: 100%; box-shadow: 0 4px 0 #1e8449; }
+        .btn:active { transform: translateY(2px); box-shadow: none; }
+        .client-item { display: flex; align-items: center; padding: 12px 0; border-bottom: 1px solid #222; justify-content: space-between; font-size: 0.85rem; }
+        input, select { width: 100%; background: #000; border: 1px solid #333; padding: 12px; border-radius: 8px; color: #fff; margin-bottom: 10px; box-sizing: border-box; }
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-thumb { background: var(--grass); border-radius: 10px; }
+
+        /* PREMIOS ETAPA */
+        .etapa-card { background:rgba(255,255,255,0.04); border:1px solid #333; border-radius:10px; overflow:hidden; position:relative; transition:all 0.3s; }
+        .etapa-card.activa { border-color:var(--gold); box-shadow:0 0 16px rgba(255,215,0,0.4); transform:scale(1.05); }
+        .etapa-card.ganada { border-color:var(--grass); opacity:0.6; }
+        .etapa-card.bloqueada { opacity:0.3; filter:grayscale(1); }
+        .etapa-num { font-size:0.55rem; font-weight:900; color:#888; padding:4px 6px; text-align:center; }
+        .etapa-card.activa .etapa-num { color:var(--gold); }
+        .etapa-card.ganada .etapa-num { color:var(--grass); }
+        .etapa-img { width:100%; aspect-ratio:1/1; object-fit:contain; background:#111; display:block; }
+        .btn-filtro { flex:1; padding:8px; border-radius:8px; border:1px solid #333; background:#000; color:#888; font-size:0.65rem; font-weight:bold; cursor:pointer; }
+        .btn-filtro.activo { background:var(--grass); color:#000; border-color:var(--grass); }
+
+        /* TARJETA CLIENTE MAPA */
+        .mapa-item { background:rgba(255,255,255,0.03); border-radius:10px; padding:12px; margin-bottom:8px; border-left:3px solid #333; }
+        .mapa-item.verde { border-left-color: #0f0; }
+        .mapa-item.ambar { border-left-color: #ff0; }
+        .mapa-item.rojo  { border-left-color: #f00; }
+        .mapa-btns { display:flex; gap:6px; margin-top:8px; }
+        .btn-maps  { flex:1; padding:7px; border-radius:6px; border:none; font-size:0.65rem; font-weight:bold; cursor:pointer; }
+        .btn-maps.google { background:#4285f4; color:#fff; }
+        .btn-maps.waze   { background:#33ccff; color:#000; }
+        .btn-maps.wa     { background:#25d366; color:#fff; }
+
+        /* LOADING */
+        .loading { text-align: center; color: #555; font-size: 0.75rem; padding: 20px; }
+        .error-msg { color: var(--red); font-size: 0.75rem; text-align: center; padding: 10px; }
+
+        /* CORES */
+        .cores-table { width:100%; border-collapse:collapse; font-size:0.72rem; }
+        .cores-table th { color:var(--grass); font-size:0.55rem; text-transform:uppercase; padding:6px 4px; border-bottom:1px solid #333; text-align:left; white-space:nowrap; }
+        .cores-table td { padding:8px 4px; border-bottom:1px solid #1a1a1a; vertical-align:middle; }
+        .cores-table tr:last-child td { border-bottom:none; }
+        .dias-badge { display:inline-block; padding:2px 8px; border-radius:20px; font-weight:900; font-size:0.7rem; }
+        .dias-verde { background:rgba(0,255,136,0.12); color:#00ff88; }
+        .dias-ambar { background:rgba(255,215,0,0.12);  color:var(--gold); }
+        .dias-rojo  { background:rgba(255,75,43,0.15);  color:var(--red); }
+        .cores-kpis { display:flex; gap:10px; margin-bottom:12px; }
+        .cores-kpi  { flex:1; background:rgba(255,255,255,0.04); border-radius:10px; padding:10px; text-align:center; border:1px solid #222; }
+        .cores-kpi span { font-size:0.5rem; color:#888; text-transform:uppercase; display:block; margin-bottom:3px; }
+        .cores-kpi b { font-size:0.9rem; }
+    </style>
+</head>
+<body>
+
+<div id="login-screen">
+    <div class="login-box">
+        <img src="https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/logo-international.png" class="logo-login" alt="International" onerror="this.style.display='none'">
+        <h3 style="color:var(--gold); margin-top:0;">WORLD CUP CATOSA</h3>
+        <div id="login-status" style="font-size:0.7rem; color:#555; margin-bottom:10px;">Cargando datos...</div>
+        <input type="text" id="u-name" placeholder="NOMBRE ASESOR">
+        <input type="password" id="u-pass" placeholder="CONTRASEÑA">
+        <button class="btn" id="btn-login" onclick="login()" disabled>CARGANDO...</button>
+    </div>
+</div>
+
+<div id="main-app">
+    <div class="top-bar">
+        <img src="https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/logo-catosa.png" class="logo-top" alt="Catosa" onerror="this.style.display='none'">
+        <div class="header-info"><b id="u-disp">--</b><small id="s-disp">--</small></div>
+        <button class="btn-salir" onclick="location.reload()">SALIR</button>
+    </div>
+
+    <div class="time-panel">
+        <div class="time-item"><span class="time-label">HOY</span><span class="time-value" id="val-hoy">--</span></div>
+        <div class="time-item" style="border-left:1px solid #333; border-right:1px solid #333;"><span class="time-label">DÍAS RESTANTES</span><span class="time-value" id="val-dias" style="color:var(--red);">--</span></div>
+        <div class="time-item"><span class="time-label">FALTA P/ ORO</span><span class="time-value" id="val-falta-oro" style="color:var(--gold);">$0</span></div>
+    </div>
+
+    <div class="top-stats">
+        <div class="top-card"><span>Goles Reales</span><b id="k-v">$0.00</b></div>
+        <div class="top-card"><span>Litros Aceite Mes</span><b id="k-f-prov">-- L</b></div>
+        <div class="top-card"><span>Avance Ind.</span><b id="k-pp">0%</b></div>
+        <div class="top-card"><span>Avance Sede</span><b id="k-po">0%</b></div>
+    </div>
+
+    <span class="race-label">🏆 MI DESEMPEÑO INDIVIDUAL (120%)</span>
+    <div class="race-track">
+        <div class="porteria">🥅</div>
+        <div class="line-meta l-75"></div><div class="line-meta l-110"></div>
+        <div id="truck-ind" class="truck"></div>
+    </div>
+
+    <span class="race-label" id="suc-label">🏟️ DESEMPEÑO SUCURSAL</span>
+    <div class="race-track">
+        <div class="porteria">🥅</div>
+        <div class="line-meta l-75"></div><div class="line-meta l-110"></div>
+        <div id="truck-grp" class="truck" style="filter:invert(1) hue-rotate(150deg);"></div>
+    </div>
+
+    <span class="race-label" id="prov-label" style="color:var(--purple)">🌟 CHALLENGE ACEITE MOTOR</span>
+    <div class="race-track" style="background:linear-gradient(90deg,#2e1065 50%,#4c1d95 50%); background-size:40px 100%; border-color:var(--purple);">
+        <div class="porteria" style="border-left-color:var(--purple);">🏆</div>
+        <div class="line-meta" style="left:50%; border-left:1px dashed var(--purple);"></div>
+        <div id="truck-prov" class="truck" style="filter:invert(1) hue-rotate(280deg);"></div>
+    </div>
+
+    <!-- ══ SECCIÓN PREMIOS WORLD CUP ══════════════════════════════════════ -->
+    <div id="premios-section" style="position:relative; border-radius:20px; overflow:hidden; margin-bottom:15px; border:2px solid var(--gold); box-shadow:0 0 40px rgba(255,215,0,0.15);">
+        <div style="position:absolute; inset:0; background:url('https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/PAPEL%20TAPIZ%20COPA%20DEL%20MUNDO.png') center/cover no-repeat; filter:brightness(0.25);"></div>
+        <div style="position:relative; padding:20px;">
+            <div style="text-align:center; margin-bottom:18px;">
+                <div style="font-size:0.6rem; color:var(--gold); letter-spacing:4px; text-transform:uppercase; margin-bottom:4px;">LA FIEBRE DEL</div>
+                <div style="font-size:2rem; font-weight:900; color:var(--gold); text-shadow:0 0 20px rgba(255,215,0,0.8); letter-spacing:6px;">🏆 ORO 🏆</div>
+                <div style="font-size:0.65rem; color:#aaa; margin-top:4px;">Llega al 120% y gana tu premio del mes</div>
+            </div>
+            <!-- Premios especiales Mundial -->
+            <div style="margin-bottom:16px;">
+                <div style="font-size:0.55rem; color:var(--grass); text-transform:uppercase; font-weight:bold; letter-spacing:2px; margin-bottom:10px; text-align:center;">⚽ EDICIÓN ESPECIAL MUNDIAL — MAYO · JUNIO · JULIO</div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                    <div style="background:rgba(255,215,0,0.08); border:1px solid var(--gold); border-radius:14px; overflow:hidden; position:relative;">
+                        <div style="position:absolute; top:6px; left:6px; background:var(--gold); color:#000; font-size:0.5rem; font-weight:900; padding:2px 8px; border-radius:20px; z-index:1;">120%</div>
+                        <img src="https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/PREMIO%20BALON.png" style="width:100%; aspect-ratio:1/1; object-fit:contain; background:#222; display:block;" alt="Balón">
+                    </div>
+                    <div style="background:rgba(0,255,136,0.08); border:1px solid var(--grass); border-radius:14px; overflow:hidden; position:relative;">
+                        <div style="position:absolute; top:6px; left:6px; background:var(--grass); color:#000; font-size:0.5rem; font-weight:900; padding:2px 8px; border-radius:20px; z-index:1;">125%</div>
+                        <img src="https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/PREMIO%20JERSEY.png" style="width:100%; aspect-ratio:1/1; object-fit:contain; background:#222; display:block;" alt="Jersey">
+                    </div>
+                </div>
+            </div>
+            <div style="border-top:1px solid rgba(255,255,255,0.1); margin-bottom:14px;"></div>
+            <!-- Premios por etapa -->
+            <div>
+                <div style="font-size:0.55rem; color:var(--blue); text-transform:uppercase; font-weight:bold; letter-spacing:2px; margin-bottom:10px; text-align:center;">🎯 PREMIOS POR ETAPA — CADA VEZ QUE LLEGUES AL 120%</div>
+                <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:8px;">
+                    <div id="premio-etapa-1" class="etapa-card"><div class="etapa-num">1ª</div><img src="https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/PREMIO%20CINE.png" class="etapa-img" alt="Cine"></div>
+                    <div id="premio-etapa-2" class="etapa-card"><div class="etapa-num">2ª</div><img src="https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/PREMIO%20HIELERA.png" class="etapa-img" alt="Hielera"></div>
+                    <div id="premio-etapa-3" class="etapa-card"><div class="etapa-num">3ª</div><img src="https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/PREMIO%20CELULAR.png" class="etapa-img" alt="Celular"></div>
+                    <div id="premio-etapa-4" class="etapa-card"><div class="etapa-num">4ª</div><img src="https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/PREMIO%20SMART%20TV.png" class="etapa-img" alt="Smart TV"></div>
+                </div>
+                <div id="etapa-actual-txt" style="text-align:center; margin-top:10px; font-size:0.65rem; color:#888;">Cargando...</div>
+            </div>
+        </div>
+    </div>
+
+    <button class="btn-forms" onclick="window.open('https://docs.google.com/forms/d/e/1FAIpQLSfWF2AutcLCDhfBL6hoABmWVv4OKDvorCNB2CJTgY5QlrPrwA/viewform?usp=dialog','_blank')">
+        📝 REGISTRAR NUEVO PROSPECTO
+    </button>
+
+    <div style="background:var(--card); border-radius:20px; padding:20px; border:1px solid #333; margin-bottom:15px;">
+        <h2 style="font-size:0.8rem; border-bottom:1px solid var(--red); padding-bottom:10px; margin-bottom:16px; color:var(--red); text-transform:uppercase;">⚠️ DEVOLUCIONES DE CORES</h2>
+        <div class="cores-kpis">
+            <div class="cores-kpi"><span>Total Devoluciones</span><b id="cores-total">—</b></div>
+            <div class="cores-kpi"><span>Monto Devuelto</span><b id="cores-monto" style="color:var(--red);">—</b></div>
+            <div class="cores-kpi"><span>Más Reciente</span><b id="cores-maxdias" style="color:var(--gold);">—</b></div>
+        </div>
+        <div style="overflow-x:auto; overflow-y:auto; max-height:420px;">
+            <table class="cores-table">
+                <thead><tr>
+                    <th>Referencia</th>
+                    <th>Cliente</th>
+                    <th>Artículo</th>
+                    <th>Tipo</th>
+                    <th>Fecha</th>
+                    <th>Cantidad</th>
+                    <th>Monto</th>
+                    <th>Días</th>
+                </tr></thead>
+                <tbody id="cores-tbody">
+                    <tr><td colspan="8" class="loading">Cargando...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="grid">
+        <div class="card" style="min-height:auto;">
+            <h2 style="margin-bottom:12px;">💰 PROYECCIÓN DE PREMIOS</h2>
+
+            <!-- Nivel actual grande -->
+            <div id="premio-nivel" style="text-align:center; padding:16px; border-radius:14px; background:#111; margin-bottom:12px; border:2px solid #333; transition: all 0.5s;">
+                <div id="premio-emoji" style="font-size:2.5rem;">⏳</div>
+                <div id="premio-titulo" style="font-size:1.1rem; font-weight:900; letter-spacing:2px; margin:4px 0;">CARGANDO...</div>
+                <div id="premio-monto" style="font-size:1.8rem; font-weight:900; color:var(--grass);">$0</div>
+                <div id="premio-sub" style="font-size:0.65rem; color:#888; margin-top:4px;">-- de venta acumulada</div>
+            </div>
+
+            <!-- Barra de niveles -->
+            <div style="position:relative; height:28px; border-radius:10px; background:#111; overflow:hidden; margin-bottom:8px; border:1px solid #333;">
+                <div id="premio-barra" style="height:100%; width:0%; border-radius:10px; transition:width 1s ease; background:linear-gradient(90deg, var(--bronze), var(--silver), var(--gold));"></div>
+                <!-- Marcadores -->
+                <div style="position:absolute; top:0; bottom:0; left:62.5%; width:1px; background:var(--bronze); opacity:0.7;"></div>
+                <div style="position:absolute; top:0; bottom:0; left:91.6%; width:1px; background:var(--silver); opacity:0.7;"></div>
+                <div style="position:absolute; top:50%; left:10px; transform:translateY(-50%); font-size:0.5rem; color:#888; font-weight:bold;">FUERA</div>
+                <div style="position:absolute; top:50%; left:64%; transform:translateY(-50%); font-size:0.5rem; color:var(--bronze); font-weight:bold;">BRONCE</div>
+                <div style="position:absolute; top:50%; left:93%; transform:translateY(-50%); font-size:0.5rem; color:var(--silver); font-weight:bold;">PLATA</div>
+            </div>
+            <div style="display:flex; justify-content:space-between; font-size:0.55rem; color:#555; margin-bottom:14px; padding:0 2px;">
+                <span>0%</span><span style="color:var(--bronze);">75%</span><span style="color:var(--silver);">110%</span><span style="color:var(--gold);">120% ORO</span>
+            </div>
+
+            <!-- Grid de días -->
+            <div style="font-size:0.6rem; color:#888; margin-bottom:6px; text-transform:uppercase;">Venta diaria del mes</div>
+            <div class="cal-grid" id="cal-grid" style="flex:1; overflow-y:auto;"></div>
+        </div>
+
+
+        <div id="lista-cli" style="display:none;"></div>
+
+        <div class="card"><h2>🔥 TOP 10 PRODUCTOS</h2><div id="v-top-list" style="flex:1; overflow-y:auto;"><div class="loading">Cargando...</div></div></div>
+
+        <div class="card">
+            <h2>📍 CARTERA DE CLIENTES</h2>
+            <input type="text" id="mapa-buscar" placeholder="🔍 BUSCAR CLIENTE..." oninput="filtrarMapa()" style="margin-bottom:10px;">
+            <div style="display:flex; gap:8px; margin-bottom:12px;">
+                <button onclick="filtroMapa('todos')" id="f-todos" class="btn-filtro activo">TODOS</button>
+                <button onclick="filtroMapa('activo')" id="f-activo" class="btn-filtro">ACTIVOS</button>
+                <button onclick="filtroMapa('inactivo')" id="f-inactivo" class="btn-filtro">INACTIVOS</button>
+            </div>
+            <div id="mapa-lista" style="flex:1; overflow-y:auto;"><div class="loading">Cargando cartera...</div></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ─── CONFIGURACIÓN ──────────────────────────────────────────────────────
+    // ⚠️  CAMBIA ESTA URL POR LA DE TU SERVIDOR (Railway, etc.)
+    const API = 'https://api.catosaapps.lat';
+
+    // ─── ESTADO GLOBAL ──────────────────────────────────────────────────────
+    let dbV = [], user = null, cotList = [], cnf = false;
+
+    // ─── UTILIDADES ─────────────────────────────────────────────────────────
+    const fM = n => new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', minimumFractionDigits: 0 }).format(n || 0);
+
+    async function apiFetch(endpoint) {
+        const res = await fetch(API + endpoint);
+        if (!res.ok) throw new Error(`Error ${res.status} en ${endpoint}`);
+        return res.json();
+    }
+
+    // ─── CARGA INICIAL ──────────────────────────────────────────────────────
+    window.onload = async () => {
+        // Construir grid de días (solo visual, datos vienen del servidor)
+        const cg = document.getElementById('cal-grid');
+        const diasMes = new Date(new Date().getFullYear(), new Date().getMonth()+1, 0).getDate();
+        for (let i = 1; i <= diasMes; i++) {
+            cg.innerHTML += `<div class="day-box" id="dbox_${i}">
+                <span style="font-size:0.5rem;color:#555;">${i}</span>
+                <div class="day-in" id="in_day_${i}" style="color:#333;">—</div>
+            </div>`;
+        }
+
+        // Cargar vendedores desde la API
+        try {
+            document.getElementById('login-status').textContent = 'Conectando con servidor...';
+            dbV = await apiFetch('/api/ventas');
+            document.getElementById('login-status').textContent = `✅ ${dbV.length} asesores cargados`;
+            document.getElementById('btn-login').disabled = false;
+            document.getElementById('btn-login').textContent = 'PATEAR INICIO';
+        } catch (err) {
+            document.getElementById('login-status').innerHTML = `<span style="color:var(--red)">❌ Sin conexión al servidor<br><small>${err.message}</small></span>`;
+            document.getElementById('btn-login').textContent = 'REINTENTAR';
+            document.getElementById('btn-login').disabled = false;
+            document.getElementById('btn-login').onclick = () => location.reload();
+        }
+    };
+
+    // ─── LOGIN ───────────────────────────────────────────────────────────────
+    function login() {
+        const n = document.getElementById('u-name').value.toUpperCase().trim();
+        const p = document.getElementById('u-pass').value.toUpperCase().trim();
+
+        // Buscar vendedor por nombre
+        const f = dbV.find(v => (v.Nombre || '').toUpperCase().includes(n) && n !== '');
+        if (!f) { alert('JUGADOR NO ENCONTRADO'); return; }
+
+        const ape = f.Nombre.trim().split(' ').pop().toUpperCase();
+        if (p !== ape + '123' && p !== 'CATOSA2026') { alert('CONTRASEÑA INCORRECTA'); return; }
+
+        user = f;
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('main-app').style.display = 'block';
+        document.getElementById('u-disp').innerText = user.Nombre;
+        document.getElementById('s-disp').innerText = 'SEDE: ' + user.Sucursal;
+
+        renderApp();
+        loadClientes();
+        loadTopProductos();
+        loadVentasDiarias();
+        loadCores();
+    }
+
+    // ─── RENDER PRINCIPAL ────────────────────────────────────────────────────
+    function renderApp() {
+        const vr = parseFloat(user.Ventas) || 0;
+        const vm = parseFloat(user.Meta) || 1;
+        const pctInd = (vr / vm) * 100;
+        const sucData = dbV.filter(v => v.Sucursal === user.Sucursal);
+        let sV = 0, sM = 0;
+        sucData.forEach(v => { sV += parseFloat(v.Ventas) || 0; sM += parseFloat(v.Meta) || 0; });
+        const pctGrp = sM > 0 ? (sV / sM) * 100 : 0;
+
+        const hoy = new Date();
+        const uDia = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0).getDate();
+        document.getElementById('val-hoy').innerText = hoy.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' }).toUpperCase();
+        document.getElementById('val-dias').innerText = (uDia - hoy.getDate() + 1) + ' DÍAS';
+        document.getElementById('val-falta-oro').innerText = fM(Math.max(0, (vm * 1.20) - vr));
+
+        document.getElementById('k-v').innerText = fM(vr);
+        document.getElementById('k-pp').innerText = pctInd.toFixed(1) + '%';
+        document.getElementById('k-po').innerText = pctGrp.toFixed(1) + '%';
+
+        document.getElementById('truck-ind').style.left = `calc(${Math.min(100, (pctInd / 120) * 100)}% - 32px)`;
+        document.getElementById('truck-ind').className = 'truck ' + (pctInd >= 120 ? 'oro' : '');
+        document.getElementById('truck-grp').style.left = `calc(${Math.min(100, (pctGrp / 120) * 100)}% - 32px)`;
+        document.getElementById('truck-grp').className = 'truck ' + (pctGrp >= 120 ? 'oro' : '');
+
+        // Carga reto de aceite
+        loadAceite();
+    }
+
+    async function loadAceite() {
+        try {
+            const nombre = encodeURIComponent(user.Nombre);
+            const a = await apiFetch(`/api/aceite?vendedor=${nombre}`);
+
+            document.getElementById('k-f-prov').innerText = a.litrosTotal + ' L';
+            document.getElementById('truck-prov').style.left = `calc(${Math.min(100, a.pctBarra)}% - 32px)`;
+
+            // Info detallada en el label de challenge proveedor
+            const premio = a.premioTotal > 0 ? ` | 💰 $${a.premioTotal} ganados` : '';
+            const intlPct = parseFloat(a.pctIntl) >= 30 ? ' ✅ +30% Intl' : ` (${a.pctIntl}% Intl)`;
+            document.getElementById('prov-label').innerHTML =
+                `🌟 CHALLENGE ACEITE MOTOR &nbsp;|&nbsp; ${a.litrosIncrementales}L incrementales` +
+                `${intlPct} &nbsp;|&nbsp; Bloque ${a.bloques}/∞ × $${a.premioPorBloque}${premio}`;
+        } catch(e) {
+            document.getElementById('prov-label').innerText = '🌟 CHALLENGE ACEITE MOTOR';
+        }
+    }
+
+    // ─── CLIENTES ────────────────────────────────────────────────────────────
+    let todosClientes = [];
+
+    async function loadClientes() {
+        const lc = document.getElementById('lista-cli');
+        const ml = document.getElementById('mapa-lista');
+        try {
+            const nombre = encodeURIComponent(user.Nombre);
+            const clientes = await apiFetch(`/api/clientes?vendedor=${nombre}`);
+            todosClientes = clientes;
+
+            // ── Tabla alineación ──
+            lc.innerHTML = '';
+            clientes.forEach(c => {
+                const d   = parseInt(c.Dias) || 0;
+                const col = d > 60 ? 'rojo' : (d > 14 ? 'ambar' : 'verde');
+                const nom = c.Cliente || c.NombreCompleto || c.Codigo || '—';
+                lc.innerHTML += `
+                    <div class="client-item">
+                        <div>
+                            <span class="dot ${col}"></span>
+                            <b>${nom}</b><br>
+                            <small>${d} días inactivo</small>
+                        </div>
+                        <b style="color:var(--grass)">${fM(c.Venta_Mes)}</b>
+                    </div>`;
+            });
+            if (clientes.length === 0) lc.innerHTML = '<div class="loading">Sin clientes registrados</div>';
+
+            // ── Mapa cartera ──
+            renderMapa(clientes);
+        } catch (err) {
+            lc.innerHTML = `<div class="error-msg">❌ Error cargando clientes<br><small>${err.message}</small></div>`;
+            document.getElementById('mapa-lista').innerHTML = `<div class="error-msg">❌ ${err.message}</div>`;
+        }
+    }
+
+    function renderMapa(lista) {
+        const ml = document.getElementById('mapa-lista');
+        if (!lista.length) { ml.innerHTML = '<div class="loading">Sin clientes en cartera</div>'; return; }
+        ml.innerHTML = '';
+        lista.forEach(c => {
+            const d   = parseInt(c.Dias) || 0;
+            const col = d > 60 ? 'rojo' : (d > 14 ? 'ambar' : 'verde');
+            const nom = c.Cliente || c.Codigo || '—';
+            // Armar dirección evitando duplicados — DIRECCION ya incluye ciudad/estado
+            const partes = [];
+            if (c.Direccion)  partes.push(c.Direccion);
+            if (c.Colonia && !c.Direccion.toUpperCase().includes((c.Colonia||'').toUpperCase().split(' ')[0])) partes.push(c.Colonia);
+            if (c.CP)         partes.push(c.CP);
+            if (c.Pais)       partes.push(c.Pais);
+            const dirTexto = partes.filter(Boolean).join(', ');
+            const dirEnc   = dirTexto ? encodeURIComponent(dirTexto) : '';
+
+            ml.innerHTML += `
+                <div class="mapa-item ${col}">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                        <div style="flex:1; min-width:0;">
+                            <b style="font-size:0.85rem;">${nom}</b><br>
+                            ${c.NombreCompleto && c.NombreCompleto !== nom ? `<small style="color:#888;">${c.NombreCompleto}</small><br>` : ''}
+                            <small style="color:#555;">${dirTexto || 'Sin dirección registrada'}</small>
+                        </div>
+                        <div style="text-align:right; white-space:nowrap; margin-left:8px;">
+                            <b style="color:var(--grass); font-size:0.8rem;">${fM(c.Venta_Mes)}</b><br>
+                            <small style="color:#888;">${d} días</small>
+                        </div>
+                    </div>
+                    ${dirEnc ? `
+                    <div class="mapa-btns">
+                        <button class="btn-maps google" onclick="window.open('https://www.google.com/maps/search/?api=1&query=${dirEnc}','_blank')">📍 Maps</button>
+                        <button class="btn-maps wa" onclick="enviarWA('${encodeURIComponent(c.Cliente || c.Codigo || '')}')">💬 WhatsApp</button>
+                    </div>` : ''}
+                </div>`;
+        });
+    }
+
+    // ─── PREMIOS ─────────────────────────────────────────────────────────────
+    function updatePremios(pct) {
+        const key    = 'etapas_' + (user ? user.Nombre : '');
+        let etapas   = parseInt(localStorage.getItem(key) || '0');
+        const mesKey = 'mes120_' + (user ? user.Nombre : '') + '_' + new Date().getFullYear() + '_' + new Date().getMonth();
+
+        if (pct >= 120 && !localStorage.getItem(mesKey)) {
+            localStorage.setItem(mesKey, '1');
+            etapas = Math.min(etapas + 1, 4);
+            localStorage.setItem(key, etapas);
+        }
+
+        for (let i = 1; i <= 4; i++) {
+            const card = document.getElementById('premio-etapa-' + i);
+            if (!card) continue;
+            if (i < etapas)                       card.className = 'etapa-card ganada';
+            else if (i === etapas && pct >= 120)  card.className = 'etapa-card activa';
+            else if (i === etapas + 1 && pct < 120) card.className = 'etapa-card activa';
+            else                                  card.className = 'etapa-card bloqueada';
+        }
+
+        const txt       = document.getElementById('etapa-actual-txt');
+        if (!txt) return;
+        const mes       = new Date().toLocaleString('es-MX', {month:'long'}).toUpperCase();
+        const nombres   = ['', 'ENTRADAS AL CINE 🎬', 'HIELERA ❄️', 'CELULAR 📱', 'SMART TV 📺'];
+        const esWC      = [5,6,7].includes(new Date().getMonth() + 1);
+        const nextEtapa = Math.min(etapas + 1, 4);
+
+        if (pct >= 125 && esWC) {
+            txt.innerHTML = `<span style="color:var(--grass);font-weight:bold;">🎽 ¡JERSEY + ${nombres[Math.min(etapas,4)]} este mes!</span>`;
+        } else if (pct >= 120) {
+            const bono = esWC ? '⚽ BALÓN + ' : '';
+            txt.innerHTML = `<span style="color:var(--gold);font-weight:bold;">🏆 ¡GANASTE ${bono}${nombres[Math.min(etapas,4)]} en ${mes}!</span>`;
+        } else {
+            const bono = esWC ? ' + ⚽ BALÓN' : '';
+            txt.innerHTML = `Tu próximo premio al 120%: <b style="color:var(--gold);">${nombres[nextEtapa]}${bono}</b>`;
+        }
+    }
+
+        let filtroActual = 'todos';
+
+    function filtroMapa(tipo) {
+        filtroActual = tipo;
+        document.querySelectorAll('.btn-filtro').forEach(b => b.classList.remove('activo'));
+        document.getElementById('f-' + tipo).classList.add('activo');
+        filtrarMapa();
+    }
+
+    function enviarWA(clienteEnc) {
+        const cliente = decodeURIComponent(clienteEnc);
+        const asesor  = user.Nombre.split(' ')[0];
+        const msg = `Buen día, le saluda *${asesor}* de *Catosa Refacciones*. 🙌\n\n` +
+            `Espero se encuentre muy bien. Me pongo en contacto para saber si este mes han necesitado alguna refacción o insumo para sus camiones — ` +
+            `con gusto le ayudo a conseguirlo al mejor precio y con entrega rápida.\n\n` +
+            `Quedo a sus órdenes. ¡Que tenga excelente día! 🚛`;
+        window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`, '_blank');
+    }
+
+    function filtrarMapa() {
+        const q = (document.getElementById('mapa-buscar').value || '').toUpperCase();
+        let lista = todosClientes;
+        if (filtroActual === 'activo')   lista = lista.filter(c => (parseInt(c.Dias)||0) <= 14);
+        if (filtroActual === 'inactivo') lista = lista.filter(c => (parseInt(c.Dias)||0) > 14);
+        if (q) lista = lista.filter(c => (c.Cliente||'').toUpperCase().includes(q) || (c.NombreCompleto||'').toUpperCase().includes(q));
+        renderMapa(lista);
+    }
+
+    // ─── TOP PRODUCTOS ───────────────────────────────────────────────────────
+    async function loadTopProductos() {
+        const list = document.getElementById('v-top-list');
+        try {
+            const nombre = encodeURIComponent(user.Nombre);
+            const prods = await apiFetch(`/api/top-productos?vendedor=${nombre}`);
+            list.innerHTML = '';
+            prods.forEach((p, i) => {
+                const vendidas = parseInt(p.Unidades_Vendidas) || 0;
+                const stock    = parseInt(p.Existencia) || 0;
+                list.innerHTML += `
+                    <div class="client-item" style="padding:10px; background:rgba(255,255,255,0.03); margin-bottom:4px; border-radius:10px; align-items:flex-start;">
+                        <div style="display:flex; align-items:flex-start; flex:1;">
+                            <b style="color:var(--gold); margin-right:8px; margin-top:2px;">#${i+1}</b>
+                            <div>
+                                <b style="font-size:0.85rem;">${p.Parte}</b>
+                                <br><small style="color:#aaa;">${p.Descripcion || ''}</small>
+                            </div>
+                        </div>
+                        <div style="text-align:right; white-space:nowrap;">
+                            <b style="color:var(--blue); font-size:1rem;">${vendidas}</b>
+                            <br><small style="color:#555;">vendidas</small>
+                        </div>
+                    </div>`;
+            });
+            if (prods.length === 0) list.innerHTML = '<div class="loading">Sin ventas este mes</div>';
+        } catch (err) {
+            list.innerHTML = `<div class="error-msg">❌ Error<br><small>${err.message}</small></div>`;
+        }
+    }
+
+
+
+    // ─── CALCULADORA AUTOMÁTICA ──────────────────────────────────────────────
+    async function loadVentasDiarias() {
+        try {
+            const nombre = encodeURIComponent(user.Nombre);
+            const dias   = await apiFetch(`/api/ventas-diarias?vendedor=${nombre}`);
+            const hoy    = new Date().getDate();
+            const vm     = parseFloat(user.Meta) || 1;
+            let total    = 0;
+
+            // Llenar grid de días
+            const diasMes = new Date(new Date().getFullYear(), new Date().getMonth()+1, 0).getDate();
+            for (let i = 1; i <= diasMes; i++) {
+                const venta  = dias[i] || 0;
+                const box    = document.getElementById('dbox_' + i);
+                const valEl  = document.getElementById('in_day_' + i);
+                if (!box || !valEl) continue;
+
+                if (i > hoy) {
+                    // Días futuros — gris
+                    box.style.borderColor = '#1a1a1a';
+                    valEl.style.color     = '#333';
+                    valEl.innerText       = '—';
+                } else if (venta > 0) {
+                    // Día con venta — verde
+                    box.style.borderColor = 'var(--grass)';
+                    box.style.background  = 'rgba(0,255,136,0.05)';
+                    valEl.style.color     = 'var(--grass)';
+                    valEl.innerText       = '$' + (venta >= 1000 ? (venta/1000).toFixed(1)+'k' : Math.round(venta));
+                    total += venta;
+                } else {
+                    // Día sin venta pasado — rojo tenue
+                    box.style.borderColor = 'rgba(255,75,43,0.3)';
+                    valEl.style.color     = '#444';
+                    valEl.innerText       = '$0';
+                }
+            }
+
+            actualizarPremio(total, vm);
+        } catch(err) {
+            console.error('Error ventas diarias:', err);
+        }
+    }
+
+    function actualizarPremio(ventaTotal, vm) {
+        const pct    = (ventaTotal / vm) * 100;
+        const canal  = (user.Canal || 'CALLE').toUpperCase();
+
+        // Determinar nivel
+        let nivel, color, emoji, fInd;
+        if (pct >= 120) {
+            nivel = 'ORO'; color = 'var(--gold)'; emoji = '🥇'; fInd = canal === 'MOSTRADOR' ? 1.46 : 1.65;
+        } else if (pct >= 110) {
+            nivel = 'PLATA'; color = 'var(--silver)'; emoji = '🥈'; fInd = canal === 'MOSTRADOR' ? 1.31 : 1.50;
+        } else if (pct >= 75) {
+            nivel = 'BRONCE'; color = 'var(--bronze)'; emoji = '🥉'; fInd = canal === 'MOSTRADOR' ? 1.31 : 1.50;
+        } else {
+            nivel = 'FUERA'; color = 'var(--red)'; emoji = '⚽'; fInd = 1.10;
+        }
+
+        // Bono sucursal
+        const sucData = dbV.filter(v => v.Sucursal === user.Sucursal);
+        let sV = 0, sM = 0;
+        sucData.forEach(v => { sV += parseFloat(v.Ventas)||0; sM += parseFloat(v.Meta)||0; });
+        const pctGrp = sM > 0 ? (sV/sM)*100 : 0;
+        const fGrp   = pctGrp >= 110 ? (canal === 'MOSTRADOR' ? 0.34 : 0.15) : 0;
+
+        const premio = ventaTotal * ((fInd + fGrp) / 100);
+
+        // Actualizar UI
+        const nivelEl = document.getElementById('premio-nivel');
+        nivelEl.style.borderColor  = color;
+        nivelEl.style.background   = `linear-gradient(135deg, #111, ${color}22)`;
+        document.getElementById('premio-emoji').innerText   = emoji;
+        document.getElementById('premio-titulo').innerText  = nivel;
+        document.getElementById('premio-titulo').style.color = color;
+        document.getElementById('premio-monto').innerText   = fM(premio);
+        document.getElementById('premio-monto').style.color = color;
+        document.getElementById('premio-sub').innerText     = fM(ventaTotal) + ' de venta acumulada · ' + pct.toFixed(1) + '%';
+
+        // Barra — mapear 0-120% a 0-100% del ancho
+        const anchoBarra = Math.min(100, (pct / 120) * 100);
+        document.getElementById('premio-barra').style.width = anchoBarra + '%';
+
+        // Confetti si llega a ORO
+        if (pct >= 120 && !cnf) { confetti({ particleCount: 150, spread: 60, origin: { y: 0.7 } }); cnf = true; }
+        updatePremios(pct);
+    }
+
+    // ─── CORES (Devoluciones) ─────────────────────────────────────────────────
+    async function loadCores() {
+        const tbody = document.getElementById('cores-tbody');
+        try {
+            const nombre = encodeURIComponent(user.Nombre);
+            const cores  = await apiFetch(`/api/cores?vendedor=${nombre}`);
+
+            if (cores.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="loading">✅ Sin devoluciones de CORES</td></tr>';
+                document.getElementById('cores-total').innerText   = '0';
+                document.getElementById('cores-monto').innerText   = fM(0);
+                document.getElementById('cores-maxdias').innerText = '—';
+                return;
+            }
+
+            const totalMonto  = cores.reduce((s, c) => s + (parseFloat(c.Monto) || 0), 0);
+            const masReciente = cores[0].FechaFactura || '—';
+            document.getElementById('cores-total').innerText   = cores.length;
+            document.getElementById('cores-monto').innerText   = fM(totalMonto);
+            document.getElementById('cores-maxdias').innerText = masReciente;
+
+            tbody.innerHTML = '';
+            cores.forEach(c => {
+                const dias  = parseInt(c.DiasTranscurridos) || 0;
+                const clase = dias <= 7 ? 'dias-rojo' : dias <= 30 ? 'dias-ambar' : 'dias-verde';
+                const tipo  = (c.TipoVenta || '').includes('8%') ? 'CORES 8%' : 'CORES';
+                tbody.innerHTML += `
+                    <tr>
+                        <td style="color:var(--blue);font-weight:bold;">${c.NumFactura || c.Referencia || '—'}</td>
+                        <td style="color:#ccc;">${c.Codigo || '—'}</td>
+                        <td style="color:#aaa; max-width:180px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${c.Articulo || ''}">${c.Articulo || '—'}</td>
+                        <td style="color:#888; font-size:0.65rem;">${tipo}</td>
+                        <td style="color:#888; white-space:nowrap;">${c.FechaFactura || '—'}</td>
+                        <td style="text-align:center;">${c.Cantidad || 0}</td>
+                        <td style="color:var(--red);font-weight:bold;white-space:nowrap;">${fM(c.Monto)}</td>
+                        <td><span class="dias-badge ${clase}">${dias} días</span></td>
+                    </tr>`;
+            });
+        } catch (err) {
+            tbody.innerHTML = `<tr><td colspan="8" class="error-msg">❌ Error: ${err.message}</td></tr>`;
+        }
+    }
+
+</script>
+</body>
+</html>
