@@ -125,6 +125,20 @@
         /* LOADING */
         .loading { text-align: center; color: #555; font-size: 0.75rem; padding: 20px; }
         .error-msg { color: var(--red); font-size: 0.75rem; text-align: center; padding: 10px; }
+
+        /* CORES */
+        .cores-table { width:100%; border-collapse:collapse; font-size:0.72rem; }
+        .cores-table th { color:var(--grass); font-size:0.55rem; text-transform:uppercase; padding:6px 4px; border-bottom:1px solid #333; text-align:left; white-space:nowrap; }
+        .cores-table td { padding:8px 4px; border-bottom:1px solid #1a1a1a; vertical-align:middle; }
+        .cores-table tr:last-child td { border-bottom:none; }
+        .dias-badge { display:inline-block; padding:2px 8px; border-radius:20px; font-weight:900; font-size:0.7rem; }
+        .dias-verde { background:rgba(0,255,136,0.12); color:#00ff88; }
+        .dias-ambar { background:rgba(255,215,0,0.12);  color:var(--gold); }
+        .dias-rojo  { background:rgba(255,75,43,0.15);  color:var(--red); }
+        .cores-kpis { display:flex; gap:10px; margin-bottom:12px; }
+        .cores-kpi  { flex:1; background:rgba(255,255,255,0.04); border-radius:10px; padding:10px; text-align:center; border:1px solid #222; }
+        .cores-kpi span { font-size:0.5rem; color:#888; text-transform:uppercase; display:block; margin-bottom:3px; }
+        .cores-kpi b { font-size:0.9rem; }
     </style>
 </head>
 <body>
@@ -259,6 +273,32 @@
 
         <div class="card"><h2>🔥 TOP 10 PRODUCTOS</h2><div id="v-top-list" style="flex:1; overflow-y:auto;"><div class="loading">Cargando...</div></div></div>
 
+        <div class="card" style="grid-column:1/-1;">
+            <h2>🔄 CORES PENDIENTES DE PAGO</h2>
+            <div class="cores-kpis">
+                <div class="cores-kpi"><span>Total CORES</span><b id="cores-total">—</b></div>
+                <div class="cores-kpi"><span>Monto Pendiente</span><b id="cores-monto" style="color:var(--red);">—</b></div>
+                <div class="cores-kpi"><span>Máx. Días</span><b id="cores-maxdias" style="color:var(--gold);">—</b></div>
+            </div>
+            <div style="overflow-x:auto; overflow-y:auto; max-height:420px;">
+                <table class="cores-table">
+                    <thead><tr>
+                        <th>Referencia</th>
+                        <th>Cliente</th>
+                        <th>Artículo</th>
+                        <th>Fecha Factura</th>
+                        <th>Cant. Pedida</th>
+                        <th>Cant. Recibida</th>
+                        <th>Monto</th>
+                        <th>Días Sin Pagar</th>
+                    </tr></thead>
+                    <tbody id="cores-tbody">
+                        <tr><td colspan="8" class="loading">Cargando CORES...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
         <div class="card">
             <h2>📍 CARTERA DE CLIENTES</h2>
             <input type="text" id="mapa-buscar" placeholder="🔍 BUSCAR CLIENTE..." oninput="filtrarMapa()" style="margin-bottom:10px;">
@@ -338,6 +378,7 @@
         loadClientes();
         loadTopProductos();
         loadVentasDiarias();
+        loadCores();
     }
 
     // ─── RENDER PRINCIPAL ────────────────────────────────────────────────────
@@ -652,7 +693,49 @@
         updatePremios(pct);
     }
 
+    // ─── CORES ───────────────────────────────────────────────────────────────
+    async function loadCores() {
+        const tbody = document.getElementById('cores-tbody');
+        try {
+            const nombre = encodeURIComponent(user.Nombre);
+            const cores  = await apiFetch(`/api/cores?vendedor=${nombre}`);
 
-</script>
+            if (cores.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="loading">✅ Sin CORES pendientes de pago</td></tr>';
+                document.getElementById('cores-total').innerText   = '0';
+                document.getElementById('cores-monto').innerText   = fM(0);
+                document.getElementById('cores-maxdias').innerText = '0 días';
+                return;
+            }
+
+            const totalMonto = cores.reduce((s, c) => s + (parseFloat(c.Monto) || 0), 0);
+            const maxDias    = Math.max(...cores.map(c => parseInt(c.DiasSinPagar) || 0));
+            document.getElementById('cores-total').innerText   = cores.length;
+            document.getElementById('cores-monto').innerText   = fM(totalMonto);
+            document.getElementById('cores-maxdias').innerText = maxDias + ' días';
+
+            tbody.innerHTML = '';
+            cores.forEach(c => {
+                const dias  = parseInt(c.DiasSinPagar) || 0;
+                const clase = dias > 30 ? 'dias-rojo' : dias > 15 ? 'dias-ambar' : 'dias-verde';
+                tbody.innerHTML += `
+                    <tr>
+                        <td style="color:var(--blue);font-weight:bold;">${c.Referencia || '—'}</td>
+                        <td style="color:#ccc;">${c.Codigo || '—'}</td>
+                        <td style="color:#aaa; max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${c.Articulo || ''}">${c.Articulo || '—'}</td>
+                        <td style="color:#888; white-space:nowrap;">${c.FechaFactura || '—'}</td>
+                        <td style="text-align:center;">${c.CantidadPedida || 0}</td>
+                        <td style="text-align:center;">${c.CantidadRecibida || 0}</td>
+                        <td style="color:var(--grass);font-weight:bold;white-space:nowrap;">${fM(c.Monto)}</td>
+                        <td><span class="dias-badge ${clase}">${dias} días</span></td>
+                    </tr>`;
+            });
+        } catch (err) {
+            tbody.innerHTML = `<tr><td colspan="8" class="error-msg">❌ Error cargando CORES: ${err.message}</td></tr>`;
+        }
+    }
+
+
 </body>
 </html>
+    
