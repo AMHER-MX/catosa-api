@@ -416,7 +416,7 @@
             const a = await apiFetch(`/api/aceite?vendedor=${nombre}`);
 
             document.getElementById('k-f-prov').innerText = a.litrosTotal + ' L';
-            document.getElementById('truck-prov').style.left = `calc(${Math.min(100, Math.max(3, a.pctBarra))}% - 32px)`;
+            document.getElementById('truck-prov').style.left = `calc(${Math.min(100, a.pctBarra)}% - 32px)`;
 
             // Info detallada en el label de challenge proveedor
             const premio = a.premioTotal > 0 ? ` | 💰 $${a.premioTotal} ganados` : '';
