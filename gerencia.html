@@ -463,6 +463,18 @@
         </div>
     </div>
 
+    <!-- CANCHA DEL TORNEO WORLD CUP -->
+    <div class="card" style="margin-bottom:14px; min-height:auto;">
+        <div class="card-title" id="torneo-titulo">
+            🏆 CANCHA DEL TORNEO WORLD CUP
+            <span id="torneo-fase-badge" style="font-size:0.55rem; color:#555; font-weight:400;">Cargando...</span>
+        </div>
+        <div id="torneo-leyenda" style="display:flex; gap:12px; margin-bottom:10px; flex-wrap:wrap; font-size:0.55rem; color:#666;"></div>
+        <div id="torneo-pista" style="border-radius:10px; overflow:hidden; position:relative;">
+            <div class="loading">Cargando torneo...</div>
+        </div>
+    </div>
+
     <!-- CORES DEVOLUCIONES -->
     <div class="card" style="margin-bottom:14px;">
         <div class="card-title">
@@ -482,18 +494,6 @@
                 </tr></thead>
                 <tbody id="cores-tbody"><tr><td colspan="7" class="loading">Cargando CORES...</td></tr></tbody>
             </table>
-        </div>
-    </div>
-
-    <!-- CANCHA DEL TORNEO WORLD CUP -->
-    <div class="card" style="margin-bottom:14px; min-height:auto;">
-        <div class="card-title" id="torneo-titulo">
-            🏆 CANCHA DEL TORNEO WORLD CUP
-            <span id="torneo-fase-badge" style="font-size:0.55rem; color:#555; font-weight:400;">Cargando...</span>
-        </div>
-        <div id="torneo-leyenda" style="display:flex; gap:12px; margin-bottom:10px; flex-wrap:wrap; font-size:0.55rem; color:#666;"></div>
-        <div id="torneo-pista" style="border-radius:10px; overflow:hidden; position:relative;">
-            <div class="loading">Cargando torneo...</div>
         </div>
     </div>
 
@@ -549,7 +549,7 @@
 <script>
 // ── CONFIG ────────────────────────────────────────────────────────────────────
 const API = 'https://api.catosaapps.lat';
-const SHEETS_BBD = 'https://docs.google.com/spreadsheets/d/1vUYJz5r1kgMNDel9-6LqaiKAeb3g_n0JwS5_Hs59yeM/pub?gid=0&single=true&output=csv';
+const SHEETS_BBD = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTXRBcfvzRWWgd4GI6OZ2CI4fPXdDzkQIucSNCb_1lZhKW9kmBVcXCFx19L5kdTCMEy0d9Yy5GOttRH/pub?gid=349527356&single=true&output=csv';
 
 const USUARIOS = {
     'GERENTE':   'CATOSA2026',
