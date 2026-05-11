@@ -617,6 +617,7 @@ function fillFilters() {
 }
 
 function getFiltered() {
+    // Todos los vendedores — para KPIs de venta y avance global
     const fs = document.getElementById('f-suc').value;
     const fv = document.getElementById('f-vend').value;
     return dbV.filter(v =>
@@ -626,17 +627,30 @@ function getFiltered() {
     );
 }
 
+function getFilteredMetas() {
+    // Solo vendedores con meta en el Excel — para canchas, torneo y premios
+    const fs = document.getElementById('f-suc').value;
+    const fv = document.getElementById('f-vend').value;
+    return dbV.filter(v =>
+        v.Nombre &&
+        parseFloat(v.Meta) > 0 &&
+        (fs === 'TODAS' || v.Sucursal === fs) &&
+        (fv === 'TODOS' || v.Nombre === fv)
+    );
+}
+
 // ── RENDER PRINCIPAL ──────────────────────────────────────────────────────────
 async function renderAll() {
-    const lista = getFiltered();
+    const lista      = getFiltered();       // todos — KPIs, ranking, chart
+    const listaMetas = getFilteredMetas();  // solo con meta — canchas, torneo, premios
+
     renderTime(lista);
     renderKPIs(lista);
-    renderPista(lista);
-    renderPremios(lista);
+    renderPista(listaMetas);
+    renderPremios(listaMetas);
     renderRanking(lista);
     renderChart(lista);
 
-    // Recargar clientes si cambia el filtro
     const fv = document.getElementById('f-vend').value;
     if (fv !== 'TODOS') {
         loadClientes(fv);
