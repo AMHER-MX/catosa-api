@@ -721,7 +721,7 @@
                 const tipo  = (c.TipoVenta || '').includes('8%') ? 'CORES 8%' : 'CORES';
                 tbody.innerHTML += `
                     <tr>
-                        <td style="color:var(--blue);font-weight:bold;">${c.Referencia || '—'}</td>
+                        <td style="color:var(--blue);font-weight:bold;">${c.NumFactura || c.Referencia || '—'}</td>
                         <td style="color:#ccc;">${c.Codigo || '—'}</td>
                         <td style="color:#aaa; max-width:180px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${c.Articulo || ''}">${c.Articulo || '—'}</td>
                         <td style="color:#888; font-size:0.65rem;">${tipo}</td>
