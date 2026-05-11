@@ -288,6 +288,44 @@
 
         .loading { color: #444; font-size: 0.7rem; text-align: center; padding: 20px; }
         .error-msg { color: var(--red); font-size: 0.7rem; text-align: center; padding: 10px; }
+
+        /* WORLD CUP BADGES */
+        .wc-fase-badge { display:inline-block; padding:2px 10px; border-radius:20px; font-size:0.55rem; font-weight:900; letter-spacing:1px; text-transform:uppercase; }
+        .wc-clasificado { background:rgba(0,255,136,0.15); color:var(--grass); border:1px solid var(--grass); }
+        .wc-pendiente   { background:rgba(255,215,0,0.1);  color:var(--gold);  border:1px solid var(--gold); }
+        .wc-fuera       { background:rgba(255,75,43,0.1);  color:var(--red);   border:1px solid var(--red); }
+
+        /* TORNEO TRACK */
+        .torneo-track { border-radius:12px; overflow:hidden; border:1px solid rgba(255,255,255,0.1); margin-bottom:4px; }
+        .torneo-lane { height:38px; position:relative; display:flex; align-items:center;
+            background:linear-gradient(90deg,#1a1a2e 50%,#16213e 50%); background-size:40px 100%;
+            border-bottom:1px solid rgba(255,255,255,0.04); }
+        .torneo-lane.clasificado { background:linear-gradient(90deg,#1a2e1a 50%,#162e1a 50%); background-size:40px 100%; }
+        .torneo-lane.no-clasif { opacity:0.45; filter:grayscale(0.6); }
+        .torneo-vname { width:130px; font-size:0.52rem; color:rgba(255,255,255,0.85); padding-left:10px;
+            white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:600; z-index:6;
+            text-shadow:0 1px 3px rgba(0,0,0,0.9); flex-shrink:0; }
+        .torneo-pct { position:absolute; right:10px; font-size:0.5rem; color:rgba(255,255,255,0.5); z-index:6; }
+        .torneo-ticket { position:absolute; left:134px; font-size:0.55rem; z-index:6; }
+        .torneo-ball { position:absolute; width:26px; height:26px;
+            background:url('https://cdn-icons-png.flaticon.com/512/53/53283.png') center/contain no-repeat;
+            filter:invert(1); transition:left 1.5s cubic-bezier(0.2,0,0.2,1); z-index:10; }
+        .torneo-ball.clasificado { filter: drop-shadow(0 0 8px var(--gold)) sepia(1) saturate(8); }
+        .torneo-ball.lider { animation: spin-slow 3s infinite linear; }
+        @keyframes spin-slow { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }
+        .torneo-meta-line { position:absolute; top:0; bottom:0; width:1px; z-index:3; }
+        .torneo-porteria { position:absolute; right:0; top:0; bottom:0; width:30px;
+            background:rgba(255,255,255,0.06); border-left:2px dashed rgba(255,255,255,0.3);
+            display:flex; align-items:center; justify-content:center; font-size:0.9rem; z-index:5; }
+
+        /* CORES TABLE */
+        .cores-table { width:100%; border-collapse:collapse; font-size:0.7rem; }
+        .cores-table th { color:var(--gold); font-size:0.52rem; text-transform:uppercase; padding:6px 8px; border-bottom:1px solid var(--border); text-align:left; white-space:nowrap; }
+        .cores-table td { padding:8px; border-bottom:1px solid var(--border); }
+        .dias-badge { display:inline-block; padding:2px 7px; border-radius:20px; font-weight:900; font-size:0.65rem; }
+        .dias-verde { background:rgba(0,255,136,0.12); color:var(--grass); }
+        .dias-ambar { background:rgba(255,215,0,0.12); color:var(--gold); }
+        .dias-rojo  { background:rgba(255,75,43,0.15); color:var(--red); }
     </style>
 </head>
 <body>
@@ -364,39 +402,48 @@
     <div class="premios-section">
         <div class="premios-bg"></div>
         <div class="premios-content">
-            <div class="premios-title">🏆 LA FIEBRE DEL ORO</div>
-            <div class="premios-sub">Estado de premios por asesor — Mayo 2026</div>
+            <div class="premios-title">🏆 WORLD CUP CATOSA 2026</div>
+            <div class="premios-sub">Entrega de premios: 18 de Julio · Un día antes de la Final 🌍</div>
 
-            <!-- Imágenes premios Mundial -->
-            <div style="display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-bottom:16px;">
-                <div style="background:rgba(255,215,0,0.08); border:1px solid var(--gold); border-radius:14px; overflow:hidden; position:relative;">
-                    <div style="position:absolute; top:6px; left:6px; background:var(--gold); color:#000; font-size:0.5rem; font-weight:900; padding:2px 8px; border-radius:20px; z-index:1;">120% — BALÓN</div>
-                    <img src="https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/PREMIO%20BALON.png" style="width:100%; aspect-ratio:1/1; object-fit:contain; background:#1a1a1a; display:block;">
+            <!-- Fases -->
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px;">
+                <div style="background:rgba(0,255,136,0.06); border:1px solid rgba(0,255,136,0.3); border-radius:10px; padding:10px; text-align:center;">
+                    <div style="font-size:0.5rem; color:var(--grass); text-transform:uppercase; font-weight:bold; letter-spacing:2px; margin-bottom:4px;">⚽ Fase de Grupos</div>
+                    <div style="font-size:0.65rem; color:#fff; font-weight:bold;">18 Mayo — 30 Junio</div>
+                    <div style="font-size:0.55rem; color:#aaa; margin-top:3px;">ORO (120%) en Mayo o Junio = clasificado</div>
                 </div>
-                <div style="background:rgba(0,255,136,0.08); border:1px solid var(--grass); border-radius:14px; overflow:hidden; position:relative;">
-                    <div style="position:absolute; top:6px; left:6px; background:var(--grass); color:#000; font-size:0.5rem; font-weight:900; padding:2px 8px; border-radius:20px; z-index:1;">125% — JERSEY</div>
-                    <img src="https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/PREMIO%20JERSEY.png" style="width:100%; aspect-ratio:1/1; object-fit:contain; background:#1a1a1a; display:block;">
+                <div style="background:rgba(255,215,0,0.06); border:1px solid rgba(255,215,0,0.3); border-radius:10px; padding:10px; text-align:center;">
+                    <div style="font-size:0.5rem; color:var(--gold); text-transform:uppercase; font-weight:bold; letter-spacing:2px; margin-bottom:4px;">🏆 Fase Final</div>
+                    <div style="font-size:0.65rem; color:#fff; font-weight:bold;">1 — 17 Julio</div>
+                    <div style="font-size:0.55rem; color:#aaa; margin-top:3px;">Mayor % de meta en Julio gana</div>
                 </div>
             </div>
-            <div style="font-size:0.55rem; color:var(--blue); text-transform:uppercase; font-weight:bold; letter-spacing:2px; margin-bottom:10px; text-align:center;">🎯 PREMIOS POR ETAPA</div>
+
+            <!-- Premios -->
             <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:16px;">
-                <div style="background:rgba(255,255,255,0.04); border:1px solid #333; border-radius:10px; overflow:hidden; text-align:center;">
-                    <div style="font-size:0.55rem; color:var(--gold); padding:4px; font-weight:900;">1ª VEZ</div>
-                    <img src="https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/PREMIO%20CINE.png" style="width:100%; aspect-ratio:1/1; object-fit:contain; background:#111; display:block;">
-                </div>
-                <div style="background:rgba(255,255,255,0.04); border:1px solid #333; border-radius:10px; overflow:hidden; text-align:center;">
-                    <div style="font-size:0.55rem; color:var(--gold); padding:4px; font-weight:900;">2ª VEZ</div>
-                    <img src="https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/PREMIO%20HIELERA.png" style="width:100%; aspect-ratio:1/1; object-fit:contain; background:#111; display:block;">
-                </div>
-                <div style="background:rgba(255,255,255,0.04); border:1px solid #333; border-radius:10px; overflow:hidden; text-align:center;">
-                    <div style="font-size:0.55rem; color:var(--gold); padding:4px; font-weight:900;">3ª VEZ</div>
-                    <img src="https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/PREMIO%20CELULAR.png" style="width:100%; aspect-ratio:1/1; object-fit:contain; background:#111; display:block;">
-                </div>
-                <div style="background:rgba(255,255,255,0.04); border:1px solid #333; border-radius:10px; overflow:hidden; text-align:center;">
-                    <div style="font-size:0.55rem; color:var(--gold); padding:4px; font-weight:900;">4ª VEZ</div>
+                <div style="border-radius:12px; overflow:hidden; position:relative; background:rgba(255,215,0,0.08); border:1px solid var(--gold); text-align:center;">
+                    <div style="position:absolute; top:5px; left:5px; background:var(--gold); color:#000; font-size:0.5rem; font-weight:900; padding:2px 6px; border-radius:20px;">🥇 1°</div>
                     <img src="https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/PREMIO%20SMART%20TV.png" style="width:100%; aspect-ratio:1/1; object-fit:contain; background:#111; display:block;">
+                    <div style="font-size:0.55rem; padding:4px; font-weight:bold; color:var(--gold);">Smart TV 📺 + 🍿</div>
+                </div>
+                <div style="border-radius:12px; overflow:hidden; position:relative; background:rgba(192,192,192,0.08); border:1px solid var(--silver); text-align:center;">
+                    <div style="position:absolute; top:5px; left:5px; background:var(--silver); color:#000; font-size:0.5rem; font-weight:900; padding:2px 6px; border-radius:20px;">🥈 2°</div>
+                    <img src="https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/PREMIO%20JERSEY.png" style="width:100%; aspect-ratio:1/1; object-fit:contain; background:#111; display:block;">
+                    <div style="font-size:0.55rem; padding:4px; font-weight:bold; color:var(--silver);">Jersey 🎽 + 🍿</div>
+                </div>
+                <div style="border-radius:12px; overflow:hidden; position:relative; background:rgba(205,127,50,0.08); border:1px solid var(--bronze); text-align:center;">
+                    <div style="position:absolute; top:5px; left:5px; background:var(--bronze); color:#000; font-size:0.5rem; font-weight:900; padding:2px 6px; border-radius:20px;">🥉 3°</div>
+                    <img src="https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/PREMIO%20HIELERA.png" style="width:100%; aspect-ratio:1/1; object-fit:contain; background:#111; display:block;">
+                    <div style="font-size:0.55rem; padding:4px; font-weight:bold; color:var(--bronze);">Hielera ❄️ + 🍿</div>
+                </div>
+                <div style="border-radius:12px; overflow:hidden; position:relative; background:rgba(255,255,255,0.04); border:1px solid #444; text-align:center;">
+                    <div style="position:absolute; top:5px; left:5px; background:#555; color:#fff; font-size:0.5rem; font-weight:900; padding:2px 6px; border-radius:20px;">4°</div>
+                    <img src="https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/PREMIO%20BALON.png" style="width:100%; aspect-ratio:1/1; object-fit:contain; background:#111; display:block;">
+                    <div style="font-size:0.55rem; padding:4px; font-weight:bold; color:#aaa;">Balón ⚽ + 🍿</div>
                 </div>
             </div>
+
+            <!-- Tabla estado por asesor -->
             <div style="overflow-x:auto;">
                 <table class="premios-table">
                     <thead>
@@ -405,66 +452,48 @@
                             <th>Sede</th>
                             <th>Avance</th>
                             <th>Nivel</th>
-                            <th>Premio Mes</th>
-                            <th>⚽ Balón</th>
-                            <th>🎽 Jersey</th>
+                            <th>Estado Torneo</th>
+                            <th>Premio Proyectado</th>
                         </tr>
                     </thead>
                     <tbody id="premios-tbody"></tbody>
                 </table>
             </div>
+            <div style="text-align:center; margin-top:8px; font-size:0.52rem; color:#555;">Empates comparten el mismo premio · Clasificación por localStorage del vendedor</div>
         </div>
     </div>
 
-    <!-- RETO PROVEEDOR TOGGLE -->
-    <div style="margin-bottom:14px;">
-        <button id="btn-reto" onclick="toggleReto()" style="
-            width:100%; padding:16px 20px; border-radius:14px;
-            background:linear-gradient(135deg, #2e1065, #4c1d95);
-            border:1px solid var(--purple); color:#fff;
-            font-family:'Bebas Neue',sans-serif; font-size:1.1rem;
-            letter-spacing:3px; cursor:pointer;
-            display:flex; justify-content:space-between; align-items:center;
-            box-shadow: 0 0 20px rgba(168,85,247,0.2);
-        ">
-            <span>🌟 RETO PROVEEDOR — ACEITE MOTOR INTERNATIONAL & FLEETRITE</span>
-            <span id="reto-chevron" style="font-size:1.2rem; transition:transform 0.3s;">▼</span>
-        </button>
+    <!-- CORES DEVOLUCIONES -->
+    <div class="card" style="margin-bottom:14px;">
+        <div class="card-title">
+            ⚠️ DEVOLUCIONES DE CORES — MES ACTUAL
+            <span id="cores-resumen" style="font-size:0.55rem; color:#555; font-weight:400;"></span>
+        </div>
+        <div style="overflow-x:auto; max-height:360px; overflow-y:auto;">
+            <table class="cores-table">
+                <thead><tr>
+                    <th>Referencia</th>
+                    <th>Asesor</th>
+                    <th>Cliente</th>
+                    <th>Artículo</th>
+                    <th>Fecha</th>
+                    <th>Monto</th>
+                    <th>Días</th>
+                </tr></thead>
+                <tbody id="cores-tbody"><tr><td colspan="7" class="loading">Cargando CORES...</td></tr></tbody>
+            </table>
+        </div>
+    </div>
 
-        <div id="reto-panel" style="display:none; margin-top:10px;">
-            <!-- PISTA DE ACEITE -->
-            <div style="background:var(--card2); border:1px solid rgba(168,85,247,0.3); border-radius:14px; padding:18px; margin-bottom:12px;">
-                <div style="font-size:0.6rem; color:var(--purple); font-weight:700; text-transform:uppercase; letter-spacing:2px; margin-bottom:12px;">
-                    ⚽ Avance al siguiente bloque de 500L incrementales
-                </div>
-                <div id="reto-pista" style="background:linear-gradient(90deg,#2e1065 50%,#4c1d95 50%); background-size:40px 100%; border:1px solid rgba(168,85,247,0.4); border-radius:10px; position:relative; overflow:hidden; padding:6px 0;">
-                    <div style="position:absolute; right:0; top:0; bottom:0; width:36px; background:rgba(168,85,247,0.2); border-left:2px dashed var(--purple); display:flex; align-items:center; justify-content:center; font-size:1.2rem; z-index:5;">🏆</div>
-                    <div id="reto-lanes"></div>
-                </div>
-            </div>
-
-            <!-- TABLA DETALLE -->
-            <div style="background:var(--card2); border:1px solid rgba(168,85,247,0.3); border-radius:14px; padding:18px;">
-                <div style="font-size:0.6rem; color:var(--purple); font-weight:700; text-transform:uppercase; letter-spacing:2px; margin-bottom:12px;">
-                    📊 Detalle por asesor
-                </div>
-                <div style="overflow-x:auto;">
-                    <table style="width:100%; border-collapse:collapse; font-size:0.72rem;">
-                        <thead>
-                            <tr style="border-bottom:1px solid rgba(168,85,247,0.3);">
-                                <th style="color:var(--purple); font-size:0.55rem; text-transform:uppercase; letter-spacing:1px; padding:6px 8px; text-align:left;">Asesor</th>
-                                <th style="color:var(--purple); font-size:0.55rem; text-transform:uppercase; letter-spacing:1px; padding:6px 8px; text-align:right;">Base 2025</th>
-                                <th style="color:var(--purple); font-size:0.55rem; text-transform:uppercase; letter-spacing:1px; padding:6px 8px; text-align:right;">Litros Mes</th>
-                                <th style="color:var(--purple); font-size:0.55rem; text-transform:uppercase; letter-spacing:1px; padding:6px 8px; text-align:right;">Incrementales</th>
-                                <th style="color:var(--purple); font-size:0.55rem; text-transform:uppercase; letter-spacing:1px; padding:6px 8px; text-align:right;">% Intl</th>
-                                <th style="color:var(--purple); font-size:0.55rem; text-transform:uppercase; letter-spacing:1px; padding:6px 8px; text-align:right;">Bloques</th>
-                                <th style="color:var(--purple); font-size:0.55rem; text-transform:uppercase; letter-spacing:1px; padding:6px 8px; text-align:right;">Premio</th>
-                            </tr>
-                        </thead>
-                        <tbody id="reto-tbody"></tbody>
-                    </table>
-                </div>
-            </div>
+    <!-- CANCHA DEL TORNEO WORLD CUP -->
+    <div class="card" style="margin-bottom:14px; min-height:auto;">
+        <div class="card-title" id="torneo-titulo">
+            🏆 CANCHA DEL TORNEO WORLD CUP
+            <span id="torneo-fase-badge" style="font-size:0.55rem; color:#555; font-weight:400;">Cargando...</span>
+        </div>
+        <div id="torneo-leyenda" style="display:flex; gap:12px; margin-bottom:10px; flex-wrap:wrap; font-size:0.55rem; color:#666;"></div>
+        <div id="torneo-pista" style="border-radius:10px; overflow:hidden; position:relative;">
+            <div class="loading">Cargando torneo...</div>
         </div>
     </div>
 
@@ -493,30 +522,23 @@
         <div class="card">
             <div class="card-title">
                 📋 Últimos Prospectos (Refacciones)
-                <div style="display:flex; align-items:center; gap:8px;">
-                    <span id="bbd-count" style="font-size:0.55rem; color:#555; font-weight:400;"></span>
-                    <a href="https://docs.google.com/spreadsheets/d/1vUYJz5r1kgMNDel9-6LqaiKAeb3g_n0JwS5_Hs59yeM/edit" target="_blank" style="font-size:0.55rem; color:var(--blue); text-decoration:none; border:1px solid var(--blue); padding:2px 8px; border-radius:10px; white-space:nowrap;">Ver completo →</a>
-                </div>
+                <span id="bbd-count" style="font-size:0.55rem; color:#555; font-weight:400;"></span>
             </div>
             <div class="scroll-list" id="bbd-list"><div class="loading">Cargando...</div></div>
         </div>
 
-        <!-- CARTERA CLIENTES -->
+        <!-- CARTERA SEMÁFORO -->
         <div class="card" style="grid-column: 1 / -1;">
-            <div class="card-title">📍 Cartera de Clientes
-                <div style="display:flex; gap:8px; align-items:center;">
-                    <span id="cartera-stats" style="font-size:0.55rem; color:#555; font-weight:400;"></span>
-                </div>
-            </div>
+            <div class="card-title">👥 Cartera Semáforo</div>
             <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:12px;">
                 <select class="filter-select" id="f-color" onchange="renderCartera()">
                     <option value="TODOS">Todos</option>
-                    <option value="VERDE">Activos (&lt;14 días)</option>
-                    <option value="AMBAR">Inactivos (14-60)</option>
-                    <option value="ROJO">Críticos (&gt;60 días)</option>
+                    <option value="VERDE">🟢 Al día (≤7 días)</option>
+                    <option value="AMBAR">🟡 Inactivo (8-21 días)</option>
+                    <option value="ROJO">🔴 Crítico (+21 días)</option>
                 </select>
                 <input type="text" id="f-cli" class="filter-select" placeholder="🔍 Buscar cliente..." oninput="renderCartera()" style="padding:10px 14px;">
-                <button onclick="renderCartera()" style="background:var(--card); border:1px solid var(--border); color:var(--grass); border-radius:10px; font-size:0.7rem; font-weight:700; cursor:pointer; padding:10px;">🔄 Actualizar</button>
+                <div id="cartera-stats" style="font-size:0.6rem; color:#555; display:flex; align-items:center; justify-content:center; text-align:center;"></div>
             </div>
             <div class="scroll-list" id="cli-list"><div class="loading">Cargando...</div></div>
         </div>
@@ -527,7 +549,7 @@
 <script>
 // ── CONFIG ────────────────────────────────────────────────────────────────────
 const API = 'https://api.catosaapps.lat';
-const SHEETS_BBD = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTXRBcfvzRWWgd4GI6OZ2CI4fPXdDzkQIucSNCb_1lZhKW9kmBVcXCFx19L5kdTCMEy0d9Yy5GOttRH/pub?gid=349527356&single=true&output=csv';
+const SHEETS_BBD = 'https://docs.google.com/spreadsheets/d/1vUYJz5r1kgMNDel9-6LqaiKAeb3g_n0JwS5_Hs59yeM/pub?gid=0&single=true&output=csv';
 
 const USUARIOS = {
     'GERENTE':   'CATOSA2026',
@@ -538,11 +560,6 @@ const USUARIOS = {
 let dbV = [], dbC = [], dbTop = [], dbBBD = [], myChart = null, userRole = '';
 
 // ── UTILS ─────────────────────────────────────────────────────────────────────
-const formatPct = n => {
-    const v = parseFloat(n) || 0;
-    if (v >= 100) return v.toFixed(0);
-    return v.toFixed(1);
-};
 const fM = n => new Intl.NumberFormat('es-MX', { style:'currency', currency:'MXN', minimumFractionDigits:0 }).format(n||0);
 
 async function apiFetch(endpoint) {
@@ -556,8 +573,6 @@ window.onload = async () => {
     try {
         document.getElementById('login-status').textContent = 'Conectando con servidor...';
         dbV = await apiFetch('/api/ventas');
-        // Solo asesores con meta asignada (los demás no comisionan)
-        dbV = dbV.filter(v => parseFloat(v.Meta) > 0);
         document.getElementById('login-status').textContent = `✅ ${dbV.length} asesores cargados`;
         document.getElementById('btn-login').disabled = false;
         document.getElementById('btn-login').textContent = 'ENTRAR';
@@ -585,6 +600,8 @@ async function login() {
     renderAll();
     loadTopProductos();
     loadBBD();
+    loadCores();
+    loadTorneo();
 };
 
 // ── FILTROS ───────────────────────────────────────────────────────────────────
@@ -613,32 +630,20 @@ function getFiltered() {
 async function renderAll() {
     const lista = getFiltered();
     renderTime(lista);
+    renderKPIs(lista);
     renderPista(lista);
     renderPremios(lista);
     renderRanking(lista);
     renderChart(lista);
 
-    // KPIs usan totales reales (todos los vendedores)
-    try {
-        const totales = await apiFetch('/api/ventas-totales');
-        const fs = document.getElementById('f-suc').value;
-        let ventaReal = 0;
-        if (fs === 'TODAS') {
-            ventaReal = totales.total;
-        } else {
-            const suc = totales.porSucursal.find(s => s.Sucursal === fs);
-            ventaReal = suc ? parseFloat(suc.Ventas) : 0;
-        }
-        // Meta viene de los vendedores con meta asignada
-        let tm = 0;
-        lista.forEach(v => { tm += parseFloat(v.Meta)||0; });
-        renderKPIsConTotal(ventaReal, tm);
-    } catch(e) {
-        renderKPIs(lista);
-    }
-
+    // Recargar clientes si cambia el filtro
     const fv = document.getElementById('f-vend').value;
-    loadClientes(fv !== 'TODOS' ? fv : '');
+    if (fv !== 'TODOS') {
+        loadClientes(fv);
+    } else {
+        loadClientes('');
+    }
+    loadCores();
 }
 
 function renderTime(lista) {
@@ -652,23 +657,13 @@ function renderTime(lista) {
     document.getElementById('val-falta').textContent = fM(Math.max(0, (tm*1.20) - tv));
 }
 
-function renderKPIsConTotal(ventaReal, metaTotal) {
-    const mt = metaTotal || 1;
-    document.getElementById('k-venta').textContent  = fM(ventaReal);
-    document.getElementById('k-falta').textContent  = fM(Math.max(0, mt - ventaReal));
-    document.getElementById('k-avance').textContent = formatPct((ventaReal/mt)*100) + '%';
-    document.getElementById('k-oro').textContent    = formatPct((ventaReal/(mt*1.20))*100) + '%';
-    // Actualizar también el faltante para oro en time panel
-    document.getElementById('val-falta').textContent = fM(Math.max(0, (mt*1.20) - ventaReal));
-}
-
 function renderKPIs(lista) {
     let tv = 0, tm = 0;
     lista.forEach(v => { tv += parseFloat(v.Ventas)||0; tm += parseFloat(v.Meta)||1; });
     document.getElementById('k-venta').textContent  = fM(tv);
     document.getElementById('k-falta').textContent  = fM(Math.max(0, tm - tv));
-    document.getElementById('k-avance').textContent = formatPct((tv/tm)*100);
-    document.getElementById('k-oro').textContent    = formatPct((tv/(tm*1.20))*100);
+    document.getElementById('k-avance').textContent = ((tv/tm)*100).toFixed(1) + '%';
+    document.getElementById('k-oro').textContent    = ((tv/(tm*1.20))*100).toFixed(1) + '%';
 }
 
 function renderPista(lista) {
@@ -691,30 +686,61 @@ function renderPista(lista) {
 function renderPremios(lista) {
     const tbody = document.getElementById('premios-tbody');
     tbody.innerHTML = '';
-    const mesWC = [5,6,7].includes(new Date().getMonth()+1);
-    const nombres = ['', 'Cine 🎬', 'Hielera ❄️', 'Celular 📱', 'Smart TV 📺'];
+    const hoy  = new Date();
+    const mes  = hoy.getMonth() + 1;
+    const dia  = hoy.getDate();
+    const anio = hoy.getFullYear();
+    const enGrupos  = (mes === 5 && dia >= 18) || mes === 6;
+    const enFinal   = mes === 7 && dia >= 1 && dia <= 17;
+    const terminado = (mes === 7 && dia >= 18) || mes > 7;
+
+    // Ranking por % de meta (para fase final)
+    const ranking = [...lista]
+        .filter(v => parseFloat(v.Meta) > 0)
+        .map(v => ({ nombre: v.Nombre, pct: (parseFloat(v.Ventas) / parseFloat(v.Meta)) * 100 }))
+        .sort((a, b) => b.pct - a.pct);
 
     lista.sort((a,b) => (parseFloat(b.Ventas)||0) - (parseFloat(a.Ventas)||0)).forEach(v => {
         const ven = parseFloat(v.Ventas)||0, met = parseFloat(v.Meta)||1;
         const pct = (ven/met)*100;
-        let nivel, cls, premio;
-        if      (pct >= 120) { nivel='ORO';    cls='nivel-oro';    premio=nombres[1]; }
-        else if (pct >= 110) { nivel='PLATA';  cls='nivel-plata';  premio='—'; }
-        else if (pct >= 75)  { nivel='BRONCE'; cls='nivel-bronce'; premio='—'; }
-        else                 { nivel='FUERA';  cls='nivel-fuera';  premio='—'; }
+        let nivel, cls;
+        if      (pct >= 120) { nivel='ORO';    cls='nivel-oro'; }
+        else if (pct >= 110) { nivel='PLATA';  cls='nivel-plata'; }
+        else if (pct >= 75)  { nivel='BRONCE'; cls='nivel-bronce'; }
+        else                 { nivel='FUERA';  cls='nivel-fuera'; }
 
-        const balon  = mesWC && pct >= 120  ? '✅' : (mesWC && pct >= 100 ? `${(120-pct).toFixed(0)}% falta` : '—');
-        const jersey = mesWC && pct >= 125  ? '✅' : (mesWC && pct >= 100 ? `${(125-pct).toFixed(0)}% falta` : '—');
+        // Estado torneo
+        let estadoHTML = '', premioHTML = '—';
+        const keyMayo  = `wc_oro_mayo_${anio}_${v.Nombre}`;
+        const keyJunio = `wc_oro_junio_${anio}_${v.Nombre}`;
+        // En gerencia no tenemos localStorage del vendedor, usamos el % actual como referencia
+        const clasificado = pct >= 120 && (enGrupos || enFinal);
+
+        if (terminado) {
+            estadoHTML = `<span class="wc-fase-badge ${pct>=120?'wc-clasificado':'wc-fuera'}">${pct>=120?'🏆 FIN':'❌ FIN'}</span>`;
+        } else if (enFinal) {
+            const pos = ranking.findIndex(r => r.nombre === v.Nombre) + 1;
+            const premios = ['','📺 Smart TV','🎽 Jersey','❄️ Hielera','⚽ Balón'];
+            estadoHTML = `<span class="wc-fase-badge wc-clasificado">🏆 FINAL #${pos}</span>`;
+            premioHTML = pos <= 4 ? premios[pos] + ' + 🍿' : '—';
+        } else if (enGrupos) {
+            if (pct >= 120) {
+                estadoHTML = `<span class="wc-fase-badge wc-clasificado">✅ CLASIFICADO</span>`;
+            } else {
+                estadoHTML = `<span class="wc-fase-badge wc-pendiente">⏳ ${(120-pct).toFixed(1)}% falta</span>`;
+            }
+        } else {
+            estadoHTML = `<span class="wc-fase-badge wc-pendiente">⏳ PRÓXIMO</span>`;
+        }
 
         tbody.innerHTML += `
             <tr>
                 <td style="font-weight:600;">${v.Nombre}</td>
                 <td style="color:#666; font-size:0.65rem;">${v.Sucursal||'—'}</td>
-                <td style="color:${pct>=120?'var(--gold)':pct>=75?'var(--grass)':'var(--red)'}; font-weight:700;">${formatPct(pct)}%</td>
+                <td style="color:${pct>=120?'var(--gold)':pct>=75?'var(--grass)':'var(--red)'}; font-weight:700;">${pct.toFixed(1)}%</td>
                 <td><span class="nivel-badge ${cls}">${nivel}</span></td>
-                <td style="color:var(--grass); font-size:0.65rem;">${pct>=120 ? premio : '—'}</td>
-                <td style="font-size:0.65rem; color:${pct>=120?'var(--grass)':'#555'};">${balon}</td>
-                <td style="font-size:0.65rem; color:${pct>=125?'var(--grass)':'#555'};">${jersey}</td>
+                <td>${estadoHTML}</td>
+                <td style="color:var(--grass); font-size:0.65rem;">${premioHTML}</td>
             </tr>`;
     });
 }
@@ -818,13 +844,19 @@ function renderCartera() {
 
     let lista = dbC.filter(c => {
         const d = parseInt(c.Dias)||0;
-        const colorOk = col==='TODOS' || (col==='VERDE'&&d<=14) || (col==='AMBAR'&&d>14&&d<=60) || (col==='ROJO'&&d>60);
+        const colorOk = col==='TODOS' ||
+            (col==='VERDE' && d<=7) ||
+            (col==='AMBAR' && d>7 && d<=21) ||
+            (col==='ROJO'  && d>21);
         const qOk = !q || (c.Cliente||'').toUpperCase().includes(q);
         return colorOk && qOk;
     });
 
     const stats = { verde:0, ambar:0, rojo:0 };
-    dbC.forEach(c => { const d=parseInt(c.Dias)||0; if(d<=14)stats.verde++; else if(d<=60)stats.ambar++; else stats.rojo++; });
+    dbC.forEach(c => {
+        const d = parseInt(c.Dias)||0;
+        if (d<=7) stats.verde++; else if (d<=21) stats.ambar++; else stats.rojo++;
+    });
     document.getElementById('cartera-stats').innerHTML =
         `<span style="color:#0f0">●${stats.verde}</span>&nbsp;
          <span style="color:#ff0">●${stats.ambar}</span>&nbsp;
@@ -833,11 +865,14 @@ function renderCartera() {
     el.innerHTML = '';
     lista.slice(0, 100).forEach(c => {
         const d = parseInt(c.Dias)||0;
-        const col2 = d>60?'rojo':d>14?'ambar':'verde';
+        const col2 = d<=7?'verde':d<=21?'ambar':'rojo';
+        const badgeHTML = c.EsCartera
+            ? `<span style="font-size:0.48rem;font-weight:900;padding:1px 5px;border-radius:8px;margin-left:5px;background:rgba(0,212,255,0.15);color:var(--blue);border:1px solid rgba(0,212,255,0.3);">⭐</span>`
+            : '';
         el.innerHTML += `
             <div class="v-row">
                 <div class="v-row-left">
-                    <div class="v-row-name"><span class="dot ${col2}"></span>${c.Cliente||c.Codigo||'—'}</div>
+                    <div class="v-row-name"><span class="dot ${col2}"></span>${c.Cliente||c.Codigo||'—'}${badgeHTML}</div>
                     <div class="v-row-sub">${c.Direccion||''}</div>
                 </div>
                 <div style="text-align:right; white-space:nowrap;">
@@ -849,72 +884,139 @@ function renderCartera() {
     if (!lista.length) el.innerHTML = '<div class="loading">Sin resultados</div>';
 }
 
-// ── RETO PROVEEDOR ────────────────────────────────────────────────────────────
-let retoLoaded = false;
+// ── CORES DEVOLUCIONES ────────────────────────────────────────────────────────
+async function loadCores() {
+    const tbody = document.getElementById('cores-tbody');
+    try {
+        const fv = document.getElementById('f-vend').value;
+        const nombre = fv !== 'TODOS' ? encodeURIComponent(fv) : '';
+        const cores = await apiFetch(`/api/cores?vendedor=${nombre}`);
 
-function toggleReto() {
-    const panel   = document.getElementById('reto-panel');
-    const chevron = document.getElementById('reto-chevron');
-    const open    = panel.style.display === 'none';
-    panel.style.display  = open ? 'block' : 'none';
-    chevron.style.transform = open ? 'rotate(180deg)' : 'rotate(0deg)';
-    if (open && !retoLoaded) { loadReto(); retoLoaded = true; }
+        if (cores.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" class="loading">✅ Sin devoluciones de CORES este mes</td></tr>';
+            document.getElementById('cores-resumen').textContent = '';
+            return;
+        }
+
+        const totalMonto = cores.reduce((s, c) => s + (parseFloat(c.Monto)||0), 0);
+        document.getElementById('cores-resumen').textContent = `${cores.length} registros · ${fM(totalMonto)} devuelto`;
+
+        tbody.innerHTML = '';
+        cores.forEach(c => {
+            const dias  = parseInt(c.DiasTranscurridos) || 0;
+            const clase = dias <= 7 ? 'dias-rojo' : dias <= 30 ? 'dias-ambar' : 'dias-verde';
+            tbody.innerHTML += `
+                <tr>
+                    <td style="color:var(--blue);font-weight:bold;">${c.NumFactura||c.Referencia||'—'}</td>
+                    <td style="color:#aaa;">${c.Vendedor||'—'}</td>
+                    <td style="color:#ccc;">${c.Codigo||'—'}</td>
+                    <td style="color:#888; max-width:160px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${c.Articulo||'—'}</td>
+                    <td style="color:#888; white-space:nowrap;">${c.FechaFactura||'—'}</td>
+                    <td style="color:var(--red);font-weight:bold;">${fM(c.Monto)}</td>
+                    <td><span class="dias-badge ${clase}">${dias}d</span></td>
+                </tr>`;
+        });
+    } catch(err) {
+        tbody.innerHTML = `<tr><td colspan="7" class="error-msg">❌ ${err.message}</td></tr>`;
+    }
 }
 
-async function loadReto() {
-    const lanes  = document.getElementById('reto-lanes');
-    const tbody  = document.getElementById('reto-tbody');
-    const lista  = getFiltered();
+// ── TORNEO WORLD CUP ──────────────────────────────────────────────────────────
+async function loadTorneo() {
+    const pista = document.getElementById('torneo-pista');
+    const leyenda = document.getElementById('torneo-leyenda');
+    const faseBadge = document.getElementById('torneo-fase-badge');
+    try {
+        const data = await apiFetch('/api/torneo');
+        const hoy  = new Date();
+        const mes  = hoy.getMonth() + 1;
+        const dia  = hoy.getDate();
 
-    lanes.innerHTML  = '<div style="color:#555; font-size:0.65rem; text-align:center; padding:10px;">Cargando...</div>';
-    tbody.innerHTML  = '<tr><td colspan="7" style="color:#555; text-align:center; padding:10px;">Cargando...</td></tr>';
+        const enGrupos  = (mes === 5 && dia >= 18) || mes === 6;
+        const enFinal   = mes === 7 && dia >= 1 && dia <= 17;
+        const terminado = (mes === 7 && dia >= 18) || mes > 7;
 
-    // Fetch aceite data for each vendor
-    const results = await Promise.allSettled(
-        lista.map(v => apiFetch(`/api/aceite?vendedor=${encodeURIComponent(v.Nombre)}`).then(d => ({ ...d, Nombre: v.Nombre, Sucursal: v.Sucursal })))
-    );
+        // Fase label
+        let faseHTML = '';
+        if (enFinal) {
+            faseHTML = `<span class="wc-fase-badge wc-clasificado">🏆 FASE FINAL — Julio 1–17</span>`;
+        } else if (enGrupos) {
+            faseHTML = `<span class="wc-fase-badge wc-pendiente">⚽ FASE DE GRUPOS — ${mes===5?'Mayo 18–31':'Junio'}</span>`;
+        } else {
+            faseHTML = `<span class="wc-fase-badge" style="background:rgba(255,255,255,0.05);color:#555;border:1px solid #333;">Torneo inicia 18 Mayo</span>`;
+        }
+        faseBadge.innerHTML = faseHTML;
 
-    const datos = results
-        .filter(r => r.status === 'fulfilled')
-        .map(r => r.value)
-        .sort((a, b) => b.litrosIncrementales - a.litrosIncrementales);
+        // Leyenda
+        const clasificados = data.filter(v => v.Clasificado).length;
+        const total = data.length;
+        leyenda.innerHTML = `
+            <span>🟢 Clasificados: <b style="color:var(--grass)">${clasificados}</b></span>
+            <span>⚪ Pendientes: <b style="color:#666">${total - clasificados}</b></span>
+            ${enFinal ? `<span>🏆 Compiten por premios los top 4 clasificados en % de Julio</span>` : ''}
+        `;
 
-    const maxLitros = Math.max(...datos.map(d => d.litrosIncrementales), 1);
+        // Determinar métrica de la pista
+        // En grupos: avance del mes actual vs meta
+        // En final: % de Julio
+        const getMetrica = v => {
+            if (enFinal)   return v.PctJulio;
+            if (mes === 6) return v.PctJunio;
+            return v.PctMayo;
+        };
+        const maxMetrica = Math.max(...data.map(getMetrica), 120);
 
-    // Pista
-    lanes.innerHTML = '';
-    datos.forEach(d => {
-        const pct = Math.min(100, (d.litrosIncrementales / Math.max(d.litrosIncrementales + (500 - d.litrosIncrementales % 500), 500)) * 100);
-        const pctBarra = d.pctBarra || 0;
-        lanes.innerHTML += `
-            <div style="height:34px; position:relative; display:flex; align-items:center; border-bottom:1px solid rgba(255,255,255,0.04);">
-                <span style="width:120px; font-size:0.52rem; color:rgba(255,255,255,0.85); padding-left:10px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:600; z-index:6; text-shadow:0 1px 3px rgba(0,0,0,0.8);">${d.Nombre}</span>
-                <div style="position:absolute; left:120px; right:40px; height:10px; background:rgba(0,0,0,0.3); border-radius:5px; overflow:hidden;">
-                    <div style="height:100%; width:${pctBarra}%; background:linear-gradient(90deg,var(--purple),#c084fc); border-radius:5px; transition:width 1s;"></div>
-                </div>
-                <span style="position:absolute; right:44px; font-size:0.5rem; color:rgba(255,255,255,0.4);">${d.litrosIncrementales}L</span>
+        // Ranking para fase final
+        const rankingFinal = enFinal
+            ? [...data].filter(v => v.Clasificado).sort((a,b) => b.PctJulio - a.PctJulio)
+            : [];
+
+        // Ordenar: clasificados primero, luego por % descendente
+        const sorted = [...data].sort((a, b) => {
+            if (b.Clasificado !== a.Clasificado) return b.Clasificado - a.Clasificado;
+            return getMetrica(b) - getMetrica(a);
+        });
+
+        pista.innerHTML = `
+            <div style="position:relative; border-radius:10px; overflow:hidden;">
+                ${sorted.map((v, idx) => {
+                    const pct  = getMetrica(v);
+                    const pos  = Math.min(100, (pct / Math.max(maxMetrica, 120)) * 100);
+                    const esClasif = v.Clasificado;
+                    const esPrimero = enFinal && rankingFinal[0]?.Nombre === v.Nombre;
+
+                    // Premio proyectado en final
+                    const posRank = rankingFinal.findIndex(r => r.Nombre === v.Nombre) + 1;
+                    const premios = ['','📺','🎽','❄️','⚽'];
+                    const premioIcon = enFinal && esClasif && posRank <= 4 ? premios[posRank] : '';
+
+                    // Badge ticket
+                    let ticketHTML = '';
+                    if (esClasif && v.ClasifMayo && v.ClasifJunio)
+                        ticketHTML = `<span style="font-size:0.45rem; background:rgba(0,255,136,0.2); color:var(--grass); border-radius:8px; padding:1px 4px; margin-left:2px;">✅M+J</span>`;
+                    else if (esClasif && v.ClasifMayo)
+                        ticketHTML = `<span style="font-size:0.45rem; background:rgba(0,255,136,0.15); color:var(--grass); border-radius:8px; padding:1px 4px; margin-left:2px;">✅MAY</span>`;
+                    else if (esClasif && v.ClasifJunio)
+                        ticketHTML = `<span style="font-size:0.45rem; background:rgba(0,255,136,0.15); color:var(--grass); border-radius:8px; padding:1px 4px; margin-left:2px;">✅JUN</span>`;
+
+                    return `
+                    <div class="torneo-lane ${esClasif ? 'clasificado' : 'no-clasif'}">
+                        <span class="torneo-vname">${v.Nombre.split(' ')[0]} ${v.Nombre.split(' ')[1]||''}</span>
+                        <span class="torneo-ticket">${ticketHTML}${premioIcon}</span>
+                        <div class="torneo-meta-line" style="left:83.3%; border-left:1px dashed rgba(255,215,0,0.4);"></div>
+                        <div class="torneo-porteria">🥅</div>
+                        <div class="torneo-ball ${esClasif ? 'clasificado' : ''} ${esPrimero ? 'lider' : ''}"
+                            style="left:calc(${pos}% - 28px);">
+                        </div>
+                        <span class="torneo-pct" style="color:${esClasif?'var(--grass)':'#444'}">${pct.toFixed(0)}%</span>
+                    </div>`;
+                }).join('')}
             </div>`;
-    });
 
-    // Tabla
-    tbody.innerHTML = '';
-    datos.forEach(d => {
-        const incColor = d.litrosIncrementales >= 500 ? 'var(--grass)' : d.litrosIncrementales > 0 ? 'var(--gold)' : '#555';
-        const intlColor = parseFloat(d.pctIntl) >= 30 ? 'var(--grass)' : '#888';
-        tbody.innerHTML += `
-            <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
-                <td style="padding:8px; font-weight:600;">${d.Nombre}</td>
-                <td style="padding:8px; text-align:right; color:#555;">${d.basePromedio}L</td>
-                <td style="padding:8px; text-align:right; color:var(--blue);">${d.litrosTotal}L</td>
-                <td style="padding:8px; text-align:right; color:${incColor}; font-weight:700;">${d.litrosIncrementales}L</td>
-                <td style="padding:8px; text-align:right; color:${intlColor};">${d.pctIntl}%</td>
-                <td style="padding:8px; text-align:right; color:var(--purple); font-weight:700;">${d.bloques}</td>
-                <td style="padding:8px; text-align:right; color:var(--gold); font-weight:700;">${d.premioTotal > 0 ? '$'+d.premioTotal.toLocaleString('es-MX') : '—'}</td>
-            </tr>`;
-    });
-    if (!datos.length) tbody.innerHTML = '<tr><td colspan="7" style="color:#555; text-align:center; padding:10px;">Sin datos</td></tr>';
+    } catch(err) {
+        pista.innerHTML = `<div class="error-msg">❌ ${err.message}</div>`;
+    }
 }
-
 
 function loadBBD() {
     const el = document.getElementById('bbd-list');
@@ -922,32 +1024,22 @@ function loadBBD() {
         download: true, header: true,
         complete: r => {
             const refacciones = r.data.filter(row =>
-                (row['Departamento']||'').toLowerCase().includes('refacciones') &&
-                (row['Razón Social'] || row['Razon Social'] || row['Grupo Empresarial'])
+                (row['Departamento']||'').toLowerCase().includes('refacciones') && row['Cliente']
             ).reverse().slice(0, 30);
 
             document.getElementById('bbd-count').textContent = `${refacciones.length} registros`;
             el.innerHTML = '';
             refacciones.forEach(p => {
-                const empresa  = p['Razón Social'] || p['Razon Social'] || '—';
-                const grupo    = p['Grupo Empresarial'] || '';
-                const ciudad   = p['Ciudad'] || '—';
-                const estado   = p['Estado'] || '';
-                const industria= p['Industria / Sector'] || p['Industria/Sector'] || '—';
-                const tipo     = p['Tipo de cliente'] || '—';
-                const flota    = p['Tamaño de flota (H...'] || p['Tamaño de flota'] || '—';
-                const fecha    = (p['Marca temporal']||'').split(' ')[0];
-
                 el.innerHTML += `
                     <div class="prospecto-item">
-                        <div class="prospecto-name">⚽ ${empresa}</div>
-                        <div class="prospecto-meta" style="color:#888; margin-bottom:2px;">${grupo ? `🏢 ${grupo}` : ''}</div>
+                        <div class="prospecto-name">⚽ ${p['Cliente']||'—'}</div>
                         <div class="prospecto-meta">
-                            📍 ${ciudad}${estado ? ', '+estado : ''} &nbsp;|&nbsp;
-                            🏭 ${industria}
+                            👤 ${p['Nombre contacto']||p['Contacto']||'—'} &nbsp;|&nbsp;
+                            📞 ${p['Teléfono']||p['Telefono']||'—'}
                         </div>
-                        <div class="prospecto-meta">
-                            👤 ${tipo} &nbsp;|&nbsp; 🚛 Flota: ${flota} &nbsp;|&nbsp; 📅 ${fecha}
+                        <div class="prospecto-meta" style="color:#444;">
+                            Asesor: ${p['Asesor']||p['Vendedor']||'—'} &nbsp;|&nbsp;
+                            ${p['Fecha']||p['Timestamp']||''}
                         </div>
                     </div>`;
             });
@@ -955,77 +1047,6 @@ function loadBBD() {
         },
         error: () => { el.innerHTML = '<div class="error-msg">❌ Error cargando BBD</div>'; }
     });
-}
-
-// ── CARTERA CLIENTES ──────────────────────────────────────────────────────────
-async function loadClientes(vendedor) {
-    const el = document.getElementById('cli-list');
-    el.innerHTML = '<div class="loading">Cargando cartera...</div>';
-    try {
-        const nombre = encodeURIComponent(vendedor);
-        const clientes = await apiFetch(`/api/clientes?vendedor=${nombre}`);
-        dbC = clientes;
-        renderCartera();
-    } catch(err) {
-        el.innerHTML = `<div class="error-msg">❌ ${err.message}</div>`;
-    }
-}
-
-function renderCartera() {
-    const el   = document.getElementById('cli-list');
-    const col  = document.getElementById('f-color').value;
-    const q    = (document.getElementById('f-cli').value||'').toUpperCase();
-
-    let lista = dbC.filter(c => {
-        const d = parseInt(c.Dias)||0;
-        const colorOk = col==='TODOS' || (col==='VERDE'&&d<=14) || (col==='AMBAR'&&d>14&&d<=60) || (col==='ROJO'&&d>60);
-        const qOk = !q || (c.Cliente||'').toUpperCase().includes(q) || (c.NombreCompleto||'').toUpperCase().includes(q);
-        return colorOk && qOk;
-    });
-
-    // Stats
-    const stats = { verde:0, ambar:0, rojo:0 };
-    dbC.forEach(c => { const d=parseInt(c.Dias)||0; if(d<=14)stats.verde++; else if(d<=60)stats.ambar++; else stats.rojo++; });
-    document.getElementById('cartera-stats').innerHTML =
-        `<span style="color:#0f0">● ${stats.verde} activos</span> &nbsp;
-         <span style="color:#ff0">● ${stats.ambar} inactivos</span> &nbsp;
-         <span style="color:#f00">● ${stats.rojo} críticos</span>`;
-
-    el.innerHTML = '';
-    lista.slice(0, 150).forEach(c => {
-        const d    = parseInt(c.Dias)||0;
-        const col2 = d>60?'rojo':d>14?'ambar':'verde';
-        const nom  = c.Cliente || c.Codigo || '—';
-
-        // Armar dirección limpia
-        const partes = [];
-        if (c.Direccion) partes.push(c.Direccion);
-        if (c.Colonia && !(c.Direccion||'').toUpperCase().includes((c.Colonia||'').toUpperCase().split(' ')[0])) partes.push(c.Colonia);
-        if (c.CP)     partes.push(c.CP);
-        if (c.Pais)   partes.push(c.Pais);
-        const dirTexto  = partes.filter(Boolean).join(', ');
-        const dirEnc    = dirTexto ? encodeURIComponent(dirTexto) : '';
-
-        el.innerHTML += `
-            <div class="mapa-item ${col2}" style="background:rgba(255,255,255,0.03); border-radius:10px; padding:12px; margin-bottom:8px; border-left:3px solid ${col2==='verde'?'#0f0':col2==='ambar'?'#ff0':'#f00'};">
-                <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-                    <div style="flex:1; min-width:0;">
-                        <b style="font-size:0.82rem;">${nom}</b>
-                        ${c.NombreCompleto && c.NombreCompleto !== nom ? `<br><small style="color:#888;">${c.NombreCompleto}</small>` : ''}
-                        <br><small style="color:#555;">${dirTexto || 'Sin dirección'}</small>
-                    </div>
-                    <div style="text-align:right; white-space:nowrap; margin-left:10px;">
-                        <b style="color:var(--grass); font-size:0.8rem;">${fM(c.Venta_Mes)}</b>
-                        <br><small style="color:#666;">${d} días</small>
-                    </div>
-                </div>
-                ${dirEnc ? `
-                <div style="display:flex; gap:6px; margin-top:8px;">
-                    <button onclick="window.open('https://www.google.com/maps/search/?api=1&query=${dirEnc}','_blank')" style="flex:1; padding:7px; border-radius:6px; border:none; background:#4285f4; color:#fff; font-size:0.65rem; font-weight:bold; cursor:pointer;">📍 Maps</button>
-                </div>` : ''}
-            </div>`;
-    });
-    if (!lista.length) el.innerHTML = '<div class="loading">Sin clientes</div>';
 }
 </script>
 </body>
