@@ -77,6 +77,16 @@ function buscarMeta(nombreSql) {
   return { meta: 0, canal: 'CALLE', sucursal: '' };
 }
 
+// Busca cartera con match flexible (igual que buscarMeta)
+function buscarCartera(vendedor) {
+  const key = nombreKey(vendedor);
+  if (carteraMap[key]) return carteraMap[key];
+  for (const [k, v] of Object.entries(carteraMap)) {
+    if (key.includes(k.split(' ')[0]) || k.includes(key.split(' ')[0])) return v;
+  }
+  return [];
+}
+
 const SUCURSALES    = `'ANA','GOMEZ PALACIO','MONCLOVA','PIEDRAS NEGRAS','TORREON'`;
 const TIPOS_EXCL    = `'PRESUPUESTO','PRESUPUESTO 8%','Traspaso salida almacen'`;
 
@@ -200,11 +210,15 @@ app.get('/api/clientes', async (req, res) => {
         ORDER BY Dias ASC
       `);
 
-    // Armar dirección completa legible
+    // Armar dirección + marcar si es de cartera
+    const cartera    = buscarCartera(vendedor);
+    const carteraSet = new Set(cartera.map(c => c.toUpperCase().trim()));
+
     const datos = result.recordset.map(r => ({
       ...r,
       Direccion: [r.Direccion, r.Colonia, r.Ciudad, r.Estado, r.CP]
-        .filter(Boolean).join(', ')
+        .filter(Boolean).join(', '),
+      EsCartera: carteraSet.has((r.Codigo || '').toUpperCase().trim())
     }));
 
     res.json(datos);
@@ -415,6 +429,48 @@ app.get('/api/ventas-diarias', async (req, res) => {
     res.json(dias);
   } catch (err) {
     console.error('Error /api/ventas-diarias:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── CORES (Devoluciones pendientes — restan a ventas del vendedor) ────────────
+app.get('/api/cores', async (req, res) => {
+  try {
+    const db       = await getPool();
+    const vendedor = decodeURIComponent(req.query.vendedor || '');
+    const hoy      = new Date();
+    const ini      = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-01`;
+    const fin      = hoy.toISOString().split('T')[0];
+
+    const result = await db.request()
+      .input('ini',  sql.Date, ini)
+      .input('fin',  sql.Date, fin)
+      .input('vend', sql.VarChar, `%${vendedor}%`)
+      .query(`
+        SELECT
+          s.REFERENCIA                          AS Referencia,
+          s.NUM_FACTURA                         AS NumFactura,
+          s.CLIENTE                             AS Codigo,
+          s.DES_ARTICULO                        AS Articulo,
+          s.DES_TIPO_VENTA                      AS TipoVenta,
+          CONVERT(varchar(10), s.FECHA, 23)     AS FechaFactura,
+          s.IMP_TOTAL_LINEA                     AS Monto,
+          s.CANTIDAD                            AS Cantidad,
+          DATEDIFF(day, s.FECHA, GETDATE())     AS DiasTranscurridos
+        FROM FTSABI_PR s
+        WHERE s.DES_TIPO_VENTA IN (
+            'CANCELACION VENTA REMISIONES CORES',
+            'CANCELACION VENTA REMISIONES CORES 8%'
+          )
+          AND s.FECHA >= @ini AND s.FECHA <= @fin
+          AND s.NOM_ALMACEN_LIN IN (${SUCURSALES})
+          AND s.NOM_VENDEDOR LIKE @vend
+        ORDER BY s.FECHA DESC
+      `);
+
+    res.json(result.recordset);
+  } catch (err) {
+    console.error('Error /api/cores:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
