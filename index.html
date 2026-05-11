@@ -99,28 +99,7 @@
         ::-webkit-scrollbar { width: 5px; }
         ::-webkit-scrollbar-thumb { background: var(--grass); border-radius: 10px; }
 
-        /* MUNDIAL PREMIOS */
-        .wc-fase-badge { display:inline-block; padding:3px 12px; border-radius:20px; font-size:0.6rem; font-weight:900; letter-spacing:2px; text-transform:uppercase; }
-        .wc-clasificado { background:rgba(0,255,136,0.15); color:var(--grass); border:1px solid var(--grass); }
-        .wc-pendiente   { background:rgba(255,215,0,0.1);  color:var(--gold);  border:1px solid var(--gold); }
-        .wc-fuera       { background:rgba(255,75,43,0.1);  color:var(--red);   border:1px solid var(--red); }
-        .premio-card { border-radius:14px; overflow:hidden; position:relative; transition:all 0.3s; }
-        .premio-card .lugar { position:absolute; top:6px; left:6px; font-size:0.55rem; font-weight:900; padding:2px 8px; border-radius:20px; z-index:1; }
-        .premio-card img { width:100%; aspect-ratio:1/1; object-fit:contain; background:#111; display:block; }
-        .premio-card .nombre { font-size:0.6rem; text-align:center; padding:5px 4px; font-weight:bold; }
-        /* CARTERA BADGES */
-        .cartera-badge { display:inline-block; font-size:0.5rem; font-weight:900; padding:1px 6px; border-radius:10px; margin-left:6px; vertical-align:middle; }
-        .cartera-si  { background:rgba(0,212,255,0.15); color:var(--blue); border:1px solid rgba(0,212,255,0.3); }
-        .cartera-no  { background:rgba(255,255,255,0.06); color:#666; border:1px solid #333; }
-        .filtros-mapa { display:flex; gap:6px; margin-bottom:8px; flex-wrap:wrap; }
-        .btn-filtro-c { padding:6px 10px; border-radius:8px; border:1px solid #333; background:#000; color:#888; font-size:0.6rem; font-weight:bold; cursor:pointer; white-space:nowrap; }
-        .btn-filtro-c.activo { color:#000; border-color:transparent; }
-        .btn-filtro-c.f-todos.activo    { background:#fff; color:#000; }
-        .btn-filtro-c.f-cartera.activo  { background:var(--blue); color:#000; }
-        .btn-filtro-c.f-nocartera.activo{ background:#666; color:#fff; }
-        .btn-filtro-c.f-verde.activo    { background:#0f0; }
-        .btn-filtro-c.f-ambar.activo    { background:#ff0; }
-        .btn-filtro-c.f-rojo.activo     { background:#f00; color:#fff; }
+        /* PREMIOS ETAPA */
         .btn-filtro { flex:1; padding:8px; border-radius:8px; border:1px solid #333; background:#000; color:#888; font-size:0.65rem; font-weight:bold; cursor:pointer; }
         .btn-filtro.activo { background:var(--grass); color:#000; border-color:var(--grass); }
 
@@ -138,6 +117,12 @@
         /* LOADING */
         .loading { text-align: center; color: #555; font-size: 0.75rem; padding: 20px; }
         .error-msg { color: var(--red); font-size: 0.75rem; text-align: center; padding: 10px; }
+
+        /* WORLD CUP BADGES */
+        .wc-fase-badge { display:inline-block; padding:3px 12px; border-radius:20px; font-size:0.6rem; font-weight:900; letter-spacing:2px; text-transform:uppercase; }
+        .wc-clasificado { background:rgba(0,255,136,0.15); color:var(--grass); border:1px solid var(--grass); }
+        .wc-pendiente   { background:rgba(255,215,0,0.1);  color:var(--gold);  border:1px solid var(--gold); }
+        .wc-fuera       { background:rgba(255,75,43,0.1);  color:var(--red);   border:1px solid var(--red); }
 
         /* CORES */
         .cores-table { width:100%; border-collapse:collapse; font-size:0.72rem; }
@@ -237,25 +222,25 @@
             <div style="border-top:1px solid rgba(255,255,255,0.1); padding-top:14px;">
                 <div style="font-size:0.55rem; color:var(--blue); text-transform:uppercase; font-weight:bold; letter-spacing:2px; margin-bottom:10px; text-align:center;">🎁 PREMIOS FINALES + COMBO BOTANAS 🍿</div>
                 <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:8px;">
-                    <div class="premio-card" style="background:rgba(255,215,0,0.08); border:1px solid var(--gold);">
-                        <div class="lugar" style="background:var(--gold); color:#000;">🥇 1°</div>
-                        <img src="https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/PREMIO%20SMART%20TV.png" alt="Smart TV">
-                        <div class="nombre" style="color:var(--gold);">Smart TV 📺</div>
+                    <div style="border-radius:14px; overflow:hidden; position:relative; background:rgba(255,215,0,0.08); border:1px solid var(--gold);">
+                        <div style="position:absolute; top:6px; left:6px; background:var(--gold); color:#000; font-size:0.55rem; font-weight:900; padding:2px 8px; border-radius:20px; z-index:1;">🥇 1°</div>
+                        <img src="https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/PREMIO%20SMART%20TV.png" style="width:100%; aspect-ratio:1/1; object-fit:contain; background:#111; display:block;" alt="Smart TV">
+                        <div style="font-size:0.6rem; text-align:center; padding:5px 4px; font-weight:bold; color:var(--gold);">Smart TV 📺</div>
                     </div>
-                    <div class="premio-card" style="background:rgba(192,192,192,0.08); border:1px solid var(--silver);">
-                        <div class="lugar" style="background:var(--silver); color:#000;">🥈 2°</div>
-                        <img src="https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/PREMIO%20JERSEY.png" alt="Jersey">
-                        <div class="nombre" style="color:var(--silver);">Jersey 🎽</div>
+                    <div style="border-radius:14px; overflow:hidden; position:relative; background:rgba(192,192,192,0.08); border:1px solid var(--silver);">
+                        <div style="position:absolute; top:6px; left:6px; background:var(--silver); color:#000; font-size:0.55rem; font-weight:900; padding:2px 8px; border-radius:20px; z-index:1;">🥈 2°</div>
+                        <img src="https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/PREMIO%20JERSEY.png" style="width:100%; aspect-ratio:1/1; object-fit:contain; background:#111; display:block;" alt="Jersey">
+                        <div style="font-size:0.6rem; text-align:center; padding:5px 4px; font-weight:bold; color:var(--silver);">Jersey 🎽</div>
                     </div>
-                    <div class="premio-card" style="background:rgba(205,127,50,0.08); border:1px solid var(--bronze);">
-                        <div class="lugar" style="background:var(--bronze); color:#000;">🥉 3°</div>
-                        <img src="https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/PREMIO%20HIELERA.png" alt="Hielera">
-                        <div class="nombre" style="color:var(--bronze);">Hielera ❄️</div>
+                    <div style="border-radius:14px; overflow:hidden; position:relative; background:rgba(205,127,50,0.08); border:1px solid var(--bronze);">
+                        <div style="position:absolute; top:6px; left:6px; background:var(--bronze); color:#000; font-size:0.55rem; font-weight:900; padding:2px 8px; border-radius:20px; z-index:1;">🥉 3°</div>
+                        <img src="https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/PREMIO%20HIELERA.png" style="width:100%; aspect-ratio:1/1; object-fit:contain; background:#111; display:block;" alt="Hielera">
+                        <div style="font-size:0.6rem; text-align:center; padding:5px 4px; font-weight:bold; color:var(--bronze);">Hielera ❄️</div>
                     </div>
-                    <div class="premio-card" style="background:rgba(255,255,255,0.04); border:1px solid #444;">
-                        <div class="lugar" style="background:#555; color:#fff;">4°</div>
-                        <img src="https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/PREMIO%20BALON.png" alt="Balón">
-                        <div class="nombre" style="color:#aaa;">Balón ⚽</div>
+                    <div style="border-radius:14px; overflow:hidden; position:relative; background:rgba(255,255,255,0.04); border:1px solid #444;">
+                        <div style="position:absolute; top:6px; left:6px; background:#555; color:#fff; font-size:0.55rem; font-weight:900; padding:2px 8px; border-radius:20px; z-index:1;">4°</div>
+                        <img src="https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/PREMIO%20BALON.png" style="width:100%; aspect-ratio:1/1; object-fit:contain; background:#111; display:block;" alt="Balón">
+                        <div style="font-size:0.6rem; text-align:center; padding:5px 4px; font-weight:bold; color:#aaa;">Balón ⚽</div>
                     </div>
                 </div>
                 <div style="text-align:center; margin-top:8px; font-size:0.55rem; color:#666;">Empates comparten el mismo premio</div>
@@ -331,16 +316,12 @@
 
         <div class="card">
             <h2>📍 CARTERA DE CLIENTES</h2>
-            <input type="text" id="mapa-buscar" placeholder="🔍 BUSCAR CLIENTE..." oninput="filtrarMapa()" style="margin-bottom:10px;">
-            <div class="filtros-mapa">
-                <button onclick="filtroMapa('todos')"     id="f-todos"     class="btn-filtro-c f-todos activo">TODOS</button>
-                <button onclick="filtroMapa('cartera')"   id="f-cartera"   class="btn-filtro-c f-cartera">⭐ CARTERA</button>
-                <button onclick="filtroMapa('nocartera')" id="f-nocartera" class="btn-filtro-c f-nocartera">VISITADOS</button>
-            </div>
-            <div class="filtros-mapa">
-                <button onclick="filtroMapa('verde')"  id="f-verde"  class="btn-filtro-c f-verde">🟢 ≤7 días</button>
-                <button onclick="filtroMapa('ambar')"  id="f-ambar"  class="btn-filtro-c f-ambar">🟡 8-21 días</button>
-                <button onclick="filtroMapa('rojo')"   id="f-rojo"   class="btn-filtro-c f-rojo">🔴 +21 días</button>
+            <input type="text" id="mapa-buscar" placeholder="🔍 BUSCAR CLIENTE..." oninput="filtrarMapa()" style="margin-bottom:8px;">
+            <div style="display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap;">
+                <button onclick="filtroMapa('todos')" id="f-todos" class="btn-filtro activo">TODOS</button>
+                <button onclick="filtroMapa('verde')" id="f-verde" class="btn-filtro" style="border-color:#0f0; color:#0f0;">🟢 ≤7 días</button>
+                <button onclick="filtroMapa('ambar')" id="f-ambar" class="btn-filtro" style="border-color:#ff0; color:#ff0;">🟡 8-21 días</button>
+                <button onclick="filtroMapa('rojo')"  id="f-rojo"  class="btn-filtro" style="border-color:#f00; color:#f00;">🔴 +21 días</button>
             </div>
             <div id="mapa-lista" style="flex:1; overflow-y:auto;"><div class="loading">Cargando cartera...</div></div>
         </div>
@@ -515,16 +496,12 @@
             const d   = parseInt(c.Dias) || 0;
             const col = colorSemaforo(d);
             const nom = c.Cliente || c.Codigo || '—';
-            const partes = [];
-            if (c.Direccion)  partes.push(c.Direccion);
-            if (c.Colonia && !c.Direccion.toUpperCase().includes((c.Colonia||'').toUpperCase().split(' ')[0])) partes.push(c.Colonia);
-            if (c.CP)         partes.push(c.CP);
-            if (c.Pais)       partes.push(c.Pais);
-            const dirTexto = partes.filter(Boolean).join(', ');
-            const dirEnc   = dirTexto ? encodeURIComponent(dirTexto) : '';
+            // Dirección sin CP duplicado — DIRECCION ya viene con ciudad/CP del server
+            const dir    = (c.Direccion || '').trim();
+            const dirEnc = dir ? encodeURIComponent(dir) : '';
             const badgeHTML = c.EsCartera
-                ? `<span class="cartera-badge cartera-si">⭐ CARTERA</span>`
-                : `<span class="cartera-badge cartera-no">VISITADO</span>`;
+                ? `<span style="display:inline-block;font-size:0.5rem;font-weight:900;padding:1px 6px;border-radius:10px;margin-left:6px;background:rgba(0,212,255,0.15);color:var(--blue);border:1px solid rgba(0,212,255,0.3);">⭐ CARTERA</span>`
+                : `<span style="display:inline-block;font-size:0.5rem;font-weight:900;padding:1px 6px;border-radius:10px;margin-left:6px;background:rgba(255,255,255,0.06);color:#666;border:1px solid #333;">VISITADO</span>`;
 
             ml.innerHTML += `
                 <div class="mapa-item ${col}">
@@ -532,7 +509,7 @@
                         <div style="flex:1; min-width:0;">
                             <b style="font-size:0.85rem;">${nom}</b>${badgeHTML}<br>
                             ${c.NombreCompleto && c.NombreCompleto !== nom ? `<small style="color:#888;">${c.NombreCompleto}</small><br>` : ''}
-                            <small style="color:#555;">${dirTexto || 'Sin dirección registrada'}</small>
+                            <small style="color:#555;">${dir || 'Sin dirección registrada'}</small>
                         </div>
                         <div style="text-align:right; white-space:nowrap; margin-left:8px;">
                             <b style="color:var(--grass); font-size:0.8rem;">${fM(c.Venta_Mes)}</b><br>
@@ -570,12 +547,12 @@
         const clasificado = localStorage.getItem(keyMayo) === '1' || localStorage.getItem(keyJunio) === '1';
         const badge = document.getElementById('wc-badge');
         const texto = document.getElementById('wc-estado-txt');
+        if (!badge || !texto) return;
 
         if (terminado) {
             badge.className = clasificado ? 'wc-fase-badge wc-clasificado' : 'wc-fase-badge wc-fuera';
-            badge.innerText = clasificado ? '🏆 CLASIFICADO A LA FINAL' : '❌ NO CLASIFICADO';
-            texto.innerHTML = clasificado ? `Revisa tu posición final con tu gerente. ¡Gracias por competir! 🎉` : `No alcanzaste el ORO en Mayo/Junio. ¡Nos vemos el próximo torneo!`;
-
+            badge.innerText = clasificado ? '🏆 CLASIFICADO' : '❌ NO CLASIFICADO';
+            texto.innerHTML = clasificado ? `Revisa tu posición con tu gerente. ¡Gracias por competir! 🎉` : `No alcanzaste el ORO en Mayo/Junio.`;
         } else if (enFinal) {
             if (!clasificado) {
                 badge.className = 'wc-fase-badge wc-fuera';
@@ -589,25 +566,21 @@
                 const premios  = ['', '📺 Smart TV', '🎽 Jersey', '❄️ Hielera', '⚽ Balón'];
                 const miPremio = posicion <= 4 ? premios[posicion] : '—';
                 badge.className = 'wc-fase-badge wc-clasificado';
-                badge.innerText = `🏆 EN LA FINAL — POSICIÓN #${posicion}`;
+                badge.innerText = `🏆 EN LA FINAL — #${posicion}`;
                 texto.innerHTML = `Tu % en Julio: <b style="color:var(--gold)">${pct.toFixed(1)}%</b> &nbsp;|&nbsp; Premio proyectado: <b style="color:var(--grass)">${miPremio} + 🍿</b><br>
                     <small style="color:#666;">Quedan ${17 - dia} días de competencia.</small>`;
             }
-
         } else if (enGrupos) {
             if (clasificado) {
                 badge.className = 'wc-fase-badge wc-clasificado';
                 badge.innerText = '✅ ¡CLASIFICADO!';
                 texto.innerHTML = `Ya tienes tu lugar en la Final (Jul 1–17). ¡Sigue fuerte! 💪`;
             } else {
-                badge.className = 'wc-fase-badge wc-pendiente';
-                badge.innerText = pct >= 120 ? '✅ ¡RECIÉN CLASIFICADO! 🎉' : '⏳ EN FASE DE GRUPOS';
                 const falta = ((parseFloat(user.Meta) || 0) * 1.20) - (parseFloat(user.Ventas) || 0);
-                texto.innerHTML = pct >= 120
-                    ? `¡Llegaste al ORO! Ya estás en la Final de Julio. 🎉`
-                    : `Necesitas llegar al <b style="color:var(--gold)">ORO (120%)</b> en Mayo o Junio.<br>
-                       <small style="color:#aaa;">Te faltan <b style="color:var(--red)">${fM(Math.max(0, falta))}</b> para el ORO este mes.</small>`;
-                if (pct >= 120) { if (mes === 5) localStorage.setItem(keyMayo,'1'); if (mes === 6) localStorage.setItem(keyJunio,'1'); confetti({ particleCount: 200, spread: 80, origin: { y: 0.6 } }); }
+                badge.className = 'wc-fase-badge wc-pendiente';
+                badge.innerText = '⏳ EN FASE DE GRUPOS';
+                texto.innerHTML = `Necesitas el <b style="color:var(--gold)">ORO (120%)</b> en Mayo o Junio para clasificar.<br>
+                    <small style="color:#aaa;">Te faltan <b style="color:var(--red)">${fM(Math.max(0, falta))}</b> este mes.</small>`;
             }
         } else {
             badge.className = 'wc-fase-badge wc-pendiente';
@@ -622,7 +595,7 @@
 
     function filtroMapa(tipo) {
         filtroActual = tipo;
-        document.querySelectorAll('.btn-filtro-c').forEach(b => b.classList.remove('activo'));
+        document.querySelectorAll('.btn-filtro').forEach(b => b.classList.remove('activo'));
         const btn = document.getElementById('f-' + tipo);
         if (btn) btn.classList.add('activo');
         filtrarMapa();
@@ -641,11 +614,9 @@
     function filtrarMapa() {
         const q = (document.getElementById('mapa-buscar').value || '').toUpperCase();
         let lista = todosClientes;
-        if (filtroActual === 'cartera')   lista = lista.filter(c => c.EsCartera);
-        if (filtroActual === 'nocartera') lista = lista.filter(c => !c.EsCartera);
-        if (filtroActual === 'verde')     lista = lista.filter(c => colorSemaforo(parseInt(c.Dias)||0) === 'verde');
-        if (filtroActual === 'ambar')     lista = lista.filter(c => colorSemaforo(parseInt(c.Dias)||0) === 'ambar');
-        if (filtroActual === 'rojo')      lista = lista.filter(c => colorSemaforo(parseInt(c.Dias)||0) === 'rojo');
+        if (filtroActual === 'verde') lista = lista.filter(c => colorSemaforo(parseInt(c.Dias)||0) === 'verde');
+        if (filtroActual === 'ambar') lista = lista.filter(c => colorSemaforo(parseInt(c.Dias)||0) === 'ambar');
+        if (filtroActual === 'rojo')  lista = lista.filter(c => colorSemaforo(parseInt(c.Dias)||0) === 'rojo');
         if (q) lista = lista.filter(c => (c.Cliente||'').toUpperCase().includes(q) || (c.NombreCompleto||'').toUpperCase().includes(q));
         renderMapa(lista);
     }
