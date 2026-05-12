@@ -87,8 +87,16 @@ function buscarCartera(vendedor) {
   return [];
 }
 
+const SUCURSAL_NORM = {
+  'TR': 'TORREON', 'TORREÓN': 'TORREON',
+  'GP': 'GOMEZ PALACIO', 'GÓMEZ PALACIO': 'GOMEZ PALACIO',
+  'MONC': 'MONCLOVA', 'PN': 'PIEDRAS NEGRAS',
+};
+function normSuc(s) { const k = (s||'').toUpperCase().trim(); return SUCURSAL_NORM[k] || k; }
+
 const SUCURSALES    = `'ANA','GOMEZ PALACIO','MONCLOVA','PIEDRAS NEGRAS','TORREON'`;
 const TIPOS_EXCL    = `'PRESUPUESTO','PRESUPUESTO 8%','Traspaso salida almacen'`;
+const TIPO_EXCL_SQL = `(s.DES_TIPO_VENTA NOT IN (${TIPOS_EXCL}) AND s.DES_TIPO_VENTA IS NOT NULL AND LTRIM(RTRIM(s.DES_TIPO_VENTA)) <> '')`;
 
 // ── HEALTH CHECK ──────────────────────────────────────────────────────────────
 app.get('/', (req, res) => res.json({ status: 'ok', servidor: 'Catosa API' }));
@@ -119,7 +127,7 @@ app.get('/api/ventas-totales', async (req, res) => {
           SUM(s.IMP_TOTAL_LINEA)       AS Ventas
         FROM FTSABI_PR s
         WHERE s.FECHA >= @ini AND s.FECHA <= @fin
-          AND s.DES_TIPO_VENTA NOT IN (${TIPOS_EXCL})
+          AND ${TIPO_EXCL_SQL}
           AND s.NOM_ALMACEN_LIN IN (${SUCURSALES})
         GROUP BY s.NOM_ALMACEN_LIN
         ORDER BY Ventas DESC
@@ -151,7 +159,7 @@ app.get('/api/ventas', async (req, res) => {
           SUM(s.IMP_TOTAL_LINEA)     AS Ventas
         FROM FTSABI_PR s
         WHERE s.FECHA >= @ini AND s.FECHA <= @fin
-          AND s.DES_TIPO_VENTA NOT IN (${TIPOS_EXCL})
+          AND ${TIPO_EXCL_SQL}
           AND s.NOM_ALMACEN_LIN IN (${SUCURSALES})
           AND s.NOM_VENDEDOR IS NOT NULL AND s.NOM_VENDEDOR <> ''
         GROUP BY s.NOM_VENDEDOR, s.NOM_ALMACEN_LIN
@@ -161,7 +169,7 @@ app.get('/api/ventas', async (req, res) => {
     const datos = result.recordset.map(row => {
       const m = buscarMeta(row.Nombre);
       return {
-        Nombre: row.Nombre, Sucursal: m.sucursal || row.Sucursal_SQL,
+        Nombre: row.Nombre, Sucursal: normSuc(m.sucursal || row.Sucursal_SQL),
         Canal: m.canal, Ventas: row.Ventas, Meta: m.meta,
         Venta_Prov: 0, Meta_Prov: 50000,
       };
@@ -201,7 +209,7 @@ app.get('/api/clientes', async (req, res) => {
           COALESCE(c.PAIS, '')                                               AS Pais
         FROM FTSABI_PR s
         LEFT JOIN FMCUBI_PR c ON c.CUENTA = s.CLIENTE
-        WHERE s.DES_TIPO_VENTA NOT IN (${TIPOS_EXCL})
+        WHERE ${TIPO_EXCL_SQL}
           AND s.NOM_ALMACEN_LIN IN (${SUCURSALES})
           AND s.NOM_VENDEDOR LIKE @vend
         GROUP BY s.CLIENTE, c.NOMBRE_COMERCIAL, c.NOMBRE,
@@ -286,7 +294,7 @@ app.get('/api/top-productos', async (req, res) => {
           GROUP BY ARTICULO
         ) inv ON inv.ARTICULO = s.ARTICULO
         WHERE s.FECHA >= @ini
-          AND s.DES_TIPO_VENTA NOT IN (${TIPOS_EXCL})
+          AND ${TIPO_EXCL_SQL}
           AND s.NOM_ALMACEN_LIN IN (${SUCURSALES})
           AND s.NOM_VENDEDOR LIKE @vend
         GROUP BY s.ARTICULO, s.DES_ARTICULO, inv.Existencia
@@ -355,7 +363,7 @@ app.get('/api/aceite', async (req, res) => {
           AND s.ARTICULO IN (${npsLista})
           AND s.NOM_ALMACEN_LIN IN (${SUCURSALES})
           AND s.NOM_VENDEDOR = @vend
-          AND s.DES_TIPO_VENTA NOT IN (${TIPOS_EXCL})
+          AND ${TIPO_EXCL_SQL}
         GROUP BY s.ARTICULO
       `);
 
@@ -416,7 +424,7 @@ app.get('/api/ventas-diarias', async (req, res) => {
           SUM(s.IMP_TOTAL_LINEA)     AS Venta
         FROM FTSABI_PR s
         WHERE s.FECHA >= @ini AND s.FECHA <= @fin
-          AND s.DES_TIPO_VENTA NOT IN (${TIPOS_EXCL})
+          AND ${TIPO_EXCL_SQL}
           AND s.NOM_ALMACEN_LIN IN (${SUCURSALES})
           AND s.NOM_VENDEDOR = @vend
         GROUP BY DAY(s.FECHA)
@@ -487,7 +495,7 @@ app.get('/api/torneo', async (req, res) => {
       SELECT NOM_VENDEDOR, SUM(IMP_TOTAL_LINEA) AS VentaMayo
       FROM FTSABI_PR
       WHERE FECHA >= '${anio}-05-18' AND FECHA <= '${anio}-05-31'
-        AND DES_TIPO_VENTA NOT IN (${TIPOS_EXCL})
+        AND DES_TIPO_VENTA NOT IN (${TIPOS_EXCL}) AND DES_TIPO_VENTA IS NOT NULL AND LTRIM(RTRIM(DES_TIPO_VENTA)) <> ''
         AND NOM_ALMACEN_LIN IN (${SUCURSALES})
       GROUP BY NOM_VENDEDOR
     `);
@@ -499,7 +507,7 @@ app.get('/api/torneo', async (req, res) => {
       SELECT NOM_VENDEDOR, SUM(IMP_TOTAL_LINEA) AS VentaJunio
       FROM FTSABI_PR
       WHERE FECHA >= '${anio}-06-01' AND FECHA <= '${anio}-06-30'
-        AND DES_TIPO_VENTA NOT IN (${TIPOS_EXCL})
+        AND DES_TIPO_VENTA NOT IN (${TIPOS_EXCL}) AND DES_TIPO_VENTA IS NOT NULL AND LTRIM(RTRIM(DES_TIPO_VENTA)) <> ''
         AND NOM_ALMACEN_LIN IN (${SUCURSALES})
       GROUP BY NOM_VENDEDOR
     `);
@@ -511,7 +519,7 @@ app.get('/api/torneo', async (req, res) => {
       SELECT NOM_VENDEDOR, SUM(IMP_TOTAL_LINEA) AS VentaJulio
       FROM FTSABI_PR
       WHERE FECHA >= '${anio}-07-01' AND FECHA <= '${anio}-07-17'
-        AND DES_TIPO_VENTA NOT IN (${TIPOS_EXCL})
+        AND DES_TIPO_VENTA NOT IN (${TIPOS_EXCL}) AND DES_TIPO_VENTA IS NOT NULL AND LTRIM(RTRIM(DES_TIPO_VENTA)) <> ''
         AND NOM_ALMACEN_LIN IN (${SUCURSALES})
       GROUP BY NOM_VENDEDOR
     `);
