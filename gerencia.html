@@ -641,15 +641,15 @@ function getFilteredMetas() {
 
 // ── RENDER PRINCIPAL ──────────────────────────────────────────────────────────
 async function renderAll() {
-    const lista      = getFiltered();       // todos — KPIs, ranking, chart
-    const listaMetas = getFilteredMetas();  // solo con meta — canchas, torneo, premios
+    const lista      = getFiltered();       // todos — KPIs y tiempo
+    const listaMetas = getFilteredMetas();  // solo con meta — canchas, torneo, premios, ranking, gráfica
 
     renderTime(lista);
     renderKPIs(lista);
     renderPista(listaMetas);
     renderPremios(listaMetas);
-    renderRanking(lista);
-    renderChart(lista);
+    renderRanking(listaMetas);
+    renderChart(listaMetas);
 
     const fv = document.getElementById('f-vend').value;
     if (fv !== 'TODOS') {
