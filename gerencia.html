@@ -1038,26 +1038,33 @@ function loadBBD() {
         download: true, header: true,
         complete: r => {
             const refacciones = r.data.filter(row =>
-                (row['Departamento']||'').toLowerCase().includes('refacciones') && row['Cliente']
+                (row['Departamento']||'').toLowerCase().includes('refacciones') && row['Razón Social']
             ).reverse().slice(0, 30);
 
             document.getElementById('bbd-count').textContent = `${refacciones.length} registros`;
             el.innerHTML = '';
             refacciones.forEach(p => {
+                const fecha  = (p['Marca temporal']||'').split(' ')[0] || '—';
+                const ciudad = [p['Ciudad']||'', p['Estado']||''].filter(Boolean).join(', ');
                 el.innerHTML += `
                     <div class="prospecto-item">
-                        <div class="prospecto-name">⚽ ${p['Cliente']||'—'}</div>
+                        <div class="prospecto-name">⚽ ${p['Razón Social']||'—'}</div>
                         <div class="prospecto-meta">
-                            👤 ${p['Nombre contacto']||p['Contacto']||'—'} &nbsp;|&nbsp;
-                            📞 ${p['Teléfono']||p['Telefono']||'—'}
+                            🏢 ${p['Grupo Empresarial']||'—'} &nbsp;|&nbsp;
+                            📍 ${ciudad||'—'}
                         </div>
                         <div class="prospecto-meta" style="color:#444;">
-                            Asesor: ${p['Asesor']||p['Vendedor']||'—'} &nbsp;|&nbsp;
-                            ${p['Fecha']||p['Timestamp']||''}
+                            ${p['Industria / Sector']||'—'} &nbsp;|&nbsp;
+                            ${p['Tipo de cliente']||'—'} &nbsp;|&nbsp;
+                            📅 ${fecha}
                         </div>
                     </div>`;
             });
             if (!refacciones.length) el.innerHTML = '<div class="loading">Sin prospectos registrados</div>';
+        },
+        error: () => { el.innerHTML = '<div class="error-msg">❌ Error cargando BBD</div>'; }
+    });
+}
         },
         error: () => { el.innerHTML = '<div class="error-msg">❌ Error cargando BBD</div>'; }
     });
