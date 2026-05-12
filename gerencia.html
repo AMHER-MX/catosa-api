@@ -1,5 +1,4 @@
-
-  <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -287,8 +286,43 @@
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-thumb { background: var(--grass); border-radius: 4px; }
 
-        .loading { color: #444; font-size: 0.7rem; text-align: center; padding: 20px; }
-        .error-msg { color: var(--red); font-size: 0.7rem; text-align: center; padding: 10px; }
+        /* CORES TABLE */
+        .cores-table { width:100%; border-collapse:collapse; font-size:0.7rem; }
+        .cores-table th { color:var(--gold); font-size:0.52rem; text-transform:uppercase; padding:6px 8px; border-bottom:1px solid var(--border); text-align:left; white-space:nowrap; }
+        .cores-table td { padding:6px 8px; border-bottom:1px solid var(--border); vertical-align:middle; }
+        .dias-badge { display:inline-block; padding:2px 7px; border-radius:20px; font-weight:900; font-size:0.65rem; white-space:nowrap; }
+        .dias-verde { background:rgba(0,255,136,0.12); color:var(--grass); }
+        .dias-ambar { background:rgba(255,215,0,0.12); color:var(--gold); }
+        .dias-rojo  { background:rgba(255,75,43,0.15); color:var(--red); }
+
+        /* ── RESPONSIVE MÓVIL ──────────────────────────────────────────── */
+        @media(max-width:600px) {
+            /* Pista — nombres más cortos */
+            .v-name { width:80px; font-size:0.48rem; }
+            .v-pct  { right:38px; font-size:0.45rem; }
+            .race-title { font-size:0.52rem; letter-spacing:1px; }
+            .race-header { flex-direction:column; align-items:flex-start; gap:4px; }
+            .race-legend { flex-wrap:wrap; gap:6px; }
+
+            /* Torneo — nombres más cortos */
+            .torneo-vname { width:85px; font-size:0.45rem; }
+            .torneo-ticket { left:88px; }
+            .torneo-pct { font-size:0.45rem; right:6px; }
+
+            /* CORES — ocultar columnas menos importantes en móvil */
+            .cores-hide-mobile { display:none; }
+            .cores-table td, .cores-table th { padding:5px 4px; font-size:0.62rem; }
+
+            /* KPIs */
+            .kpi-value { font-size:1.1rem; }
+
+            /* Premios tabla — scroll horizontal */
+            .premios-table-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+            .premios-table { min-width:480px; }
+
+            /* Time panel */
+            .time-value { font-size:1.1rem; }
+        }
 
         /* WORLD CUP BADGES */
         .wc-fase-badge { display:inline-block; padding:2px 10px; border-radius:20px; font-size:0.55rem; font-weight:900; letter-spacing:1px; text-transform:uppercase; }
@@ -449,12 +483,12 @@
             </div>
 
             <!-- Tabla estado por asesor -->
-            <div style="overflow-x:auto;">
+            <div class="premios-table-wrap">
                 <table class="premios-table">
                     <thead>
                         <tr>
                             <th>Asesor</th>
-                            <th>Sede</th>
+                            <th class="cores-hide-mobile">Sede</th>
                             <th>Avance</th>
                             <th>Nivel</th>
                             <th>Estado Torneo</th>
@@ -491,9 +525,9 @@
                 <thead><tr>
                     <th>Referencia</th>
                     <th>Asesor</th>
-                    <th>Cliente</th>
+                    <th class="cores-hide-mobile">Cliente</th>
                     <th>Artículo</th>
-                    <th>Fecha</th>
+                    <th class="cores-hide-mobile">Fecha</th>
                     <th>Monto</th>
                     <th>Días</th>
                 </tr></thead>
@@ -755,7 +789,7 @@ function renderPremios(lista) {
         tbody.innerHTML += `
             <tr>
                 <td style="font-weight:600;">${v.Nombre}</td>
-                <td style="color:#666; font-size:0.65rem;">${v.Sucursal||'—'}</td>
+                <td class="cores-hide-mobile" style="color:#666; font-size:0.65rem;">${v.Sucursal||'—'}</td>
                 <td style="color:${pct>=120?'var(--gold)':pct>=75?'var(--grass)':'var(--red)'}; font-weight:700;">${pct.toFixed(1)}%</td>
                 <td><span class="nivel-badge ${cls}">${nivel}</span></td>
                 <td>${estadoHTML}</td>
@@ -926,12 +960,12 @@ async function loadCores() {
             const clase = dias <= 7 ? 'dias-rojo' : dias <= 30 ? 'dias-ambar' : 'dias-verde';
             tbody.innerHTML += `
                 <tr>
-                    <td style="color:var(--blue);font-weight:bold;">${c.NumFactura||c.Referencia||'—'}</td>
-                    <td style="color:#aaa;">${c.Vendedor||'—'}</td>
-                    <td style="color:#ccc;">${c.Codigo||'—'}</td>
-                    <td style="color:#888; max-width:160px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${c.Articulo||'—'}</td>
-                    <td style="color:#888; white-space:nowrap;">${c.FechaFactura||'—'}</td>
-                    <td style="color:var(--red);font-weight:bold;">${fM(c.Monto)}</td>
+                    <td style="color:var(--blue);font-weight:bold;white-space:nowrap;">${c.NumFactura||c.Referencia||'—'}</td>
+                    <td style="color:#aaa;font-size:0.6rem;">${(c.Vendedor||'—').split(' ')[0]} ${(c.Vendedor||'').split(' ')[1]||''}</td>
+                    <td class="cores-hide-mobile" style="color:#ccc;">${c.Codigo||'—'}</td>
+                    <td style="color:#888;max-width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${c.Articulo||'—'}</td>
+                    <td class="cores-hide-mobile" style="color:#888;white-space:nowrap;">${c.FechaFactura||'—'}</td>
+                    <td style="color:var(--red);font-weight:bold;white-space:nowrap;">${fM(c.Monto)}</td>
                     <td><span class="dias-badge ${clase}">${dias}d</span></td>
                 </tr>`;
         });
