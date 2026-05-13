@@ -22,10 +22,17 @@ const dbConfig = {
 
 let pool;
 async function getPool() {
-  if (!pool) pool = await sql.connect(dbConfig);
-  return pool;
+  try {
+    if (!pool || !pool.connected) {
+      pool = null;
+      pool = await sql.connect(dbConfig);
+    }
+    return pool;
+  } catch (err) {
+    pool = null;
+    throw err;
+  }
 }
-
 // ── EXCEL DE METAS ────────────────────────────────────────────────────────────
 let metasMap = {}, carteraMap = {}, aceiteBaseMap = {};
 
