@@ -559,5 +559,46 @@ app.get('/api/torneo', async (req, res) => {
   }
 });
 
+
+// ── TABLEROS: Lista todas las tablas de la BD ─────────────────────────────────
+app.get('/api/tables', async (req, res) => {
+  try {
+    const db = await getPool();
+    const result = await db.request().query(`
+      SELECT TABLE_NAME
+      FROM INFORMATION_SCHEMA.TABLES
+      WHERE TABLE_TYPE = 'BASE TABLE'
+      ORDER BY TABLE_NAME
+    `);
+    const tables = result.recordset.map(r => r.TABLE_NAME);
+    res.json({ tables });
+  } catch (err) {
+    console.error('/api/tables error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── TABLEROS: Datos de una tabla específica ───────────────────────────────────
+app.get('/api/table/:name', async (req, res) => {
+  const tableName = req.params.name;
+  const limit = Math.min(parseInt(req.query.limit) || 200, 1000);
+  if (!/^[a-zA-Z0-9_\- ]+$/.test(tableName)) {
+    return res.status(400).json({ error: 'Nombre de tabla inválido' });
+  }
+  try {
+    const db = await getPool();
+    const colResult = await db.request().query(`
+      SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_NAME = '${tableName}' ORDER BY ORDINAL_POSITION
+    `);
+    const columns = colResult.recordset.map(r => r.COLUMN_NAME);
+    const dataResult = await db.request().query(`SELECT TOP ${limit} * FROM [${tableName}]`);
+    res.json({ columns, rows: dataResult.recordset, total: dataResult.recordset.length });
+  } catch (err) {
+    console.error(`/api/table/${tableName} error:`, err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, '0.0.0.0', () => console.log(`Catosa API en http://localhost:${PORT}`));
