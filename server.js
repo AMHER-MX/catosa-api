@@ -91,8 +91,8 @@ function buscarCartera(vendedor) {
 }
 
 const SUCURSAL_NORM = {
-  'TR': 'TORREON', 'TORREÃN': 'TORREON',
-  'GP': 'GOMEZ PALACIO', 'GÃMEZ PALACIO': 'GOMEZ PALACIO',
+  'TR': 'TORREON', 'TORREÃÂN': 'TORREON',
+  'GP': 'GOMEZ PALACIO', 'GÃÂMEZ PALACIO': 'GOMEZ PALACIO',
   'MONC': 'MONCLOVA', 'PN': 'PIEDRAS NEGRAS',
 };
 function normSuc(s) { const k = (s||'').toUpperCase().trim(); return SUCURSAL_NORM[k] || k; }
@@ -101,7 +101,7 @@ const SUCURSALES    = `'ANA','GOMEZ PALACIO','MONCLOVA','PIEDRAS NEGRAS','TORREO
 const TIPOS_EXCL    = `'PRESUPUESTO','PRESUPUESTO 8%','Traspaso salida almacen'`;
 const TIPO_EXCL_SQL = `(s.DES_TIPO_VENTA NOT IN (${TIPOS_EXCL}) AND s.DES_TIPO_VENTA IS NOT NULL AND LTRIM(RTRIM(s.DES_TIPO_VENTA)) <> '')`;
 
-// ââ HEALTH CHECK ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// Ã¢ÂÂÃ¢ÂÂ HEALTH CHECK Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
 app.get('/', (req, res) => res.json({ status: 'ok', servidor: 'Catosa API' }));
 
 app.get('/api/ping', async (req, res) => {
@@ -112,8 +112,8 @@ app.get('/api/ping', async (req, res) => {
   } catch (err) { res.status(500).json({ status: 'error', mensaje: err.message }); }
 });
 
-// ââ VENTAS + METAS ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
-// ââ VENTAS TOTALES REALES (todos los vendedores, para KPIs de suma) âââââââââââ
+// Ã¢ÂÂÃ¢ÂÂ VENTAS + METAS Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+// Ã¢ÂÂÃ¢ÂÂ VENTAS TOTALES REALES (todos los vendedores, para KPIs de suma) Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
 app.get('/api/ventas-totales', async (req, res) => {
   try {
     const db  = await getPool();
@@ -184,7 +184,7 @@ app.get('/api/ventas', async (req, res) => {
   }
 });
 
-// ââ CLIENTES DEL VENDEDOR (con nombre comercial y direcciÃ³n) ââââââââââââââââââ
+// Ã¢ÂÂÃ¢ÂÂ CLIENTES DEL VENDEDOR (con nombre comercial y direcciÃÂ³n) Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
 app.get('/api/clientes', async (req, res) => {
   try {
     const db      = await getPool();
@@ -221,7 +221,7 @@ app.get('/api/clientes', async (req, res) => {
         ORDER BY Dias ASC
       `);
 
-    // Armar direcciÃ³n + marcar si es de cartera
+    // Armar direcciÃÂ³n + marcar si es de cartera
     const cartera    = buscarCartera(vendedor);
     const carteraSet = new Set(cartera.map(c => c.toUpperCase().trim()));
 
@@ -239,7 +239,7 @@ app.get('/api/clientes', async (req, res) => {
   }
 });
 
-// ââ INVENTARIO / COTIZADOR ââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// Ã¢ÂÂÃ¢ÂÂ INVENTARIO / COTIZADOR Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
 app.get('/api/productos', async (req, res) => {
   try {
     const db  = await getPool();
@@ -272,7 +272,7 @@ app.get('/api/productos', async (req, res) => {
   }
 });
 
-// ââ TOP 10 PRODUCTOS DEL VENDEDOR âââââââââââââââââââââââââââââââââââââââââââââ
+// Ã¢ÂÂÃ¢ÂÂ TOP 10 PRODUCTOS DEL VENDEDOR Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
 app.get('/api/top-productos', async (req, res) => {
   try {
     const db      = await getPool();
@@ -311,23 +311,23 @@ app.get('/api/top-productos', async (req, res) => {
   }
 });
 
-// ââ CHALLENGE ACEITE MOTOR ââââââââââââââââââââââââââââââââââââââââââââââââââââ
-// NÃºmeros de parte participantes con prefijos 0/ y 1/ como aparecen en FTSABI_PR
+// Ã¢ÂÂÃ¢ÂÂ CHALLENGE ACEITE MOTOR Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+// NÃÂºmeros de parte participantes con prefijos 0/ y 1/ como aparecen en FTSABI_PR
 const ACEITE_NPS = {};
 const _NPS_BASE = {
-  // TerminaciÃ³n BK = 1 litro
+  // TerminaciÃÂ³n BK = 1 litro
   'FLRTASCI4PLUSBK':1,'INTLCI4PBLK':1,'FLRTCI4BK':1,'FLRT15W40CK4BK':1,'INTLCK4BK':1,
   'INT15W40CI4PBLK':1,'INT15W40CK4BLK':1,'FLRT3460BK':1,'FLRTCK4BK':1,
-  // TerminaciÃ³n DR = 208 litros
+  // TerminaciÃÂ³n DR = 208 litros
   'FLRTASCI4PLUSDR':208,'INTLCI4PDR':208,'FLRT15W40CI4DR':208,'FLRT15W40CK4DR':208,'INTLCK4DR':208,
   'INT15W40CI4PDR':208,'INT15W40CK4DR':208,'FLRT3460DR':208,'FLRTCK4DR':208,'INT71231328D':208,'FLRT25W50DR':208,
-  // TerminaciÃ³n PL = 19 litros
+  // TerminaciÃÂ³n PL = 19 litros
   'FLRTASCI4PLUSPL':19,'INTLCI4PPL':19,'FLRT15W40CI4PL':19,'FLRT15W40CK4PL':19,'INTLCK4PL':19,
   'INT15W40CI4PPL':19,'INT15W40CK4PL':19,'FLRT3460PL':19,'FLRTCK4PL':19,'INT71231319P':19,'FLRT25W50PL':19,
-  // TerminaciÃ³n TL = 1000 litros
+  // TerminaciÃÂ³n TL = 1000 litros
   'FLRTASCI4PLUSTL':1000,'INTLCI4PTL':1000,'FLRT15W40CI4TL':1000,'FLRT15W40CK4TL':1000,'INTLCK4TL':1000,
   'INT15W40CI4PTT':1000,'INT15W40CK4TT':1000,'FLRT3460TL':1000,'FLRTCK4TL':1000,
-  // TerminaciÃ³n GA = 4 litros
+  // TerminaciÃÂ³n GA = 4 litros
   'FLRT15W40CI4G':4,'FLRT3460GA':4,'INT71231305G':4,
 };
 // Agrega prefijos 0/ y 1/ a cada NP
@@ -336,7 +336,7 @@ for (const [np, lts] of Object.entries(_NPS_BASE)) {
   ACEITE_NPS['0/'+np]  = lts;
   ACEITE_NPS['1/'+np]  = lts;
 }
-// NÃºmeros de marca International (con prefijos)
+// NÃÂºmeros de marca International (con prefijos)
 const _INTL_BASE = ['INTLCI4PBLK','INTLCI4PDR','INTLCI4PPL','INTLCI4PTL',
   'INTLCK4BK','INTLCK4DR','INTLCK4PL','INTLCK4TL',
   'INT15W40CI4PBLK','INT15W40CI4PDR','INT15W40CI4PPL','INT15W40CI4PTT',
@@ -379,7 +379,7 @@ app.get('/api/aceite', async (req, res) => {
       if (NPS_INTL.has(row.ARTICULO)) litrosIntl += litros;
     });
 
-    // Base 2025 del vendedor â match exacto con nombres SQL
+    // Base 2025 del vendedor Ã¢ÂÂ match exacto con nombres SQL
     const vKey = nombreKey(vendedor);
     const basePromedio = aceiteBaseMap[vKey] || 0;
 
@@ -408,7 +408,7 @@ app.get('/api/aceite', async (req, res) => {
   }
 });
 
-// ââ VENTAS DIARIAS DEL MES (para calculadora) âââââââââââââââââââââââââââââââââ
+// Ã¢ÂÂÃ¢ÂÂ VENTAS DIARIAS DEL MES (para calculadora) Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
 app.get('/api/ventas-diarias', async (req, res) => {
   try {
     const db      = await getPool();
@@ -434,7 +434,7 @@ app.get('/api/ventas-diarias', async (req, res) => {
         ORDER BY Dia ASC
       `);
 
-    // Devuelve objeto { 1: 1234.5, 2: 0, 3: 890, ... } para los 31 dÃ­as
+    // Devuelve objeto { 1: 1234.5, 2: 0, 3: 890, ... } para los 31 dÃÂ­as
     const dias = {};
     result.recordset.forEach(r => { dias[r.Dia] = parseFloat(r.Venta) || 0; });
     res.json(dias);
@@ -444,7 +444,7 @@ app.get('/api/ventas-diarias', async (req, res) => {
   }
 });
 
-// ââ CORES (Devoluciones pendientes â restan a ventas del vendedor) ââââââââââââ
+// Ã¢ÂÂÃ¢ÂÂ CORES (Devoluciones pendientes Ã¢ÂÂ restan a ventas del vendedor) Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
 app.get('/api/cores', async (req, res) => {
   try {
     const db       = await getPool();
@@ -487,13 +487,13 @@ app.get('/api/cores', async (req, res) => {
   }
 });
 
-// ââ TORNEO WORLD CUP â ClasificaciÃ³n real desde SQL ââââââââââââââââââââââââââ
+// Ã¢ÂÂÃ¢ÂÂ TORNEO WORLD CUP Ã¢ÂÂ ClasificaciÃÂ³n real desde SQL Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
 app.get('/api/torneo', async (req, res) => {
   try {
     const db   = await getPool();
     const anio = new Date().getFullYear();
 
-    // Ventas Mayo 18â31
+    // Ventas Mayo 18Ã¢ÂÂ31
     const rMayo = await db.request().query(`
       SELECT NOM_VENDEDOR, SUM(IMP_TOTAL_LINEA) AS VentaMayo
       FROM FTSABI_PR
@@ -517,7 +517,7 @@ app.get('/api/torneo', async (req, res) => {
     const ventaJunio = {};
     rJunio.recordset.forEach(r => { ventaJunio[nombreKey(r.NOM_VENDEDOR)] = parseFloat(r.VentaJunio)||0; });
 
-    // Ventas Julio 1â17 (fase final)
+    // Ventas Julio 1Ã¢ÂÂ17 (fase final)
     const rJulio = await db.request().query(`
       SELECT NOM_VENDEDOR, SUM(IMP_TOTAL_LINEA) AS VentaJulio
       FROM FTSABI_PR
@@ -563,7 +563,7 @@ app.get('/api/torneo', async (req, res) => {
 });
 
 
-// ââ TABLEROS: Lista todas las tablas de la BD âââââââââââââââââââââââââââââââââ
+// Ã¢ÂÂÃ¢ÂÂ TABLEROS: Lista todas las tablas de la BD Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
 app.get('/api/tables', async (req, res) => {
   try {
     const db = await getPool();
@@ -576,12 +576,12 @@ app.get('/api/tables', async (req, res) => {
   }
 });
 
-// ââ TABLEROS: Datos de una tabla especÃ­fica âââââââââââââââââââââââââââââââââââ
+// Ã¢ÂÂÃ¢ÂÂ TABLEROS: Datos de una tabla especÃÂ­fica Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
 app.get('/api/table/:name', async (req, res) => {
   const tableName = req.params.name;
   const limit = Math.min(parseInt(req.query.limit) || 200, 1000);
   if (!/^[a-zA-Z0-9_\- ]+$/.test(tableName)) {
-    return res.status(400).json({ error: 'Nombre de tabla invÃ¡lido' });
+    return res.status(400).json({ error: 'Nombre de tabla invÃÂ¡lido' });
   }
   try {
     const db = await getPool();
@@ -596,5 +596,13 @@ app.get('/api/table/:name', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, '0.0.0.0', () => console.log(`Catosa API en http://localhost:${PORT}`));
+app.listen(PORT, '0.0.0.0', async () => {
+  console.log(`Catosa API en http://localhost:${PORT}`);
+  try {
+    await getPool();
+    console.log('BD conectada correctamente');
+  } catch (err) {
+    console.error('Error al conectar BD al inicio:', err.message);
+  }
+});
 
