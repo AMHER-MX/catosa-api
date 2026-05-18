@@ -176,6 +176,10 @@
         <div class="line-meta l-75"></div><div class="line-meta l-110"></div>
         <div id="truck-ind" class="truck"></div>
     </div>
+    <div style="display:flex; justify-content:space-between; padding:0 4px; margin-bottom:4px;">
+        <span style="font-size:0.6rem; color:#555;">Meta mensual: <b id="label-meta-ind" style="color:var(--gold);">—</b></span>
+        <span style="font-size:0.6rem; color:#555;">Falta para ORO: <b id="label-falta-ind" style="color:var(--red);">—</b></span>
+    </div>
 
     <span class="race-label" id="suc-label">🏟️ DESEMPEÑO SUCURSAL</span>
     <div class="race-track">
@@ -183,12 +187,20 @@
         <div class="line-meta l-75"></div><div class="line-meta l-110"></div>
         <div id="truck-grp" class="truck" style="filter:invert(1) hue-rotate(150deg);"></div>
     </div>
+    <div style="display:flex; justify-content:space-between; padding:0 4px; margin-bottom:4px;">
+        <span style="font-size:0.6rem; color:#555;">Meta sucursal: <b id="label-meta-grp" style="color:var(--blue);">—</b></span>
+        <span style="font-size:0.6rem; color:#555;">Avance: <b id="label-pct-grp" style="color:var(--blue);">—</b></span>
+    </div>
 
     <span class="race-label" id="prov-label" style="color:var(--purple)">🌟 CHALLENGE ACEITE MOTOR</span>
     <div class="race-track" style="background:linear-gradient(90deg,#2e1065 50%,#4c1d95 50%); background-size:40px 100%; border-color:var(--purple);">
         <div class="porteria" style="border-left-color:var(--purple);">🏆</div>
         <div class="line-meta" style="left:50%; border-left:1px dashed var(--purple);"></div>
         <div id="truck-prov" class="truck" style="filter:invert(1) hue-rotate(280deg);"></div>
+    </div>
+    <div style="display:flex; justify-content:space-between; padding:0 4px; margin-bottom:4px;">
+        <span style="font-size:0.6rem; color:#555;">Promedio 2025: <b id="label-base-aceite" style="color:var(--purple);">—</b></span>
+        <span style="font-size:0.6rem; color:#555;">Este mes: <b id="label-litros-mes" style="color:var(--purple);">—</b></span>
     </div>
 
     <!-- ══ SECCIÓN PREMIOS WORLD CUP ══════════════════════════════════════ -->
@@ -421,6 +433,12 @@
         document.getElementById('truck-grp').style.left = `calc(${Math.min(100, (pctGrp / 120) * 100)}% - 32px)`;
         document.getElementById('truck-grp').className = 'truck ' + (pctGrp >= 120 ? 'oro' : '');
 
+        // Labels debajo de pistas
+        document.getElementById('label-meta-ind').innerText  = fM(vm);
+        document.getElementById('label-falta-ind').innerText = fM(Math.max(0, (vm * 1.20) - vr));
+        document.getElementById('label-meta-grp').innerText  = fM(sM);
+        document.getElementById('label-pct-grp').innerText   = pctGrp.toFixed(1) + '%';
+
         // Carga reto de aceite
         loadAceite();
     }
@@ -432,6 +450,10 @@
 
             document.getElementById('k-f-prov').innerText = a.litrosTotal + ' L';
             document.getElementById('truck-prov').style.left = `calc(${Math.min(100, a.pctBarra)}% - 32px)`;
+
+            // Labels debajo de pista aceite
+            document.getElementById('label-base-aceite').innerText = (a.basePromedio || 0) + ' L / mes';
+            document.getElementById('label-litros-mes').innerText  = a.litrosTotal + ' L (' + (a.litrosIncrementales > 0 ? '+' + a.litrosIncrementales + 'L inc.' : 'sin incremento') + ')';
 
             // Info detallada en el label de challenge proveedor
             const premio = a.premioTotal > 0 ? ` | 💰 $${a.premioTotal} ganados` : '';
