@@ -264,15 +264,19 @@
     </button>
 
     <div style="background:var(--card); border-radius:20px; padding:20px; border:1px solid #333; margin-bottom:15px;">
-        <h2 style="font-size:0.8rem; border-bottom:1px solid var(--red); padding-bottom:10px; margin-bottom:16px; color:var(--red); text-transform:uppercase;">⚠️ DEVOLUCIONES DE CORES</h2>
+        <h2 style="font-size:0.8rem; border-bottom:1px solid var(--red); padding-bottom:10px; margin-bottom:12px; color:var(--red); text-transform:uppercase;">⚠️ CORES</h2>
+        <div style="display:flex; gap:6px; margin-bottom:14px;">
+            <button onclick="setCoresFiltro('devueltos')" id="cores-f-dev" class="btn-filtro activo" style="border-color:var(--red); color:var(--red);">📤 Devueltos</button>
+            <button onclick="setCoresFiltro('pendientes')" id="cores-f-pen" class="btn-filtro" style="border-color:var(--gold); color:var(--gold);">⏳ Sin Pagar</button>
+        </div>
         <div class="cores-kpis">
-            <div class="cores-kpi"><span>Total Devoluciones</span><b id="cores-total">—</b></div>
-            <div class="cores-kpi"><span>Monto Devuelto</span><b id="cores-monto" style="color:var(--red);">—</b></div>
-            <div class="cores-kpi"><span>Más Reciente</span><b id="cores-maxdias" style="color:var(--gold);">—</b></div>
+            <div class="cores-kpi"><span id="cores-kpi-lbl1">Total Devoluciones</span><b id="cores-total">—</b></div>
+            <div class="cores-kpi"><span id="cores-kpi-lbl2">Monto Devuelto</span><b id="cores-monto" style="color:var(--red);">—</b></div>
+            <div class="cores-kpi"><span id="cores-kpi-lbl3">Más Reciente</span><b id="cores-maxdias" style="color:var(--gold);">—</b></div>
         </div>
         <div style="overflow-x:auto; overflow-y:auto; max-height:420px;">
             <table class="cores-table">
-                <thead><tr>
+                <thead><tr id="cores-thead">
                     <th>Referencia</th>
                     <th>Cliente</th>
                     <th>Artículo</th>
@@ -420,8 +424,10 @@
         const vm = parseFloat(user.Meta) || 1;
         const pctInd = (vr / vm) * 100;
         const sucData = dbV.filter(v => v.Sucursal === user.Sucursal);
-        let sV = 0, sM = 0;
-        sucData.forEach(v => { sV += parseFloat(v.Ventas) || 0; sM += parseFloat(v.Meta) || 0; });
+        let sV = 0;
+        sucData.forEach(v => { sV += parseFloat(v.Ventas) || 0; });
+        // Usar meta de sucursal oficial (viene del server), no suma de individuales
+        const sM = parseFloat(user.MetaSucursal) || sucData.reduce((s,v) => s + (parseFloat(v.Meta)||0), 0);
         const pctGrp = sM > 0 ? (sV / sM) * 100 : 0;
 
         const hoy = new Date();
@@ -753,9 +759,10 @@
 
         // Bono sucursal
         const sucData = dbV.filter(v => v.Sucursal === user.Sucursal);
-        let sV = 0, sM = 0;
-        sucData.forEach(v => { sV += parseFloat(v.Ventas)||0; sM += parseFloat(v.Meta)||0; });
-        const pctGrp = sM > 0 ? (sV/sM)*100 : 0;
+        let sV = 0;
+        sucData.forEach(v => { sV += parseFloat(v.Ventas)||0; });
+        const sM2 = parseFloat(user.MetaSucursal) || sucData.reduce((s,v) => s + (parseFloat(v.Meta)||0), 0);
+        const pctGrp = sM2 > 0 ? (sV/sM2)*100 : 0;
         const fGrp   = pctGrp >= 110 ? (canal === 'MOSTRADOR' ? 0.34 : 0.15) : 0;
 
         const premio = ventaTotal * ((fInd + fGrp) / 100);
@@ -780,8 +787,83 @@
         updatePremios(pct);
     }
 
-    // ─── CORES (Devoluciones) ─────────────────────────────────────────────────
+    // ─── CORES ───────────────────────────────────────────────────────────────
+    let coresFiltro = 'devueltos';
+
+    function setCoresFiltro(tipo) {
+        coresFiltro = tipo;
+        document.getElementById('cores-f-dev').classList.toggle('activo', tipo === 'devueltos');
+        document.getElementById('cores-f-pen').classList.toggle('activo', tipo === 'pendientes');
+        // Cambiar estilo del botón activo
+        document.getElementById('cores-f-dev').style.background = tipo === 'devueltos' ? 'var(--red)' : '';
+        document.getElementById('cores-f-dev').style.color      = tipo === 'devueltos' ? '#000' : 'var(--red)';
+        document.getElementById('cores-f-pen').style.background = tipo === 'pendientes' ? 'var(--gold)' : '';
+        document.getElementById('cores-f-pen').style.color      = tipo === 'pendientes' ? '#000' : 'var(--gold)';
+
+        if (tipo === 'pendientes') {
+            loadCoresPendientes();
+        } else {
+            loadCores();
+        }
+    }
+
+    async function loadCoresPendientes() {
+        const tbody = document.getElementById('cores-tbody');
+        document.getElementById('cores-kpi-lbl1').innerText = 'Total Sin Pagar';
+        document.getElementById('cores-kpi-lbl2').innerText = 'Monto Pendiente';
+        document.getElementById('cores-kpi-lbl3').innerText = 'Más Antiguo';
+        document.getElementById('cores-thead').innerHTML = `
+            <th>Referencia</th><th>Cliente</th><th>Artículo</th>
+            <th>Tipo</th><th>Fecha Factura</th><th>Cant. Pedida</th>
+            <th>Monto</th><th>Días Sin Pagar</th>`;
+        try {
+            const nombre = encodeURIComponent(user.Nombre);
+            const cores  = await apiFetch(`/api/cores-pendientes?vendedor=${nombre}`);
+
+            if (cores.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="loading">✅ Sin CORES pendientes de pago</td></tr>';
+                document.getElementById('cores-total').innerText   = '0';
+                document.getElementById('cores-monto').innerText   = fM(0);
+                document.getElementById('cores-maxdias').innerText = '—';
+                return;
+            }
+
+            const totalMonto = cores.reduce((s, c) => s + (parseFloat(c.Monto) || 0), 0);
+            const maxDias    = Math.max(...cores.map(c => parseInt(c.DiasSinPagar) || 0));
+            document.getElementById('cores-total').innerText   = cores.length;
+            document.getElementById('cores-monto').innerText   = fM(totalMonto);
+            document.getElementById('cores-maxdias').innerText = maxDias + ' días';
+
+            tbody.innerHTML = '';
+            cores.forEach(c => {
+                const dias  = parseInt(c.DiasSinPagar) || 0;
+                const clase = dias <= 7 ? 'dias-verde' : dias <= 21 ? 'dias-ambar' : 'dias-rojo';
+                const tipo  = (c.TipoVenta || '').includes('8%') ? 'CORES 8%' : 'CORES';
+                tbody.innerHTML += `
+                    <tr>
+                        <td style="color:var(--blue);font-weight:bold;">${c.Referencia || c.NroPedido || '—'}</td>
+                        <td style="color:#ccc;">${c.Codigo || '—'}</td>
+                        <td style="color:#aaa; max-width:180px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${c.Articulo || ''}">${c.Articulo || '—'}</td>
+                        <td style="color:#888; font-size:0.65rem;">${tipo}</td>
+                        <td style="color:#888; white-space:nowrap;">${c.FechaFactura || '—'}</td>
+                        <td style="text-align:center;">${c.CantidadPedida || 0}</td>
+                        <td style="color:var(--gold);font-weight:bold;white-space:nowrap;">${fM(c.Monto)}</td>
+                        <td><span class="dias-badge ${clase}">${dias} días</span></td>
+                    </tr>`;
+            });
+        } catch (err) {
+            tbody.innerHTML = `<tr><td colspan="8" class="error-msg">❌ Error: ${err.message}</td></tr>`;
+        }
+    }
+
     async function loadCores() {
+        document.getElementById('cores-kpi-lbl1').innerText = 'Total Devoluciones';
+        document.getElementById('cores-kpi-lbl2').innerText = 'Monto Devuelto';
+        document.getElementById('cores-kpi-lbl3').innerText = 'Más Reciente';
+        document.getElementById('cores-thead').innerHTML = `
+            <th>Referencia</th><th>Cliente</th><th>Artículo</th>
+            <th>Tipo</th><th>Fecha</th><th>Cantidad</th>
+            <th>Monto</th><th>Días</th>`;
         const tbody = document.getElementById('cores-tbody');
         try {
             const nombre = encodeURIComponent(user.Nombre);
