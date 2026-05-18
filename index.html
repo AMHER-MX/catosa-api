@@ -323,7 +323,13 @@
 
         <div id="lista-cli" style="display:none;"></div>
 
-        <div class="card"><h2>🔥 TOP 10 PRODUCTOS</h2><div id="v-top-list" style="flex:1; overflow-y:auto;"><div class="loading">Cargando...</div></div></div>
+        <div class="card"><h2>🔥 TOP 10 PRODUCTOS</h2>
+            <div style="display:flex; gap:6px; margin-bottom:10px;">
+                <button onclick="setTopFiltro('unidades')" id="top-f-uni" class="btn-filtro activo">📦 Unidades</button>
+                <button onclick="setTopFiltro('monto')"    id="top-f-mon" class="btn-filtro">💰 Monto</button>
+            </div>
+            <div id="v-top-list" style="flex:1; overflow-y:auto;"><div class="loading">Cargando...</div></div>
+        </div>
 
         <div class="card">
             <h2>📍 CARTERA DE CLIENTES</h2>
@@ -635,33 +641,52 @@
     }
 
     // ─── TOP PRODUCTOS ───────────────────────────────────────────────────────
-    async function loadTopProductos() {
+    let topProductosData = [];
+    let topFiltro = 'unidades';
+
+    function setTopFiltro(tipo) {
+        topFiltro = tipo;
+        document.getElementById('top-f-uni').classList.toggle('activo', tipo === 'unidades');
+        document.getElementById('top-f-mon').classList.toggle('activo', tipo === 'monto');
+        renderTopProductos();
+    }
+
+    function renderTopProductos() {
         const list = document.getElementById('v-top-list');
+        if (!topProductosData.length) { list.innerHTML = '<div class="loading">Sin ventas este mes</div>'; return; }
+        const sorted = [...topProductosData].sort((a, b) =>
+            topFiltro === 'monto'
+                ? (parseFloat(b.Monto) || 0) - (parseFloat(a.Monto) || 0)
+                : (parseInt(b.Unidades_Vendidas) || 0) - (parseInt(a.Unidades_Vendidas) || 0)
+        ).slice(0, 10);
+        list.innerHTML = '';
+        sorted.forEach((p, i) => {
+            const valor = topFiltro === 'monto' ? fM(p.Monto) : (parseInt(p.Unidades_Vendidas) || 0);
+            const etiq  = topFiltro === 'monto' ? '' : 'vendidas';
+            list.innerHTML += `
+                <div class="client-item" style="padding:10px; background:rgba(255,255,255,0.03); margin-bottom:4px; border-radius:10px; align-items:flex-start;">
+                    <div style="display:flex; align-items:flex-start; flex:1;">
+                        <b style="color:var(--gold); margin-right:8px; margin-top:2px;">#${i+1}</b>
+                        <div>
+                            <b style="font-size:0.85rem;">${p.Parte}</b>
+                            <br><small style="color:#aaa;">${p.Descripcion || ''}</small>
+                        </div>
+                    </div>
+                    <div style="text-align:right; white-space:nowrap;">
+                        <b style="color:var(--blue); font-size:1rem;">${valor}</b>
+                        <br><small style="color:#555;">${etiq}</small>
+                    </div>
+                </div>`;
+        });
+    }
+
+    async function loadTopProductos() {
         try {
             const nombre = encodeURIComponent(user.Nombre);
-            const prods = await apiFetch(`/api/top-productos?vendedor=${nombre}`);
-            list.innerHTML = '';
-            prods.forEach((p, i) => {
-                const vendidas = parseInt(p.Unidades_Vendidas) || 0;
-                const stock    = parseInt(p.Existencia) || 0;
-                list.innerHTML += `
-                    <div class="client-item" style="padding:10px; background:rgba(255,255,255,0.03); margin-bottom:4px; border-radius:10px; align-items:flex-start;">
-                        <div style="display:flex; align-items:flex-start; flex:1;">
-                            <b style="color:var(--gold); margin-right:8px; margin-top:2px;">#${i+1}</b>
-                            <div>
-                                <b style="font-size:0.85rem;">${p.Parte}</b>
-                                <br><small style="color:#aaa;">${p.Descripcion || ''}</small>
-                            </div>
-                        </div>
-                        <div style="text-align:right; white-space:nowrap;">
-                            <b style="color:var(--blue); font-size:1rem;">${vendidas}</b>
-                            <br><small style="color:#555;">vendidas</small>
-                        </div>
-                    </div>`;
-            });
-            if (prods.length === 0) list.innerHTML = '<div class="loading">Sin ventas este mes</div>';
+            topProductosData = await apiFetch(`/api/top-productos?vendedor=${nombre}`);
+            renderTopProductos();
         } catch (err) {
-            list.innerHTML = `<div class="error-msg">❌ Error<br><small>${err.message}</small></div>`;
+            document.getElementById('v-top-list').innerHTML = `<div class="error-msg">❌ Error<br><small>${err.message}</small></div>`;
         }
     }
 
