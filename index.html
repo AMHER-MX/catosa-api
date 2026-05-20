@@ -425,8 +425,8 @@
         const pctInd = (vr / vm) * 100;
         const sucData = dbV.filter(v => v.Sucursal === user.Sucursal);
         let sV = 0;
-        sucData.forEach(v => { sV += parseFloat(v.Ventas) || 0; });
-        // Usar meta de sucursal oficial (viene del server), no suma de individuales
+        // Solo sumar ventas de vendedores con meta asignada
+        sucData.filter(v => parseFloat(v.Meta) > 0).forEach(v => { sV += parseFloat(v.Ventas) || 0; });
         const sM = parseFloat(user.MetaSucursal) || sucData.reduce((s,v) => s + (parseFloat(v.Meta)||0), 0);
         const pctGrp = sM > 0 ? (sV / sM) * 100 : 0;
 
@@ -760,7 +760,7 @@
         // Bono sucursal
         const sucData = dbV.filter(v => v.Sucursal === user.Sucursal);
         let sV = 0;
-        sucData.forEach(v => { sV += parseFloat(v.Ventas)||0; });
+        sucData.filter(v => parseFloat(v.Meta) > 0).forEach(v => { sV += parseFloat(v.Ventas)||0; });
         const sM2 = parseFloat(user.MetaSucursal) || sucData.reduce((s,v) => s + (parseFloat(v.Meta)||0), 0);
         const pctGrp = sM2 > 0 ? (sV/sM2)*100 : 0;
         const fGrp   = pctGrp >= 110 ? (canal === 'MOSTRADOR' ? 0.34 : 0.15) : 0;
