@@ -570,7 +570,7 @@ app.get('/api/tables', async (req, res) => {
 
 app.get('/api/table/:name', async (req, res) => {
   const tableName = req.params.name;
-  const limit = Math.min(parseInt(req.query.limit) || 200, 1000);
+  const limit = Math.min(parseInt(req.query.limit) || 500, 10000);
   try {
     const db = await getPool();
     const col = await db.request().query("SELECT name FROM sys.columns WHERE object_id = OBJECT_ID('" + tableName + "') ORDER BY column_id");
