@@ -4,6 +4,7 @@ const cors    = require('cors');
 const sql     = require('mssql');
 const XLSX    = require('xlsx');
 const path    = require('path');
+const fs      = require('fs');
 
 const app = express();
 app.use(cors({ origin: '*', methods: ['GET','POST','OPTIONS'], allowedHeaders: ['Content-Type','Authorization'] }));
@@ -578,6 +579,57 @@ app.get('/api/table/:name', async (req, res) => {
     res.json({ columns: col.recordset.map(r=>r.name), rows: data.recordset, total: data.recordset.length });
   } catch (err) { pool = null; res.status(500).json({ error: err.message }); }
 });
+
+// ── TABLEROS: guardar/cargar por área ─────────────────────────────────────────
+const TABLEROS_FILE = path.join(__dirname, 'tableros.json');
+
+function leerTableros() {
+  try {
+    if (fs.existsSync(TABLEROS_FILE)) {
+      return JSON.parse(fs.readFileSync(TABLEROS_FILE, 'utf8'));
+    }
+  } catch(e) { console.error('Error leyendo tableros.json:', e.message); }
+  return {};
+}
+
+function guardarTableros(data) {
+  try {
+    fs.writeFileSync(TABLEROS_FILE, JSON.stringify(data, null, 2), 'utf8');
+    return true;
+  } catch(e) { console.error('Error guardando tableros.json:', e.message); return false; }
+}
+
+// GET /api/tableros/:area — obtener tableros de un área
+app.get('/api/tableros/:area', (req, res) => {
+  const { area } = req.params;
+  const all = leerTableros();
+  res.json({ dashboards: all[area] || [] });
+});
+
+// POST /api/tableros/:area — guardar tableros de un área (reemplaza todos)
+app.post('/api/tableros/:area', (req, res) => {
+  const { area } = req.params;
+  const { dashboards } = req.body;
+  if (!Array.isArray(dashboards)) return res.status(400).json({ error: 'dashboards debe ser un array' });
+  const all = leerTableros();
+  all[area] = dashboards;
+  if (guardarTableros(all)) {
+    res.json({ ok: true, saved: dashboards.length });
+  } else {
+    res.status(500).json({ error: 'No se pudo guardar' });
+  }
+});
+
+// DELETE /api/tableros/:area/:id — eliminar un tablero específico
+app.delete('/api/tableros/:area/:id', (req, res) => {
+  const { area, id } = req.params;
+  const all = leerTableros();
+  if (!all[area]) return res.json({ ok: true });
+  all[area] = all[area].filter(d => d.id !== id);
+  guardarTableros(all);
+  res.json({ ok: true });
+});
+
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, '0.0.0.0', () => console.log(`Catosa API en http://localhost:${PORT}`));
