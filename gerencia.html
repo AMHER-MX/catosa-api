@@ -711,12 +711,39 @@ function renderTime(lista) {
 }
 
 function renderKPIs(lista) {
-    let tv = 0, tm = 0;
-    lista.forEach(v => { tv += parseFloat(v.Ventas)||0; tm += parseFloat(v.Meta)||1; });
+    // Venta total — todos los vendedores
+    let tv = 0;
+    lista.forEach(v => { tv += parseFloat(v.Ventas)||0; });
+
+    // Meta sucursal — usar MetaSucursal oficial si está disponible, sino suma individual
+    const fs = document.getElementById('f-suc').value;
+    let tm = 0;
+    if (fs !== 'TODAS') {
+        // Una sola sucursal seleccionada — usar MetaSucursal del primer vendedor con meta
+        const conMeta = lista.find(v => parseFloat(v.MetaSucursal) > 0);
+        tm = conMeta ? parseFloat(conMeta.MetaSucursal) : lista.reduce((s,v) => s + (parseFloat(v.Meta)||0), 0);
+        // Venta solo de vendedores con meta
+        tv = 0;
+        lista.filter(v => parseFloat(v.Meta) > 0).forEach(v => { tv += parseFloat(v.Ventas)||0; });
+    } else {
+        // Todas las sedes — suma de MetaSucursal únicas
+        const sedesVistas = new Set();
+        lista.forEach(v => {
+            const ms = parseFloat(v.MetaSucursal) || 0;
+            if (ms > 0 && !sedesVistas.has(v.Sucursal)) {
+                tm += ms;
+                sedesVistas.add(v.Sucursal);
+            }
+        });
+        if (tm === 0) tm = lista.reduce((s,v) => s + (parseFloat(v.Meta)||0), 0);
+        tv = 0;
+        lista.filter(v => parseFloat(v.Meta) > 0).forEach(v => { tv += parseFloat(v.Ventas)||0; });
+    }
+
     document.getElementById('k-venta').textContent  = fM(tv);
     document.getElementById('k-falta').textContent  = fM(Math.max(0, tm - tv));
-    document.getElementById('k-avance').textContent = ((tv/tm)*100).toFixed(1) + '%';
-    document.getElementById('k-oro').textContent    = ((tv/(tm*1.20))*100).toFixed(1) + '%';
+    document.getElementById('k-avance').textContent = ((tv/Math.max(tm,1))*100).toFixed(1) + '%';
+    document.getElementById('k-oro').textContent    = ((tv/(Math.max(tm,1)*1.20))*100).toFixed(1) + '%';
 }
 
 function renderPista(lista) {
