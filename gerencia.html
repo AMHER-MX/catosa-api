@@ -332,6 +332,18 @@
 
         /* TORNEO TRACK */
         .torneo-track { border-radius:12px; overflow:hidden; border:1px solid rgba(255,255,255,0.1); margin-bottom:4px; }
+        /* ACEITE TRACK */
+        .aceite-lane { height:36px; position:relative; display:flex; align-items:center;
+            background:linear-gradient(90deg,#2e1065 50%,#4c1d95 50%); background-size:40px 100%;
+            border-bottom:1px solid rgba(255,255,255,0.04); }
+        .aceite-vname { width:130px; font-size:0.52rem; color:rgba(255,255,255,0.85); padding-left:10px;
+            white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:600; z-index:6;
+            text-shadow:0 1px 3px rgba(0,0,0,0.9); flex-shrink:0; }
+        .aceite-ball { position:absolute; width:26px; height:26px;
+            background:url('https://cdn-icons-png.flaticon.com/512/53/53283.png') center/contain no-repeat;
+            filter:invert(1) hue-rotate(280deg); z-index:10; }
+        .aceite-ball.ganador { filter: drop-shadow(0 0 8px var(--gold)) sepia(1) saturate(8); animation: spin-slow 3s infinite linear; }
+        .aceite-info { position:absolute; right:8px; font-size:0.48rem; color:rgba(255,255,255,0.5); z-index:6; }
         .torneo-lane { height:38px; position:relative; display:flex; align-items:center;
             background:linear-gradient(90deg,#1a1a2e 50%,#16213e 50%); background-size:40px 100%;
             border-bottom:1px solid rgba(255,255,255,0.04); }
@@ -502,6 +514,17 @@
         </div>
     </div>
 
+    <!-- CANCHA CHALLENGE ACEITE MOTOR -->
+    <div class="card" style="margin-bottom:14px; min-height:auto;">
+        <div class="card-title" style="color:var(--purple);">
+            🌟 CHALLENGE ACEITE MOTOR — LITROS INCREMENTALES
+            <span id="aceite-resumen" style="font-size:0.55rem; color:#555; font-weight:400;"></span>
+        </div>
+        <div id="aceite-pista" style="border-radius:10px; overflow:hidden;">
+            <div class="loading">Cargando...</div>
+        </div>
+    </div>
+
     <!-- CANCHA DEL TORNEO WORLD CUP -->
     <div class="card" style="margin-bottom:14px; min-height:auto;">
         <div class="card-title" id="torneo-titulo">
@@ -517,12 +540,16 @@
     <!-- CORES DEVOLUCIONES -->
     <div class="card" style="margin-bottom:14px;">
         <div class="card-title">
-            ⚠️ DEVOLUCIONES DE CORES — MES ACTUAL
+            ⚠️ CORES
             <span id="cores-resumen" style="font-size:0.55rem; color:#555; font-weight:400;"></span>
+        </div>
+        <div style="display:flex; gap:6px; margin-bottom:12px;">
+            <button onclick="setCoresFiltroG('devueltos')" id="g-cores-f-dev" class="btn-filtro activo" style="border-color:var(--red);color:var(--red);font-size:0.6rem;">📤 Devueltos</button>
+            <button onclick="setCoresFiltroG('pendientes')" id="g-cores-f-pen" class="btn-filtro" style="border-color:var(--gold);color:var(--gold);font-size:0.6rem;">⏳ Sin Pagar</button>
         </div>
         <div style="overflow-x:auto; max-height:360px; overflow-y:auto;">
             <table class="cores-table">
-                <thead><tr>
+                <thead><tr id="g-cores-thead">
                     <th>Referencia</th>
                     <th>Asesor</th>
                     <th class="cores-hide-mobile">Cliente</th>
@@ -554,6 +581,10 @@
         <!-- TOP 10 PRODUCTOS -->
         <div class="card">
             <div class="card-title">🔥 Top 10 Productos</div>
+            <div style="display:flex; gap:6px; margin-bottom:10px;">
+                <button onclick="setTopFiltroG('unidades')" id="g-top-f-uni" class="btn-filtro activo" style="font-size:0.6rem; padding:6px;">📦 Unidades</button>
+                <button onclick="setTopFiltroG('monto')"    id="g-top-f-mon" class="btn-filtro"        style="font-size:0.6rem; padding:6px;">💰 Monto</button>
+            </div>
             <div class="scroll-list" id="top-list"><div class="loading">Cargando...</div></div>
         </div>
 
@@ -641,6 +672,7 @@ async function login() {
     loadBBD();
     loadCores();
     loadTorneo();
+    loadAceiteG();
 };
 
 // ── FILTROS ───────────────────────────────────────────────────────────────────
@@ -877,29 +909,53 @@ function renderChart(lista) {
 }
 
 // ── TOP 10 PRODUCTOS ──────────────────────────────────────────────────────────
-async function loadTopProductos() {
+let topDataG = [];
+let topFiltroG = 'unidades';
+
+function setTopFiltroG(tipo) {
+    topFiltroG = tipo;
+    document.getElementById('g-top-f-uni').classList.toggle('activo', tipo === 'unidades');
+    document.getElementById('g-top-f-mon').classList.toggle('activo', tipo === 'monto');
+    renderTopG();
+}
+
+function renderTopG() {
     const el = document.getElementById('top-list');
+    if (!topDataG.length) { el.innerHTML = '<div class="loading">Sin datos</div>'; return; }
+    const sorted = [...topDataG].sort((a,b) =>
+        topFiltroG === 'monto'
+            ? (parseFloat(b.Monto)||0) - (parseFloat(a.Monto)||0)
+            : (parseInt(b.Unidades_Vendidas)||0) - (parseInt(a.Unidades_Vendidas)||0)
+    ).slice(0, 10);
+    el.innerHTML = '';
+    sorted.forEach((p, i) => {
+        const valor = topFiltroG === 'monto' ? fM(p.Monto) : p.Unidades_Vendidas;
+        const etiq  = topFiltroG === 'monto' ? '' : 'vendidas';
+        el.innerHTML += `
+            <div class="top-item">
+                <div style="display:flex; align-items:center; gap:4px;">
+                    <span class="top-num">#${i+1}</span>
+                    <div>
+                        <div style="font-weight:600;">${p.Parte}</div>
+                        <div style="font-size:0.6rem; color:#555;">${p.Descripcion||''}</div>
+                    </div>
+                </div>
+                <div style="text-align:right;">
+                    <div style="color:var(--blue); font-weight:700;">${valor}</div>
+                    <div style="font-size:0.55rem; color:#555;">${etiq}</div>
+                </div>
+            </div>`;
+    });
+}
+
+async function loadTopProductos() {
     try {
-        const prods = await apiFetch('/api/top-productos?vendedor=');
-        el.innerHTML = '';
-        prods.forEach((p, i) => {
-            el.innerHTML += `
-                <div class="top-item">
-                    <div style="display:flex; align-items:center; gap:4px;">
-                        <span class="top-num">#${i+1}</span>
-                        <div>
-                            <div style="font-weight:600;">${p.Parte}</div>
-                            <div style="font-size:0.6rem; color:#555;">${p.Descripcion||''}</div>
-                        </div>
-                    </div>
-                    <div style="text-align:right;">
-                        <div style="color:var(--blue); font-weight:700;">${p.Unidades_Vendidas}</div>
-                        <div style="font-size:0.55rem; color:#555;">vendidas</div>
-                    </div>
-                </div>`;
-        });
+        const fv = document.getElementById('f-vend').value;
+        const nombre = fv !== 'TODOS' ? encodeURIComponent(fv) : '';
+        topDataG = await apiFetch(`/api/top-productos?vendedor=${nombre}`);
+        renderTopG();
     } catch(err) {
-        el.innerHTML = `<div class="error-msg">❌ ${err.message}</div>`;
+        document.getElementById('top-list').innerHTML = `<div class="error-msg">❌ ${err.message}</div>`;
     }
 }
 
@@ -964,8 +1020,66 @@ function renderCartera() {
     if (!lista.length) el.innerHTML = '<div class="loading">Sin resultados</div>';
 }
 
-// ── CORES DEVOLUCIONES ────────────────────────────────────────────────────────
+// ── CORES ─────────────────────────────────────────────────────────────────────
+let coresFiltroG = 'devueltos';
+
+function setCoresFiltroG(tipo) {
+    coresFiltroG = tipo;
+    document.getElementById('g-cores-f-dev').classList.toggle('activo', tipo === 'devueltos');
+    document.getElementById('g-cores-f-pen').classList.toggle('activo', tipo === 'pendientes');
+    document.getElementById('g-cores-f-dev').style.background = tipo === 'devueltos' ? 'var(--red)' : '';
+    document.getElementById('g-cores-f-dev').style.color      = tipo === 'devueltos' ? '#000' : 'var(--red)';
+    document.getElementById('g-cores-f-pen').style.background = tipo === 'pendientes' ? 'var(--gold)' : '';
+    document.getElementById('g-cores-f-pen').style.color      = tipo === 'pendientes' ? '#000' : 'var(--gold)';
+    if (tipo === 'pendientes') loadCoresPendientesG();
+    else loadCores();
+}
+
+async function loadCoresPendientesG() {
+    const tbody = document.getElementById('cores-tbody');
+    document.getElementById('g-cores-thead').innerHTML = `
+        <th>Referencia</th><th>Asesor</th>
+        <th class="cores-hide-mobile">Cliente</th><th>Artículo</th>
+        <th class="cores-hide-mobile">Fecha</th><th>Monto</th><th>Días Sin Pagar</th>`;
+    try {
+        const fv     = document.getElementById('f-vend').value;
+        const nombre = fv !== 'TODOS' ? encodeURIComponent(fv) : '';
+        const cores  = await apiFetch(`/api/cores-pendientes?vendedor=${nombre}`);
+
+        if (cores.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" class="loading">✅ Sin CORES pendientes de pago</td></tr>';
+            document.getElementById('cores-resumen').textContent = '';
+            return;
+        }
+
+        const totalMonto = cores.reduce((s, c) => s + (parseFloat(c.Monto)||0), 0);
+        document.getElementById('cores-resumen').textContent = `${cores.length} registros · ${fM(totalMonto)} pendiente`;
+
+        tbody.innerHTML = '';
+        cores.forEach(c => {
+            const dias  = parseInt(c.DiasSinPagar) || 0;
+            const clase = dias <= 7 ? 'dias-verde' : dias <= 21 ? 'dias-ambar' : 'dias-rojo';
+            tbody.innerHTML += `
+                <tr>
+                    <td style="color:var(--blue);font-weight:bold;white-space:nowrap;">${c.Referencia||'—'}</td>
+                    <td style="color:#aaa;font-size:0.6rem;">${(c.Vendedor||'—').split(' ')[0]} ${(c.Vendedor||'').split(' ')[1]||''}</td>
+                    <td class="cores-hide-mobile" style="color:#ccc;">${c.Codigo||'—'}</td>
+                    <td style="color:#888;max-width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${c.Articulo||'—'}</td>
+                    <td class="cores-hide-mobile" style="color:#888;white-space:nowrap;">${c.FechaFactura||'—'}</td>
+                    <td style="color:var(--gold);font-weight:bold;white-space:nowrap;">${fM(c.Monto)}</td>
+                    <td><span class="dias-badge ${clase}">${dias}d</span></td>
+                </tr>`;
+        });
+    } catch(err) {
+        tbody.innerHTML = `<tr><td colspan="7" class="error-msg">❌ ${err.message}</td></tr>`;
+    }
+}
+
 async function loadCores() {
+    document.getElementById('g-cores-thead').innerHTML = `
+        <th>Referencia</th><th>Asesor</th>
+        <th class="cores-hide-mobile">Cliente</th><th>Artículo</th>
+        <th class="cores-hide-mobile">Fecha</th><th>Monto</th><th>Días</th>`;
     const tbody = document.getElementById('cores-tbody');
     try {
         const fv = document.getElementById('f-vend').value;
@@ -998,6 +1112,42 @@ async function loadCores() {
         });
     } catch(err) {
         tbody.innerHTML = `<tr><td colspan="7" class="error-msg">❌ ${err.message}</td></tr>`;
+    }
+}
+
+// ── CHALLENGE ACEITE MOTOR — TODOS ────────────────────────────────────────────
+async function loadAceiteG() {
+    const pista   = document.getElementById('aceite-pista');
+    const resumen = document.getElementById('aceite-resumen');
+    try {
+        const data = await apiFetch('/api/aceite-todos');
+        if (!data.length) { pista.innerHTML = '<div class="loading">Sin datos de aceite</div>'; return; }
+
+        const totalBloques = data.reduce((s, v) => s + v.Bloques, 0);
+        const totalPremio  = data.reduce((s, v) => s + v.PremioTotal, 0);
+        resumen.textContent = `${totalBloques} bloques totales · ${fM(totalPremio)} en premios acumulados`;
+
+        pista.innerHTML = `<div style="border-radius:10px; overflow:hidden;">
+            ${data.map((v, idx) => {
+                const pos      = v.PctBarra;
+                const esGanador = v.Bloques > 0;
+                const premio   = esGanador ? `🏆${v.Bloques}×${fM(v.PremioPorBloque)}` : `${v.LitrosIncrementales}L inc.`;
+                return `
+                <div class="aceite-lane">
+                    <span class="aceite-vname">${v.Nombre.split(' ')[0]} ${v.Nombre.split(' ')[1]||''}</span>
+                    <!-- línea de bloque (500L) -->
+                    <div style="position:absolute;left:calc(130px + (100% - 130px)*0.5);top:0;bottom:0;width:1px;background:rgba(168,85,247,0.4);z-index:3;"></div>
+                    <!-- portería -->
+                    <div style="position:absolute;right:0;top:0;bottom:0;width:28px;background:rgba(255,255,255,0.06);border-left:2px dashed rgba(168,85,247,0.5);display:flex;align-items:center;justify-content:center;font-size:0.8rem;z-index:5;">🏆</div>
+                    <div class="aceite-ball ${esGanador ? 'ganador' : ''}"
+                        style="left:calc(130px + (100% - 158px) * ${pos/100});">
+                    </div>
+                    <span class="aceite-info">${premio} · ${v.PctIntl}% Intl</span>
+                </div>`;
+            }).join('')}
+        </div>`;
+    } catch(err) {
+        pista.innerHTML = `<div class="error-msg">❌ ${err.message}</div>`;
     }
 }
 
