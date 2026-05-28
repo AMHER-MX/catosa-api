@@ -523,6 +523,23 @@
         <div id="aceite-pista" style="border-radius:10px; overflow:hidden;">
             <div class="loading">Cargando...</div>
         </div>
+        <!-- Tabla ranking aceite -->
+        <div style="overflow-x:auto; margin-top:12px;">
+            <table class="cores-table" id="aceite-tabla">
+                <thead><tr>
+                    <th>#</th>
+                    <th>Asesor</th>
+                    <th>Sede</th>
+                    <th>Litros Mes</th>
+                    <th>Promedio 2025</th>
+                    <th>Incrementales</th>
+                    <th>Bloques</th>
+                    <th>Premio</th>
+                    <th>% Intl</th>
+                </tr></thead>
+                <tbody id="aceite-tbody"><tr><td colspan="9" class="loading">Cargando...</td></tr></tbody>
+            </table>
+        </div>
     </div>
 
     <!-- CANCHA DEL TORNEO WORLD CUP -->
@@ -1119,6 +1136,7 @@ async function loadCores() {
 async function loadAceiteG() {
     const pista   = document.getElementById('aceite-pista');
     const resumen = document.getElementById('aceite-resumen');
+    const tbody   = document.getElementById('aceite-tbody');
     try {
         const data = await apiFetch('/api/aceite-todos');
         if (!data.length) { pista.innerHTML = '<div class="loading">Sin datos de aceite</div>'; return; }
@@ -1127,17 +1145,16 @@ async function loadAceiteG() {
         const totalPremio  = data.reduce((s, v) => s + v.PremioTotal, 0);
         resumen.textContent = `${totalBloques} bloques totales · ${fM(totalPremio)} en premios acumulados`;
 
+        // Pista morada
         pista.innerHTML = `<div style="border-radius:10px; overflow:hidden;">
-            ${data.map((v, idx) => {
+            ${data.map((v) => {
                 const pos      = v.PctBarra;
                 const esGanador = v.Bloques > 0;
                 const premio   = esGanador ? `🏆${v.Bloques}×${fM(v.PremioPorBloque)}` : `${v.LitrosIncrementales}L inc.`;
                 return `
                 <div class="aceite-lane">
                     <span class="aceite-vname">${v.Nombre.split(' ')[0]} ${v.Nombre.split(' ')[1]||''}</span>
-                    <!-- línea de bloque (500L) -->
                     <div style="position:absolute;left:calc(130px + (100% - 130px)*0.5);top:0;bottom:0;width:1px;background:rgba(168,85,247,0.4);z-index:3;"></div>
-                    <!-- portería -->
                     <div style="position:absolute;right:0;top:0;bottom:0;width:28px;background:rgba(255,255,255,0.06);border-left:2px dashed rgba(168,85,247,0.5);display:flex;align-items:center;justify-content:center;font-size:0.8rem;z-index:5;">🏆</div>
                     <div class="aceite-ball ${esGanador ? 'ganador' : ''}"
                         style="left:calc(130px + (100% - 158px) * ${pos/100});">
@@ -1146,6 +1163,35 @@ async function loadAceiteG() {
                 </div>`;
             }).join('')}
         </div>`;
+
+        // Tabla ranking
+        tbody.innerHTML = '';
+        data.forEach((v, i) => {
+            const esGanador = v.Bloques > 0;
+            const pctIntlNum = parseFloat(v.PctIntl) || 0;
+            tbody.innerHTML += `
+                <tr>
+                    <td style="color:var(--gold);font-weight:bold;text-align:center;">${i+1}</td>
+                    <td style="font-weight:600;">${v.Nombre}</td>
+                    <td style="color:#666;font-size:0.6rem;">${v.Sucursal||'—'}</td>
+                    <td style="color:var(--blue);">${v.LitrosTotal} L</td>
+                    <td style="color:#555;">${v.BasePromedio} L</td>
+                    <td style="color:${v.LitrosIncrementales > 0 ? 'var(--grass)' : '#444'}; font-weight:bold;">
+                        ${v.LitrosIncrementales > 0 ? '+' + v.LitrosIncrementales : '0'} L
+                    </td>
+                    <td style="text-align:center;">
+                        <span style="background:${esGanador ? 'rgba(255,215,0,0.15)' : 'rgba(255,255,255,0.05)'}; color:${esGanador ? 'var(--gold)' : '#555'}; padding:2px 8px; border-radius:20px; font-weight:bold;">
+                            ${v.Bloques}
+                        </span>
+                    </td>
+                    <td style="color:${esGanador ? 'var(--gold)' : '#444'}; font-weight:bold;">
+                        ${esGanador ? fM(v.PremioTotal) : '—'}
+                    </td>
+                    <td style="color:${pctIntlNum >= 30 ? 'var(--grass)' : '#666'};">
+                        ${v.PctIntl}%${pctIntlNum >= 30 ? ' ✅' : ''}
+                    </td>
+                </tr>`;
+        });
     } catch(err) {
         pista.innerHTML = `<div class="error-msg">❌ ${err.message}</div>`;
     }
