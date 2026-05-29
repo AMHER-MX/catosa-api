@@ -712,8 +712,8 @@
     function llenarSelectorClientes(clientes) {
         const sel = document.getElementById('vis-cliente');
         sel.innerHTML = '<option value="">— Selecciona cliente —</option>';
-        // Usar todos los clientes que ha atendido el vendedor
-        clientes.forEach(c => {
+        // Ordenar A-Z y usar todos los clientes que ha atendido
+        [...clientes].sort((a, b) => (a.Cliente||'').localeCompare(b.Cliente||'')).forEach(c => {
             const opt = document.createElement('option');
             opt.value = c.Codigo;
             opt.textContent = c.Cliente || c.Codigo;
