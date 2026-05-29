@@ -4,7 +4,6 @@ const cors    = require('cors');
 const sql     = require('mssql');
 const XLSX    = require('xlsx');
 const path    = require('path');
-const fs      = require('fs');
 
 const app = express();
 app.use(cors({ origin: '*', methods: ['GET','POST','OPTIONS'], allowedHeaders: ['Content-Type','Authorization'] }));
@@ -27,7 +26,7 @@ async function getPool() {
   return pool;
 }
 
-// ââ EXCEL DE METAS ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// ── EXCEL DE METAS ────────────────────────────────────────────────────────────
 let metasMap = {}, carteraMap = {}, aceiteBaseMap = {};
 
 function cargarExcel() {
@@ -88,9 +87,18 @@ function buscarCartera(vendedor) {
   return [];
 }
 
+// Metas por sucursal (definidas por dirección)
+const META_SUCURSAL = {
+  'TORREON':        5000000,
+  'GOMEZ PALACIO':  7000000,
+  'MONCLOVA':       2100000,
+  'PIEDRAS NEGRAS': 2100000,
+  'ANA':            0,
+};
+
 const SUCURSAL_NORM = {
-  'TR': 'TORREON', 'TORREÃN': 'TORREON',
-  'GP': 'GOMEZ PALACIO', 'GÃMEZ PALACIO': 'GOMEZ PALACIO',
+  'TR': 'TORREON', 'TORREÓN': 'TORREON',
+  'GP': 'GOMEZ PALACIO', 'GÓMEZ PALACIO': 'GOMEZ PALACIO',
   'MONC': 'MONCLOVA', 'PN': 'PIEDRAS NEGRAS',
 };
 function normSuc(s) { const k = (s||'').toUpperCase().trim(); return SUCURSAL_NORM[k] || k; }
@@ -99,7 +107,7 @@ const SUCURSALES    = `'ANA','GOMEZ PALACIO','MONCLOVA','PIEDRAS NEGRAS','TORREO
 const TIPOS_EXCL    = `'PRESUPUESTO','PRESUPUESTO 8%','Traspaso salida almacen'`;
 const TIPO_EXCL_SQL = `(s.DES_TIPO_VENTA NOT IN (${TIPOS_EXCL}) AND s.DES_TIPO_VENTA IS NOT NULL AND LTRIM(RTRIM(s.DES_TIPO_VENTA)) <> '')`;
 
-// ââ HEALTH CHECK ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// ── HEALTH CHECK ──────────────────────────────────────────────────────────────
 app.get('/', (req, res) => res.json({ status: 'ok', servidor: 'Catosa API' }));
 
 app.get('/api/ping', async (req, res) => {
@@ -110,8 +118,8 @@ app.get('/api/ping', async (req, res) => {
   } catch (err) { res.status(500).json({ status: 'error', mensaje: err.message }); }
 });
 
-// ââ VENTAS + METAS ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
-// ââ VENTAS TOTALES REALES (todos los vendedores, para KPIs de suma) âââââââââââ
+// ── VENTAS + METAS ────────────────────────────────────────────────────────────
+// ── VENTAS TOTALES REALES (todos los vendedores, para KPIs de suma) ───────────
 app.get('/api/ventas-totales', async (req, res) => {
   try {
     const db  = await getPool();
@@ -169,9 +177,11 @@ app.get('/api/ventas', async (req, res) => {
 
     const datos = result.recordset.map(row => {
       const m = buscarMeta(row.Nombre);
+      const metaSuc = META_SUCURSAL[normSuc(m.sucursal || row.Sucursal_SQL)] || 0;
       return {
         Nombre: row.Nombre, Sucursal: normSuc(m.sucursal || row.Sucursal_SQL),
         Canal: m.canal, Ventas: row.Ventas, Meta: m.meta,
+        MetaSucursal: metaSuc,
         Venta_Prov: 0, Meta_Prov: 50000,
       };
     });
@@ -182,7 +192,7 @@ app.get('/api/ventas', async (req, res) => {
   }
 });
 
-// ââ CLIENTES DEL VENDEDOR (con nombre comercial y direcciÃ³n) ââââââââââââââââââ
+// ── CLIENTES DEL VENDEDOR (con nombre comercial y dirección) ──────────────────
 app.get('/api/clientes', async (req, res) => {
   try {
     const db      = await getPool();
@@ -202,6 +212,8 @@ app.get('/api/clientes', async (req, res) => {
           COALESCE(c.NOMBRE, '')                                             AS NombreCompleto,
           DATEDIFF(DAY, MAX(s.FECHA), @hoy)                                 AS Dias,
           SUM(CASE WHEN s.FECHA >= @ini THEN s.IMP_TOTAL_LINEA ELSE 0 END)  AS Venta_Mes,
+          SUM(CASE WHEN s.FECHA >= DATEADD(year,-1,@ini) AND s.FECHA < @ini
+              THEN s.IMP_TOTAL_LINEA ELSE 0 END) / 12.0                     AS PromedioMensual,
           COALESCE(c.DIRECCION, '')                                          AS Direccion,
           COALESCE(c.DES_COLONIA, '')                                        AS Colonia,
           COALESCE(c.DES_DELEGACION, '')                                     AS Ciudad,
@@ -219,7 +231,7 @@ app.get('/api/clientes', async (req, res) => {
         ORDER BY Dias ASC
       `);
 
-    // Armar direcciÃ³n + marcar si es de cartera
+    // Armar dirección + marcar si es de cartera
     const cartera    = buscarCartera(vendedor);
     const carteraSet = new Set(cartera.map(c => c.toUpperCase().trim()));
 
@@ -227,7 +239,8 @@ app.get('/api/clientes', async (req, res) => {
       ...r,
       Direccion: [r.Direccion, r.Colonia, r.Ciudad, r.Estado, r.CP]
         .filter(Boolean).join(', '),
-      EsCartera: carteraSet.has((r.Codigo || '').toUpperCase().trim())
+      EsCartera: carteraSet.has((r.Codigo || '').toUpperCase().trim()),
+      PromedioMensual: parseFloat(r.PromedioMensual) || 0
     }));
 
     res.json(datos);
@@ -237,7 +250,7 @@ app.get('/api/clientes', async (req, res) => {
   }
 });
 
-// ââ INVENTARIO / COTIZADOR ââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// ── INVENTARIO / COTIZADOR ────────────────────────────────────────────────────
 app.get('/api/productos', async (req, res) => {
   try {
     const db  = await getPool();
@@ -270,7 +283,7 @@ app.get('/api/productos', async (req, res) => {
   }
 });
 
-// ââ TOP 10 PRODUCTOS DEL VENDEDOR âââââââââââââââââââââââââââââââââââââââââââââ
+// ── TOP 10 PRODUCTOS DEL VENDEDOR ─────────────────────────────────────────────
 app.get('/api/top-productos', async (req, res) => {
   try {
     const db      = await getPool();
@@ -286,6 +299,7 @@ app.get('/api/top-productos', async (req, res) => {
           s.ARTICULO                              AS Parte,
           s.DES_ARTICULO                          AS Descripcion,
           SUM(s.CANTIDAD)                         AS Unidades_Vendidas,
+          SUM(s.IMP_TOTAL_LINEA)                  AS Monto,
           COALESCE(inv.Existencia, 0)             AS Existencia
         FROM FTSABI_PR s
         LEFT JOIN (
@@ -309,23 +323,23 @@ app.get('/api/top-productos', async (req, res) => {
   }
 });
 
-// ââ CHALLENGE ACEITE MOTOR ââââââââââââââââââââââââââââââââââââââââââââââââââââ
-// NÃºmeros de parte participantes con prefijos 0/ y 1/ como aparecen en FTSABI_PR
+// ── CHALLENGE ACEITE MOTOR ────────────────────────────────────────────────────
+// Números de parte participantes con prefijos 0/ y 1/ como aparecen en FTSABI_PR
 const ACEITE_NPS = {};
 const _NPS_BASE = {
-  // TerminaciÃ³n BK = 1 litro
+  // Terminación BK = 1 litro
   'FLRTASCI4PLUSBK':1,'INTLCI4PBLK':1,'FLRTCI4BK':1,'FLRT15W40CK4BK':1,'INTLCK4BK':1,
   'INT15W40CI4PBLK':1,'INT15W40CK4BLK':1,'FLRT3460BK':1,'FLRTCK4BK':1,
-  // TerminaciÃ³n DR = 208 litros
+  // Terminación DR = 208 litros
   'FLRTASCI4PLUSDR':208,'INTLCI4PDR':208,'FLRT15W40CI4DR':208,'FLRT15W40CK4DR':208,'INTLCK4DR':208,
   'INT15W40CI4PDR':208,'INT15W40CK4DR':208,'FLRT3460DR':208,'FLRTCK4DR':208,'INT71231328D':208,'FLRT25W50DR':208,
-  // TerminaciÃ³n PL = 19 litros
+  // Terminación PL = 19 litros
   'FLRTASCI4PLUSPL':19,'INTLCI4PPL':19,'FLRT15W40CI4PL':19,'FLRT15W40CK4PL':19,'INTLCK4PL':19,
   'INT15W40CI4PPL':19,'INT15W40CK4PL':19,'FLRT3460PL':19,'FLRTCK4PL':19,'INT71231319P':19,'FLRT25W50PL':19,
-  // TerminaciÃ³n TL = 1000 litros
+  // Terminación TL = 1000 litros
   'FLRTASCI4PLUSTL':1000,'INTLCI4PTL':1000,'FLRT15W40CI4TL':1000,'FLRT15W40CK4TL':1000,'INTLCK4TL':1000,
   'INT15W40CI4PTT':1000,'INT15W40CK4TT':1000,'FLRT3460TL':1000,'FLRTCK4TL':1000,
-  // TerminaciÃ³n GA = 4 litros
+  // Terminación GA = 4 litros
   'FLRT15W40CI4G':4,'FLRT3460GA':4,'INT71231305G':4,
 };
 // Agrega prefijos 0/ y 1/ a cada NP
@@ -334,7 +348,7 @@ for (const [np, lts] of Object.entries(_NPS_BASE)) {
   ACEITE_NPS['0/'+np]  = lts;
   ACEITE_NPS['1/'+np]  = lts;
 }
-// NÃºmeros de marca International (con prefijos)
+// Números de marca International (con prefijos)
 const _INTL_BASE = ['INTLCI4PBLK','INTLCI4PDR','INTLCI4PPL','INTLCI4PTL',
   'INTLCK4BK','INTLCK4DR','INTLCK4PL','INTLCK4TL',
   'INT15W40CI4PBLK','INT15W40CI4PDR','INT15W40CI4PPL','INT15W40CI4PTT',
@@ -377,7 +391,7 @@ app.get('/api/aceite', async (req, res) => {
       if (NPS_INTL.has(row.ARTICULO)) litrosIntl += litros;
     });
 
-    // Base 2025 del vendedor â match exacto con nombres SQL
+    // Base 2025 del vendedor — match exacto con nombres SQL
     const vKey = nombreKey(vendedor);
     const basePromedio = aceiteBaseMap[vKey] || 0;
 
@@ -406,7 +420,68 @@ app.get('/api/aceite', async (req, res) => {
   }
 });
 
-// ââ VENTAS DIARIAS DEL MES (para calculadora) âââââââââââââââââââââââââââââââââ
+// ── ACEITE TODOS LOS VENDEDORES (para gerencia) ───────────────────────────────
+app.get('/api/aceite-todos', async (req, res) => {
+  try {
+    const db  = await getPool();
+    const hoy = new Date();
+    const ini = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-01`;
+    const fin = hoy.toISOString().split('T')[0];
+    const npsLista = Object.keys(ACEITE_NPS).map(n => `'${n}'`).join(',');
+
+    const result = await db.request()
+      .input('ini', sql.Date, ini)
+      .input('fin', sql.Date, fin)
+      .query(`
+        SELECT s.NOM_VENDEDOR, s.ARTICULO, SUM(s.CANTIDAD) AS Cantidad
+        FROM FTSABI_PR s
+        WHERE s.FECHA >= @ini AND s.FECHA <= @fin
+          AND s.ARTICULO IN (${npsLista})
+          AND s.NOM_ALMACEN_LIN IN (${SUCURSALES})
+          AND ${TIPO_EXCL_SQL}
+        GROUP BY s.NOM_VENDEDOR, s.ARTICULO
+      `);
+
+    // Agrupar por vendedor
+    const porVendedor = {};
+    result.recordset.forEach(row => {
+      const v = row.NOM_VENDEDOR;
+      if (!porVendedor[v]) porVendedor[v] = { litrosTotal: 0, litrosIntl: 0 };
+      const factor = ACEITE_NPS[row.ARTICULO] || 1;
+      const litros = (parseFloat(row.Cantidad) || 0) * factor;
+      porVendedor[v].litrosTotal += litros;
+      if (NPS_INTL.has(row.ARTICULO)) porVendedor[v].litrosIntl += litros;
+    });
+
+    // Construir respuesta para cada vendedor con meta
+    const datos = Object.entries(metasMap).map(([nombre, datos]) => {
+      const nombreSQL = Object.keys(porVendedor).find(k => nombreKey(k) === nombre) || '';
+      const vData = porVendedor[nombreSQL] || { litrosTotal: 0, litrosIntl: 0 };
+      const base  = aceiteBaseMap[nombre] || 0;
+      const litrosIncrementales = Math.max(0, vData.litrosTotal - base);
+      const bloques = Math.floor(litrosIncrementales / 500);
+      const pctIntl = vData.litrosTotal > 0 ? (vData.litrosIntl / vData.litrosTotal) * 100 : 0;
+      const premioPorBloque = pctIntl >= 30 ? 500 : 400;
+      return {
+        Nombre:              nombreSQL || nombre,
+        Sucursal:            datos.sucursal,
+        LitrosTotal:         Math.round(vData.litrosTotal),
+        LitrosIncrementales: Math.round(litrosIncrementales),
+        BasePromedio:        Math.round(base),
+        Bloques:             bloques,
+        PctIntl:             pctIntl.toFixed(1),
+        PremioPorBloque:     premioPorBloque,
+        PremioTotal:         bloques * premioPorBloque,
+        PctBarra:            Math.min(100, ((litrosIncrementales % 500) / 500) * 100),
+      };
+    }).sort((a, b) => b.LitrosIncrementales - a.LitrosIncrementales);
+
+    res.json(datos);
+  } catch (err) {
+    console.error('Error /api/aceite-todos:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
 app.get('/api/ventas-diarias', async (req, res) => {
   try {
     const db      = await getPool();
@@ -432,7 +507,7 @@ app.get('/api/ventas-diarias', async (req, res) => {
         ORDER BY Dia ASC
       `);
 
-    // Devuelve objeto { 1: 1234.5, 2: 0, 3: 890, ... } para los 31 dÃ­as
+    // Devuelve objeto { 1: 1234.5, 2: 0, 3: 890, ... } para los 31 días
     const dias = {};
     result.recordset.forEach(r => { dias[r.Dia] = parseFloat(r.Venta) || 0; });
     res.json(dias);
@@ -442,7 +517,42 @@ app.get('/api/ventas-diarias', async (req, res) => {
   }
 });
 
-// ââ CORES (Devoluciones pendientes â restan a ventas del vendedor) ââââââââââââ
+// ── CORES PENDIENTES DE PAGO (FTPDCBI_PR sin FEC_CANCELACION) ─────────────────
+app.get('/api/cores-pendientes', async (req, res) => {
+  try {
+    const db       = await getPool();
+    const vendedor = decodeURIComponent(req.query.vendedor || '');
+    const cartera  = buscarCartera(vendedor);
+
+    if (cartera.length === 0) return res.json([]);
+
+    const clientesIn = cartera.map(c => `'${c.replace(/'/g,"''")}'`).join(',');
+
+    const result = await db.request().query(`
+      SELECT
+        p.REFERENCIA                              AS Referencia,
+        p.NRO_PEDIDO                              AS NroPedido,
+        p.CTA_CLIENTE                             AS Codigo,
+        p.DES_ARTICULO                            AS Articulo,
+        p.DES_TIPO_VENTA                          AS TipoVenta,
+        CONVERT(varchar(10), p.FECHA, 23)         AS FechaFactura,
+        p.P_VENTA                                 AS Monto,
+        p.CANTIDAD_PEDIDA                         AS CantidadPedida,
+        p.CANTIDAD_RECIBIDA                       AS CantidadRecibida,
+        DATEDIFF(day, p.FECHA, GETDATE())         AS DiasSinPagar
+      FROM FTPDCBI_PR p
+      WHERE p.DES_TIPO_VENTA IN ('VENTA REMISIONES CORES', 'VENTA REMISIONES CORES 8%')
+        AND p.FEC_CANCELACION IS NULL
+        AND p.CTA_CLIENTE IN (${clientesIn})
+      ORDER BY DiasSinPagar DESC
+    `);
+
+    res.json(result.recordset);
+  } catch (err) {
+    console.error('Error /api/cores-pendientes:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
 app.get('/api/cores', async (req, res) => {
   try {
     const db       = await getPool();
@@ -485,13 +595,13 @@ app.get('/api/cores', async (req, res) => {
   }
 });
 
-// ââ TORNEO WORLD CUP â ClasificaciÃ³n real desde SQL ââââââââââââââââââââââââââ
+// ── TORNEO WORLD CUP — Clasificación real desde SQL ──────────────────────────
 app.get('/api/torneo', async (req, res) => {
   try {
     const db   = await getPool();
     const anio = new Date().getFullYear();
 
-    // Ventas Mayo 18â31
+    // Ventas Mayo 18–31
     const rMayo = await db.request().query(`
       SELECT NOM_VENDEDOR, SUM(IMP_TOTAL_LINEA) AS VentaMayo
       FROM FTSABI_PR
@@ -515,7 +625,7 @@ app.get('/api/torneo', async (req, res) => {
     const ventaJunio = {};
     rJunio.recordset.forEach(r => { ventaJunio[nombreKey(r.NOM_VENDEDOR)] = parseFloat(r.VentaJunio)||0; });
 
-    // Ventas Julio 1â17 (fase final)
+    // Ventas Julio 1–17 (fase final)
     const rJulio = await db.request().query(`
       SELECT NOM_VENDEDOR, SUM(IMP_TOTAL_LINEA) AS VentaJulio
       FROM FTSABI_PR
@@ -559,77 +669,6 @@ app.get('/api/torneo', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-
-// TABLEROS
-app.get('/api/tables', async (req, res) => {
-  try {
-    const db = await getPool();
-    const result = await db.request().query("SELECT name FROM sys.tables ORDER BY name");
-    res.json({ tables: result.recordset.map(r => r.name) });
-  } catch (err) { pool = null; res.status(500).json({ error: err.message }); }
-});
-
-app.get('/api/table/:name', async (req, res) => {
-  const tableName = req.params.name;
-  const limit = Math.min(parseInt(req.query.limit) || 500, 10000);
-  try {
-    const db = await getPool();
-    const col = await db.request().query("SELECT name FROM sys.columns WHERE object_id = OBJECT_ID('" + tableName + "') ORDER BY column_id");
-    const data = await db.request().query("SELECT TOP " + limit + " * FROM [" + tableName + "]");
-    res.json({ columns: col.recordset.map(r=>r.name), rows: data.recordset, total: data.recordset.length });
-  } catch (err) { pool = null; res.status(500).json({ error: err.message }); }
-});
-
-// ── TABLEROS: guardar/cargar por área ─────────────────────────────────────────
-const TABLEROS_FILE = path.join(__dirname, 'tableros.json');
-
-function leerTableros() {
-  try {
-    if (fs.existsSync(TABLEROS_FILE)) {
-      return JSON.parse(fs.readFileSync(TABLEROS_FILE, 'utf8'));
-    }
-  } catch(e) { console.error('Error leyendo tableros.json:', e.message); }
-  return {};
-}
-
-function guardarTableros(data) {
-  try {
-    fs.writeFileSync(TABLEROS_FILE, JSON.stringify(data, null, 2), 'utf8');
-    return true;
-  } catch(e) { console.error('Error guardando tableros.json:', e.message); return false; }
-}
-
-// GET /api/tableros/:area — obtener tableros de un área
-app.get('/api/tableros/:area', (req, res) => {
-  const { area } = req.params;
-  const all = leerTableros();
-  res.json({ dashboards: all[area] || [] });
-});
-
-// POST /api/tableros/:area — guardar tableros de un área (reemplaza todos)
-app.post('/api/tableros/:area', (req, res) => {
-  const { area } = req.params;
-  const { dashboards } = req.body;
-  if (!Array.isArray(dashboards)) return res.status(400).json({ error: 'dashboards debe ser un array' });
-  const all = leerTableros();
-  all[area] = dashboards;
-  if (guardarTableros(all)) {
-    res.json({ ok: true, saved: dashboards.length });
-  } else {
-    res.status(500).json({ error: 'No se pudo guardar' });
-  }
-});
-
-// DELETE /api/tableros/:area/:id — eliminar un tablero específico
-app.delete('/api/tableros/:area/:id', (req, res) => {
-  const { area, id } = req.params;
-  const all = leerTableros();
-  if (!all[area]) return res.json({ ok: true });
-  all[area] = all[area].filter(d => d.id !== id);
-  guardarTableros(all);
-  res.json({ ok: true });
-});
-
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, '0.0.0.0', () => console.log(`Catosa API en http://localhost:${PORT}`));
