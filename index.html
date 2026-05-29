@@ -118,9 +118,18 @@
         .btn-maps.waze   { background:#33ccff; color:#000; }
         .btn-maps.wa     { background:#25d366; color:#fff; }
 
-        /* LOADING */
-        .loading { text-align: center; color: #555; font-size: 0.75rem; padding: 20px; }
-        .error-msg { color: var(--red); font-size: 0.75rem; text-align: center; padding: 10px; }
+        /* REGISTRO DE VISITAS */
+        .visita-form { background:rgba(255,255,255,0.03); border-radius:14px; padding:16px; border:1px solid #222; margin-bottom:15px; }
+        .visita-form select, .visita-form input[type=text], .visita-form input[type=number] { 
+            width:100%; background:#000; border:1px solid #333; padding:10px 12px; 
+            border-radius:8px; color:#fff; margin-bottom:10px; box-sizing:border-box; font-size:0.8rem; }
+        .semaforo-potencial { display:inline-block; padding:3px 10px; border-radius:20px; font-size:0.65rem; font-weight:bold; margin-left:6px; }
+        .sem-verde  { background:rgba(0,255,136,0.15); color:var(--grass); border:1px solid var(--grass); }
+        .sem-ambar  { background:rgba(255,215,0,0.15);  color:var(--gold);  border:1px solid var(--gold); }
+        .sem-rojo   { background:rgba(255,75,43,0.15);  color:var(--red);   border:1px solid var(--red); }
+        .btn-registrar { background:var(--grass); color:#000; border:none; border-radius:50px; padding:14px; font-weight:900; width:100%; cursor:pointer; font-size:0.85rem; }
+        .btn-registrar:disabled { background:#333; color:#666; cursor:not-allowed; }
+        .visita-hist-item { padding:10px; background:rgba(255,255,255,0.03); border-radius:10px; margin-bottom:6px; border-left:3px solid var(--grass); }
 
         /* CORES */
         .cores-table { width:100%; border-collapse:collapse; font-size:0.72rem; }
@@ -261,6 +270,60 @@
     <button class="btn-forms" onclick="window.open('https://docs.google.com/forms/d/e/1FAIpQLSfWF2AutcLCDhfBL6hoABmWVv4OKDvorCNB2CJTgY5QlrPrwA/viewform?usp=dialog','_blank')">
         📝 REGISTRAR NUEVO PROSPECTO
     </button>
+
+    <!-- ══ REGISTRO DE VISITA ══════════════════════════════════════════════ -->
+    <div class="visita-form">
+        <h2 style="font-size:0.8rem; border-bottom:1px solid var(--blue); padding-bottom:10px; margin-bottom:14px; color:var(--blue); text-transform:uppercase;">📋 REGISTRAR VISITA</h2>
+
+        <!-- Cliente -->
+        <label style="font-size:0.6rem; color:#888; text-transform:uppercase; display:block; margin-bottom:4px;">Cliente</label>
+        <select id="vis-cliente" onchange="onVisClienteChange()">
+            <option value="">— Selecciona cliente —</option>
+        </select>
+        <div id="vis-cliente-otro-wrap" style="display:none;">
+            <input type="text" id="vis-cliente-otro" placeholder="Nombre del cliente...">
+        </div>
+
+        <!-- Info del cliente -->
+        <div id="vis-cliente-info" style="display:none; background:rgba(0,0,0,0.3); border-radius:8px; padding:10px; margin-bottom:10px; font-size:0.7rem;">
+            <span id="vis-info-txt" style="color:#888;"></span>
+        </div>
+
+        <!-- Motivo -->
+        <label style="font-size:0.6rem; color:#888; text-transform:uppercase; display:block; margin-bottom:4px;">Motivo de visita</label>
+        <select id="vis-motivo">
+            <option value="">— Selecciona motivo —</option>
+            <option value="Visita">📍 Visita</option>
+            <option value="Cobro">💰 Cobro</option>
+            <option value="Seguimiento de pedido">📦 Seguimiento de pedido</option>
+            <option value="Reactivación">🔄 Reactivación</option>
+            <option value="Prospección">🎯 Prospección</option>
+            <option value="Presentación de producto">🛠️ Presentación de producto</option>
+            <option value="Queja / Reclamación">⚠️ Queja / Reclamación</option>
+            <option value="Crédito">🏦 Crédito</option>
+            <option value="Otro">✏️ Otro</option>
+        </select>
+
+        <!-- Monto potencial -->
+        <label style="font-size:0.6rem; color:#888; text-transform:uppercase; display:block; margin-bottom:4px;">
+            Monto potencial del mes
+            <span id="vis-semaforo" class="semaforo-potencial" style="display:none;"></span>
+        </label>
+        <div style="position:relative;">
+            <span style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:#888; font-size:0.8rem;">$</span>
+            <input type="number" id="vis-monto" placeholder="0.00" oninput="onVisMonto()" style="padding-left:24px;">
+        </div>
+        <div id="vis-promedio-txt" style="font-size:0.6rem; color:#555; margin-top:-6px; margin-bottom:10px;"></div>
+
+        <!-- Notas -->
+        <label style="font-size:0.6rem; color:#888; text-transform:uppercase; display:block; margin-bottom:4px;">Notas (opcional)</label>
+        <input type="text" id="vis-notas" placeholder="Comentarios adicionales...">
+
+        <button class="btn-registrar" id="btn-registrar-visita" onclick="registrarVisita()">
+            ✅ REGISTRAR VISITA
+        </button>
+        <div id="vis-msg" style="text-align:center; font-size:0.7rem; margin-top:8px;"></div>
+    </div>
 
     <div style="background:var(--card); border-radius:20px; padding:20px; border:1px solid #333; margin-bottom:15px;">
         <h2 style="font-size:0.8rem; border-bottom:1px solid var(--red); padding-bottom:10px; margin-bottom:12px; color:var(--red); text-transform:uppercase;">⚠️ CORES</h2>
@@ -505,6 +568,7 @@
 
             // ── Mapa cartera ──
             renderMapa(clientes);
+            llenarSelectorClientes(clientes);
         } catch (err) {
             lc.innerHTML = `<div class="error-msg">❌ Error cargando clientes<br><small>${err.message}</small></div>`;
             document.getElementById('mapa-lista').innerHTML = `<div class="error-msg">❌ ${err.message}</div>`;
@@ -642,7 +706,137 @@
         renderMapa(lista);
     }
 
-    // ─── TOP PRODUCTOS ───────────────────────────────────────────────────────
+    const SHEETS_VISITAS = 'https://script.google.com/macros/s/AKfycbxs__4zTTQW75cld-n-tyiyhsDcYeFSefGwHGImVgyGMJepLEIgHolMztCp8ov49Fev/exec';
+
+    // ─── VISITAS ─────────────────────────────────────────────────────────────
+    function llenarSelectorClientes(clientes) {
+        const sel = document.getElementById('vis-cliente');
+        sel.innerHTML = '<option value="">— Selecciona cliente —</option>';
+        clientes.filter(c => c.EsCartera).forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c.Codigo;
+            opt.textContent = c.Cliente || c.Codigo;
+            opt.dataset.promedio = c.PromedioMensual || 0;
+            opt.dataset.venta    = c.Venta_Mes || 0;
+            opt.dataset.dias     = c.Dias || 0;
+            sel.appendChild(opt);
+        });
+        const otro = document.createElement('option');
+        otro.value = 'OTRO';
+        otro.textContent = '✏️ Otro cliente...';
+        sel.appendChild(otro);
+    }
+
+    function onVisClienteChange() {
+        const sel    = document.getElementById('vis-cliente');
+        const codigo = sel.value;
+        const wrap   = document.getElementById('vis-cliente-otro-wrap');
+        const info   = document.getElementById('vis-cliente-info');
+        const infoTxt= document.getElementById('vis-info-txt');
+
+        wrap.style.display = codigo === 'OTRO' ? 'block' : 'none';
+
+        if (codigo && codigo !== 'OTRO') {
+            const opt = sel.options[sel.selectedIndex];
+            const prom = parseFloat(opt.dataset.promedio) || 0;
+            const vent = parseFloat(opt.dataset.venta)    || 0;
+            const dias = parseInt(opt.dataset.dias)       || 0;
+            info.style.display = 'block';
+            infoTxt.innerHTML = `Promedio mensual: <b style="color:var(--blue)">${fM(prom)}</b> &nbsp;|&nbsp; Venta este mes: <b style="color:var(--grass)">${fM(vent)}</b> &nbsp;|&nbsp; Último contacto: <b>${dias} días</b>`;
+            // Actualizar semáforo si hay monto
+            onVisMonto();
+        } else {
+            info.style.display = 'none';
+        }
+    }
+
+    function onVisMonto() {
+        const sel    = document.getElementById('vis-cliente');
+        const monto  = parseFloat(document.getElementById('vis-monto').value) || 0;
+        const sem    = document.getElementById('vis-semaforo');
+        const promTxt= document.getElementById('vis-promedio-txt');
+        const opt    = sel.options[sel.selectedIndex];
+        const prom   = opt ? (parseFloat(opt.dataset.promedio) || 0) : 0;
+
+        if (prom > 0 && monto > 0) {
+            const pct = (monto / prom) * 100;
+            sem.style.display = 'inline-block';
+            promTxt.innerHTML = `Promedio histórico: ${fM(prom)} · Potencial = ${pct.toFixed(0)}% del promedio`;
+            if (pct >= 80) {
+                sem.className = 'semaforo-potencial sem-verde';
+                sem.innerText = '🟢 Alto';
+            } else if (pct >= 40) {
+                sem.className = 'semaforo-potencial sem-ambar';
+                sem.innerText = '🟡 Medio';
+            } else {
+                sem.className = 'semaforo-potencial sem-rojo';
+                sem.innerText = '🔴 Bajo';
+            }
+        } else {
+            sem.style.display = 'none';
+            promTxt.textContent = prom > 0 ? `Promedio histórico: ${fM(prom)}` : '';
+        }
+    }
+
+    async function registrarVisita() {
+        const btn    = document.getElementById('btn-registrar-visita');
+        const msg    = document.getElementById('vis-msg');
+        const sel    = document.getElementById('vis-cliente');
+        const codigo = sel.value;
+        const clienteNombre = codigo === 'OTRO'
+            ? document.getElementById('vis-cliente-otro').value.trim()
+            : (sel.options[sel.selectedIndex]?.textContent || codigo);
+        const motivo = document.getElementById('vis-motivo').value;
+        const monto  = document.getElementById('vis-monto').value;
+        const notas  = document.getElementById('vis-notas').value;
+
+        if (!codigo) { msg.innerHTML = '<span style="color:var(--red)">⚠️ Selecciona un cliente</span>'; return; }
+        if (codigo === 'OTRO' && !clienteNombre) { msg.innerHTML = '<span style="color:var(--red)">⚠️ Escribe el nombre del cliente</span>'; return; }
+        if (!motivo) { msg.innerHTML = '<span style="color:var(--red)">⚠️ Selecciona un motivo</span>'; return; }
+
+        btn.disabled = true;
+        btn.textContent = 'Registrando...';
+        msg.textContent = '';
+
+        const ahora = new Date();
+        const fecha = ahora.toLocaleDateString('es-MX');
+        const hora  = ahora.toLocaleTimeString('es-MX', { hour:'2-digit', minute:'2-digit' });
+
+        try {
+            await fetch(SHEETS_VISITAS, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    fecha, hora,
+                    asesor:         user.Nombre,
+                    sucursal:       user.Sucursal,
+                    codigo:         codigo === 'OTRO' ? 'OTRO' : codigo,
+                    cliente:        clienteNombre,
+                    motivo,
+                    montoPotencial: monto || '0',
+                    notas
+                })
+            });
+
+            // Limpiar form
+            document.getElementById('vis-cliente').value  = '';
+            document.getElementById('vis-motivo').value   = '';
+            document.getElementById('vis-monto').value    = '';
+            document.getElementById('vis-notas').value    = '';
+            document.getElementById('vis-cliente-otro-wrap').style.display = 'none';
+            document.getElementById('vis-cliente-info').style.display     = 'none';
+            document.getElementById('vis-semaforo').style.display          = 'none';
+            document.getElementById('vis-promedio-txt').textContent        = '';
+
+            msg.innerHTML = `<span style="color:var(--grass)">✅ Visita registrada — ${fecha} ${hora}</span>`;
+        } catch(err) {
+            msg.innerHTML = `<span style="color:var(--red)">❌ Error: ${err.message}</span>`;
+        } finally {
+            btn.disabled = false;
+            btn.textContent = '✅ REGISTRAR VISITA';
+        }
+    }
     let topProductosData = [];
     let topFiltro = 'unidades';
 
