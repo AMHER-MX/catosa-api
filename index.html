@@ -712,7 +712,8 @@
     function llenarSelectorClientes(clientes) {
         const sel = document.getElementById('vis-cliente');
         sel.innerHTML = '<option value="">— Selecciona cliente —</option>';
-        clientes.filter(c => c.EsCartera).forEach(c => {
+        // Usar todos los clientes que ha atendido el vendedor
+        clientes.forEach(c => {
             const opt = document.createElement('option');
             opt.value = c.Codigo;
             opt.textContent = c.Cliente || c.Codigo;
