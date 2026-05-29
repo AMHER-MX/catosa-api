@@ -614,6 +614,31 @@
             <div class="scroll-list" id="bbd-list"><div class="loading">Cargando...</div></div>
         </div>
 
+        <!-- VISITAS -->
+        <div class="card">
+            <div class="card-title">📍 Registro de Visitas
+                <span id="vis-count" style="font-size:0.55rem; color:#555; font-weight:400;"></span>
+            </div>
+            <div style="display:flex; gap:6px; margin-bottom:10px; flex-wrap:wrap;">
+                <select class="filter-select" id="vis-f-vend" onchange="loadVisitas()" style="flex:1; min-width:120px;">
+                    <option value="TODOS">Todos los asesores</option>
+                </select>
+                <select class="filter-select" id="vis-f-motivo" onchange="loadVisitas()" style="flex:1; min-width:120px;">
+                    <option value="TODOS">Todos los motivos</option>
+                    <option value="Visita">Visita</option>
+                    <option value="Cobro">Cobro</option>
+                    <option value="Seguimiento de pedido">Seguimiento pedido</option>
+                    <option value="Reactivación">Reactivación</option>
+                    <option value="Prospección">Prospección</option>
+                    <option value="Presentación de producto">Presentación</option>
+                    <option value="Queja / Reclamación">Queja</option>
+                    <option value="Crédito">Crédito</option>
+                    <option value="Otro">Otro</option>
+                </select>
+            </div>
+            <div class="scroll-list" id="vis-list"><div class="loading">Cargando...</div></div>
+        </div>
+
         <!-- CARTERA SEMÁFORO -->
         <div class="card" style="grid-column: 1 / -1;">
             <div class="card-title">👥 Cartera Semáforo</div>
@@ -637,6 +662,7 @@
 // ── CONFIG ────────────────────────────────────────────────────────────────────
 const API = 'https://api.catosaapps.lat';
 const SHEETS_BBD = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTXRBcfvzRWWgd4GI6OZ2CI4fPXdDzkQIucSNCb_1lZhKW9kmBVcXCFx19L5kdTCMEy0d9Yy5GOttRH/pub?gid=349527356&single=true&output=csv';
+const SHEETS_VISITAS = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTXRBcfvzRWWgd4GI6OZ2CI4fPXdDzkQIucSNCb_1lZhKW9kmBVcXCFx19L5kdTCMEy0d9Yy5GOttRH/pub?gid=0&single=true&output=csv';
 
 const USUARIOS = {
     'GERENTE':   'CATOSA2026',
@@ -687,6 +713,7 @@ async function login() {
     renderAll();
     loadTopProductos();
     loadBBD();
+    loadVisitas();
     loadCores();
     loadTorneo();
     loadAceiteG();
@@ -1325,6 +1352,76 @@ function loadBBD() {
             if (!refacciones.length) el.innerHTML = '<div class="loading">Sin prospectos registrados</div>';
         },
         error: () => { el.innerHTML = '<div class="error-msg">❌ Error cargando BBD</div>'; }
+    });
+}
+
+// ── VISITAS ───────────────────────────────────────────────────────────────────
+let visitas_data = [];
+
+function loadVisitas() {
+    const el = document.getElementById('vis-list');
+    el.innerHTML = '<div class="loading">Cargando...</div>';
+
+    Papa.parse(SHEETS_VISITAS, {
+        download: true, header: true,
+        complete: r => {
+            visitas_data = r.data.filter(row => row['Fecha'] && row['Asesor']);
+
+            // Llenar filtro de asesores
+            const selVend = document.getElementById('vis-f-vend');
+            const currentVend = selVend.value;
+            const asesores = [...new Set(visitas_data.map(v => v['Asesor']).filter(Boolean))].sort();
+            selVend.innerHTML = '<option value="TODOS">Todos los asesores</option>';
+            asesores.forEach(a => {
+                const opt = document.createElement('option');
+                opt.value = a; opt.textContent = a;
+                if (a === currentVend) opt.selected = true;
+                selVend.appendChild(opt);
+            });
+
+            renderVisitas();
+        },
+        error: () => { el.innerHTML = '<div class="error-msg">❌ Error cargando visitas</div>'; }
+    });
+}
+
+function renderVisitas() {
+    const el      = document.getElementById('vis-list');
+    const fVend   = document.getElementById('vis-f-vend').value;
+    const fMotivo = document.getElementById('vis-f-motivo').value;
+
+    let lista = [...visitas_data].reverse();
+    if (fVend   !== 'TODOS') lista = lista.filter(v => v['Asesor'] === fVend);
+    if (fMotivo !== 'TODOS') lista = lista.filter(v => v['Motivo'] === fMotivo);
+
+    document.getElementById('vis-count').textContent = `${lista.length} registros`;
+    el.innerHTML = '';
+
+    if (!lista.length) { el.innerHTML = '<div class="loading">Sin visitas registradas</div>'; return; }
+
+    lista.slice(0, 50).forEach(v => {
+        const monto = parseFloat(v['Monto Potencial']) || 0;
+        const motivo = v['Motivo'] || '—';
+        const motivoColor = {
+            'Cobro': 'var(--gold)', 'Reactivación': 'var(--blue)',
+            'Queja / Reclamación': 'var(--red)', 'Prospección': 'var(--grass)'
+        }[motivo] || 'var(--silver)';
+
+        el.innerHTML += `
+            <div class="prospecto-item">
+                <div class="prospecto-name">
+                    📍 ${v['Cliente'] || '—'}
+                    <span style="font-size:0.5rem; background:rgba(255,255,255,0.06); color:${motivoColor}; 
+                        border:1px solid ${motivoColor}; padding:1px 6px; border-radius:10px; margin-left:6px;">
+                        ${motivo}
+                    </span>
+                </div>
+                <div class="prospecto-meta">
+                    👤 ${v['Asesor']||'—'} &nbsp;|&nbsp; 🏢 ${v['Sucursal']||'—'} &nbsp;|&nbsp; 📅 ${v['Fecha']||'—'} ${v['Hora']||''}
+                </div>
+                ${monto > 0 ? `<div class="prospecto-meta" style="color:var(--grass);">💰 Potencial: ${fM(monto)}</div>` : ''}
+                ${v['Notas'] ? `<div class="prospecto-meta" style="color:#444;">📝 ${v['Notas']}</div>` : ''}
+            </div>`;
     });
 }
 </script>
