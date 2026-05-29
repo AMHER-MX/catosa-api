@@ -737,16 +737,22 @@
         wrap.style.display = codigo === 'OTRO' ? 'block' : 'none';
 
         if (codigo && codigo !== 'OTRO') {
-            const opt = sel.options[sel.selectedIndex];
+            const opt  = sel.options[sel.selectedIndex];
             const prom = parseFloat(opt.dataset.promedio) || 0;
             const vent = parseFloat(opt.dataset.venta)    || 0;
             const dias = parseInt(opt.dataset.dias)       || 0;
             info.style.display = 'block';
             infoTxt.innerHTML = `Promedio mensual: <b style="color:var(--blue)">${fM(prom)}</b> &nbsp;|&nbsp; Venta este mes: <b style="color:var(--grass)">${fM(vent)}</b> &nbsp;|&nbsp; Último contacto: <b>${dias} días</b>`;
-            // Actualizar semáforo si hay monto
-            onVisMonto();
+            // Auto-rellenar monto potencial con el promedio histórico
+            if (prom > 0) {
+                document.getElementById('vis-monto').value = Math.round(prom);
+                onVisMonto();
+            }
         } else {
             info.style.display = 'none';
+            document.getElementById('vis-monto').value = '';
+            document.getElementById('vis-semaforo').style.display = 'none';
+            document.getElementById('vis-promedio-txt').textContent = '';
         }
     }
 
