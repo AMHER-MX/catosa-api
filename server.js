@@ -670,5 +670,84 @@ app.get('/api/torneo', async (req, res) => {
   }
 });
 
+// ── TABLAS: exponer tablas de SQL Server para app de tableros ──────────────
+app.get('/api/tables', async (req, res) => {
+  try {
+    const db = await getPool();
+    const result = await db.request().query(
+      "SELECT name FROM sys.tables ORDER BY name"
+    );
+    res.json({ tables: result.recordset.map(r => r.name) });
+  } catch (err) {
+    pool = null;
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/table/:name', async (req, res) => {
+  const tableName = req.params.name.replace(/[^a-zA-Z0-9_]/g, '');
+  const limit = Math.min(parseInt(req.query.limit) || 500, 50000);
+  const dateFrom = req.query.dateFrom;
+  const dateTo   = req.query.dateTo;
+  const dateCol  = req.query.dateCol;
+  try {
+    const db = await getPool();
+    const colRes = await db.request().query(
+      `SELECT name FROM sys.columns WHERE object_id = OBJECT_ID('${tableName}') ORDER BY column_id`
+    );
+    const columns = colRes.recordset.map(r => r.name);
+
+    let where = '';
+    if (dateCol && columns.includes(dateCol)) {
+      const parts = [];
+      if (dateFrom) parts.push(`[${dateCol}] >= '${dateFrom}'`);
+      if (dateTo)   parts.push(`[${dateCol}] <= '${dateTo} 23:59:59'`);
+      if (parts.length) where = 'WHERE ' + parts.join(' AND ');
+    }
+
+    const data = await db.request().query(
+      `SELECT TOP ${limit} * FROM [${tableName}] ${where}`
+    );
+    res.json({ columns, rows: data.recordset, total: data.recordset.length });
+  } catch (err) {
+    pool = null;
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── TABLEROS: guardar/cargar por área ─────────────────────────────────────
+const fs = require('fs');
+const TABLEROS_FILE = path.join(__dirname, 'tableros.json');
+
+function leerTableros() {
+  try { return JSON.parse(fs.readFileSync(TABLEROS_FILE, 'utf8')); }
+  catch { return {}; }
+}
+function guardarTableros(data) {
+  fs.writeFileSync(TABLEROS_FILE, JSON.stringify(data, null, 2));
+}
+
+app.get('/api/tableros/:area', (req, res) => {
+  const data = leerTableros();
+  res.json(data[req.params.area] || []);
+});
+
+app.post('/api/tableros/:area', (req, res) => {
+  const data = leerTableros();
+  data[req.params.area] = req.body;
+  guardarTableros(data);
+  res.json({ ok: true });
+});
+
+app.delete('/api/tableros/:area/:id', (req, res) => {
+  const data = leerTableros();
+  if (data[req.params.area]) {
+    data[req.params.area] = data[req.params.area].filter(d => d.id !== req.params.id);
+    guardarTableros(data);
+  }
+  res.json({ ok: true });
+});
+
+
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, '0.0.0.0', () => console.log(`Catosa API en http://localhost:${PORT}`));
