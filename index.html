@@ -4,7 +4,75 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Catosa GP - World Cup Edition v2026</title>
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js">
+    // ── RESUMEN MES ANTERIOR ──────────────────────────────────────────────
+    const fM2 = n => new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN',minimumFractionDigits:0}).format(n||0);
+
+    async function abrirResumen() {
+        if (!user) return;
+        document.getElementById('resumen-modal').classList.add('open');
+        document.getElementById('r-ventas').innerText = '...';
+        try {
+            const nombre = encodeURIComponent(user.Nombre);
+            const d = await apiFetch(`/api/resumen-mes?vendedor=${nombre}`);
+            const mesCapital = d.mes.charAt(0).toUpperCase() + d.mes.slice(1);
+
+            document.getElementById('r-mes').innerText       = mesCapital;
+            document.getElementById('r-vendedor').innerText  = user.Nombre;
+            document.getElementById('r-ventas').innerText    = fM2(d.ventasAnt);
+            document.getElementById('r-meta').innerText      = fM2(d.meta);
+            document.getElementById('r-dias').innerText      = d.diasTrabajados;
+
+            const kpiMeta = document.getElementById('r-kpi-meta');
+            document.getElementById('r-pct').innerText = d.pct + '%';
+            kpiMeta.className = 'resumen-kpi ' + (d.cumpleMeta ? 'cumple' : 'nocumple');
+
+            // Top productos
+            const tp = document.getElementById('r-productos');
+            tp.innerHTML = d.topProductos.map((p,i) =>
+                `<tr><td>${i+1}. ${(p.Descripcion||p.Parte).substring(0,28)}</td><td>${fM2(p.Monto)}</td></tr>`
+            ).join('') || '<tr><td colspan="2" style="color:#888;text-align:center;">Sin datos</td></tr>';
+
+            // Top clientes
+            const tc = document.getElementById('r-clientes');
+            tc.innerHTML = d.topClientes.map((c,i) =>
+                `<tr><td>${i+1}. ${(c.Cliente||c.Codigo).substring(0,28)}</td><td>${fM2(c.Monto)}</td></tr>`
+            ).join('') || '<tr><td colspan="2" style="color:#888;text-align:center;">Sin datos</td></tr>';
+
+            // Oportunidades
+            document.getElementById('r-oportunidades').innerHTML =
+                d.oportunidades.map(o => `<div class="oportu-item">💡 ${o}</div>`).join('');
+
+        } catch(e) {
+            document.getElementById('r-ventas').innerText = 'Error';
+        }
+    }
+
+    function cerrarResumen() {
+        document.getElementById('resumen-modal').classList.remove('open');
+    }
+
+    async function exportarResumenPDF() {
+        window.print();
+    }
+
+    async function exportarResumenPNG() {
+        const el = document.getElementById('resumen-content');
+        if (typeof html2canvas === 'undefined') {
+            const s = document.createElement('script');
+            s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+            document.head.appendChild(s);
+            await new Promise(r => s.onload = r);
+        }
+        const canvas = await html2canvas(el, { backgroundColor:'#111', scale:2 });
+        const a = document.createElement('a');
+        a.href = canvas.toDataURL('image/png');
+        const mes = document.getElementById('r-mes').innerText.replace(/ /g,'_');
+        a.download = `Resumen_${mes}_${user?.Nombre?.split(' ')[0]||'asesor'}.png`;
+        a.click();
+    }
+
+    </script>
     <style>
         :root { 
             --pitch: #1a472a; 
@@ -144,7 +212,34 @@
         .cores-kpi  { flex:1; background:rgba(255,255,255,0.04); border-radius:10px; padding:10px; text-align:center; border:1px solid #222; }
         .cores-kpi span { font-size:0.5rem; color:#888; text-transform:uppercase; display:block; margin-bottom:3px; }
         .cores-kpi b { font-size:0.9rem; }
-    </style>
+    
+        /* ── RESUMEN MES MODAL ───────────────────────────── */
+        #resumen-modal { display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.85); overflow-y:auto; padding:16px; }
+        #resumen-modal.open { display:flex; align-items:flex-start; justify-content:center; }
+        .resumen-card { background:#111; border:1px solid var(--gold); border-radius:20px; width:100%; max-width:500px; padding:24px; margin:auto; }
+        .resumen-header { text-align:center; margin-bottom:20px; }
+        .resumen-header h2 { color:var(--gold); font-size:1.1rem; margin:0 0 4px; }
+        .resumen-header p  { color:#888; font-size:0.75rem; margin:0; }
+        .resumen-kpis { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:18px; }
+        .resumen-kpi  { background:#1a1a1a; border-radius:12px; padding:12px; text-align:center; }
+        .resumen-kpi .rk-val { font-size:1.3rem; font-weight:700; color:var(--gold); }
+        .resumen-kpi .rk-lbl { font-size:0.65rem; color:#888; margin-top:3px; }
+        .resumen-kpi.cumple .rk-val { color:#00ff88; }
+        .resumen-kpi.nocumple .rk-val { color:#ff4444; }
+        .resumen-section { margin-bottom:16px; }
+        .resumen-section h3 { font-size:0.7rem; color:#888; text-transform:uppercase; letter-spacing:1px; margin:0 0 8px; }
+        .resumen-table { width:100%; border-collapse:collapse; font-size:0.72rem; }
+        .resumen-table td { padding:6px 4px; border-bottom:1px solid #1e1e1e; }
+        .resumen-table td:last-child { text-align:right; color:var(--gold); }
+        .oportu-item { background:#1a1a1a; border-left:3px solid var(--gold); border-radius:0 8px 8px 0; padding:8px 12px; margin-bottom:8px; font-size:0.75rem; line-height:1.4; }
+        .resumen-btns { display:flex; gap:10px; margin-top:20px; }
+        .resumen-btns button { flex:1; padding:12px; border-radius:12px; font-size:0.8rem; font-weight:600; cursor:pointer; border:none; }
+        .btn-pdf { background:var(--gold); color:#000; }
+        .btn-png { background:#1a1a1a; color:var(--gold); border:1px solid var(--gold) !important; }
+        .btn-close-resumen { background:#222; color:#888; }
+        @media print { body > *:not(#resumen-modal) { display:none !important; } #resumen-modal { display:flex !important; position:static; background:white; padding:0; } .resumen-btns { display:none; } .resumen-card { border:none; } }
+
+        </style>
 </head>
 <body>
 
@@ -267,7 +362,10 @@
         </div>
     </div>
 
-    <button class="btn-forms" onclick="window.open('https://docs.google.com/forms/d/e/1FAIpQLSfWF2AutcLCDhfBL6hoABmWVv4OKDvorCNB2CJTgY5QlrPrwA/viewform?usp=dialog','_blank')">
+    <button onclick="abrirResumen()" style="width:100%;padding:14px;background:linear-gradient(135deg,#1a1600,#3a2e00);border:1px solid var(--gold);border-radius:14px;color:var(--gold);font-size:0.85rem;font-weight:700;cursor:pointer;margin-bottom:12px;">
+            📊 Resumen del mes anterior
+        </button>
+        <button class="btn-forms" onclick="window.open('https://docs.google.com/forms/d/e/1FAIpQLSfWF2AutcLCDhfBL6hoABmWVv4OKDvorCNB2CJTgY5QlrPrwA/viewform?usp=dialog','_blank')">
         📝 REGISTRAR CLIENTE BASE DE DATOS
     </button>
 
@@ -1094,6 +1192,120 @@
         }
     }
 
-</script>
+
+    // ── RESUMEN MES ANTERIOR ──────────────────────────────────────────────
+    const fM2 = n => new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN',minimumFractionDigits:0}).format(n||0);
+
+    async function abrirResumen() {
+        if (!user) return;
+        document.getElementById('resumen-modal').classList.add('open');
+        document.getElementById('r-ventas').innerText = '...';
+        try {
+            const nombre = encodeURIComponent(user.Nombre);
+            const d = await apiFetch(`/api/resumen-mes?vendedor=${nombre}`);
+            const mesCapital = d.mes.charAt(0).toUpperCase() + d.mes.slice(1);
+
+            document.getElementById('r-mes').innerText       = mesCapital;
+            document.getElementById('r-vendedor').innerText  = user.Nombre;
+            document.getElementById('r-ventas').innerText    = fM2(d.ventasAnt);
+            document.getElementById('r-meta').innerText      = fM2(d.meta);
+            document.getElementById('r-dias').innerText      = d.diasTrabajados;
+
+            const kpiMeta = document.getElementById('r-kpi-meta');
+            document.getElementById('r-pct').innerText = d.pct + '%';
+            kpiMeta.className = 'resumen-kpi ' + (d.cumpleMeta ? 'cumple' : 'nocumple');
+
+            // Top productos
+            const tp = document.getElementById('r-productos');
+            tp.innerHTML = d.topProductos.map((p,i) =>
+                `<tr><td>${i+1}. ${(p.Descripcion||p.Parte).substring(0,28)}</td><td>${fM2(p.Monto)}</td></tr>`
+            ).join('') || '<tr><td colspan="2" style="color:#888;text-align:center;">Sin datos</td></tr>';
+
+            // Top clientes
+            const tc = document.getElementById('r-clientes');
+            tc.innerHTML = d.topClientes.map((c,i) =>
+                `<tr><td>${i+1}. ${(c.Cliente||c.Codigo).substring(0,28)}</td><td>${fM2(c.Monto)}</td></tr>`
+            ).join('') || '<tr><td colspan="2" style="color:#888;text-align:center;">Sin datos</td></tr>';
+
+            // Oportunidades
+            document.getElementById('r-oportunidades').innerHTML =
+                d.oportunidades.map(o => `<div class="oportu-item">💡 ${o}</div>`).join('');
+
+        } catch(e) {
+            document.getElementById('r-ventas').innerText = 'Error';
+        }
+    }
+
+    function cerrarResumen() {
+        document.getElementById('resumen-modal').classList.remove('open');
+    }
+
+    async function exportarResumenPDF() {
+        window.print();
+    }
+
+    async function exportarResumenPNG() {
+        const el = document.getElementById('resumen-content');
+        if (typeof html2canvas === 'undefined') {
+            const s = document.createElement('script');
+            s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+            document.head.appendChild(s);
+            await new Promise(r => s.onload = r);
+        }
+        const canvas = await html2canvas(el, { backgroundColor:'#111', scale:2 });
+        const a = document.createElement('a');
+        a.href = canvas.toDataURL('image/png');
+        const mes = document.getElementById('r-mes').innerText.replace(/ /g,'_');
+        a.download = `Resumen_${mes}_${user?.Nombre?.split(' ')[0]||'asesor'}.png`;
+        a.click();
+    }
+
+    </script>
+
+    <!-- ── RESUMEN MES ANTERIOR ───────────────────────────── -->
+    <div id="resumen-modal">
+        <div class="resumen-card" id="resumen-content">
+            <div class="resumen-header">
+                <h2>📊 Resumen <span id="r-mes">—</span></h2>
+                <p id="r-vendedor">—</p>
+            </div>
+            <div class="resumen-kpis">
+                <div class="resumen-kpi" id="r-kpi-ventas">
+                    <div class="rk-val" id="r-ventas">—</div>
+                    <div class="rk-lbl">Ventas</div>
+                </div>
+                <div class="resumen-kpi" id="r-kpi-meta">
+                    <div class="rk-val" id="r-pct">—</div>
+                    <div class="rk-lbl">vs Meta</div>
+                </div>
+                <div class="resumen-kpi">
+                    <div class="rk-val" id="r-meta">—</div>
+                    <div class="rk-lbl">Meta</div>
+                </div>
+                <div class="resumen-kpi">
+                    <div class="rk-val" id="r-dias">—</div>
+                    <div class="rk-lbl">Días con ventas</div>
+                </div>
+            </div>
+            <div class="resumen-section">
+                <h3>🏆 Top 5 Productos</h3>
+                <table class="resumen-table" id="r-productos"></table>
+            </div>
+            <div class="resumen-section">
+                <h3>🤝 Top 5 Clientes</h3>
+                <table class="resumen-table" id="r-clientes"></table>
+            </div>
+            <div class="resumen-section">
+                <h3>💡 Áreas de oportunidad</h3>
+                <div id="r-oportunidades"></div>
+            </div>
+            <div class="resumen-btns">
+                <button class="btn-pdf" onclick="exportarResumenPDF()">📄 Exportar PDF</button>
+                <button class="btn-png" onclick="exportarResumenPNG()">🖼️ Guardar PNG</button>
+                <button class="btn-close-resumen" onclick="cerrarResumen()">✕ Cerrar</button>
+            </div>
+        </div>
+    </div>
+
 </body>
 </html>
