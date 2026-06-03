@@ -5,8 +5,148 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Catosa GP — Executive Command Center 2026</title>
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;600;700;900&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js">
+    // ── RESUMEN MES ANTERIOR GERENCIA ────────────────────────────────────
+    const fMg = n => new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN',minimumFractionDigits:0}).format(n||0);
+
+    async function abrirResumen() {
+        document.getElementById('resumen-modal').classList.add('open');
+        document.getElementById('r-total').innerText = '...';
+        try {
+            const d = await apiFetch('/api/resumen-mes?vendedor=');
+            const mesCapital = d.mes.charAt(0).toUpperCase() + d.mes.slice(1);
+
+            document.getElementById('r-mes').innerText       = mesCapital;
+            document.getElementById('r-total').innerText     = fMg(d.totalEquipo);
+            document.getElementById('r-meta-eq').innerText   = fMg(d.metaEquipo);
+            document.getElementById('r-pct').innerText       = d.pctEquipo + '%';
+            document.getElementById('r-cumplieron').innerText = `${d.cumplieron}/${d.totalAsesores}`;
+
+            // Tabla de asesores
+            const tbody = document.getElementById('r-equipo');
+            tbody.innerHTML = (d.equipo||[]).map(v => `
+                <tr>
+                    <td>${(v.Nombre||'').split(' ').slice(0,2).join(' ')}</td>
+                    <td style="color:#888">${v.Sucursal||''}</td>
+                    <td class="num">${fMg(v.Ventas)}</td>
+                    <td class="num">${fMg(v.Meta)}</td>
+                    <td class="${v.Cumple?'pct-ok':'pct-no'}">${v.Pct}%${v.Cumple?' ✓':''}</td>
+                </tr>
+            `).join('') || '<tr><td colspan="5" style="color:#888;text-align:center">Sin datos</td></tr>';
+
+            // Oportunidades del equipo
+            const ops = [];
+            if (d.pctEquipo < 100) ops.push(`El equipo alcanzó el ${d.pctEquipo}% — faltaron ${fMg(d.metaEquipo - d.totalEquipo)} para la meta grupal`);
+            const nocumplieron = (d.equipo||[]).filter(v => !v.Cumple);
+            if (nocumplieron.length) ops.push(`${nocumplieron.length} asesor(es) no alcanzaron su meta individual: ${nocumplieron.map(v=>v.Nombre.split(' ')[0]).join(', ')}`);
+            const top = (d.equipo||[]).filter(v => v.Cumple);
+            if (top.length) ops.push(`Destacados que cumplieron meta: ${top.map(v=>v.Nombre.split(' ')[0]).join(', ')}`);
+            if (d.pctEquipo >= 100) ops.push(`¡Excelente! El equipo superó la meta con ${d.pctEquipo}% — mantener el estándar`);
+
+            document.getElementById('r-oportunidades').innerHTML =
+                ops.map(o => `<div class="oportu-item">💡 ${o}</div>`).join('');
+
+        } catch(e) {
+            document.getElementById('r-total').innerText = 'Error: ' + e.message;
+        }
+    }
+
+    function cerrarResumen() {
+        document.getElementById('resumen-modal').classList.remove('open');
+    }
+
+    async function exportarResumenPDF() {
+        window.print();
+    }
+
+    async function exportarResumenPNG() {
+        const el = document.getElementById('resumen-content');
+        if (typeof html2canvas === 'undefined') {
+            const s = document.createElement('script');
+            s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+            document.head.appendChild(s);
+            await new Promise(r => s.onload = r);
+        }
+        const canvas = await html2canvas(el, { backgroundColor:'#111', scale:2 });
+        const a = document.createElement('a');
+        a.href = canvas.toDataURL('image/png');
+        const mes = document.getElementById('r-mes').innerText.replace(/ /g,'_');
+        a.download = `Resumen_Equipo_${mes}.png`;
+        a.click();
+    }
+
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js">
+    // ── RESUMEN MES ANTERIOR GERENCIA ────────────────────────────────────
+    const fMg = n => new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN',minimumFractionDigits:0}).format(n||0);
+
+    async function abrirResumen() {
+        document.getElementById('resumen-modal').classList.add('open');
+        document.getElementById('r-total').innerText = '...';
+        try {
+            const d = await apiFetch('/api/resumen-mes?vendedor=');
+            const mesCapital = d.mes.charAt(0).toUpperCase() + d.mes.slice(1);
+
+            document.getElementById('r-mes').innerText       = mesCapital;
+            document.getElementById('r-total').innerText     = fMg(d.totalEquipo);
+            document.getElementById('r-meta-eq').innerText   = fMg(d.metaEquipo);
+            document.getElementById('r-pct').innerText       = d.pctEquipo + '%';
+            document.getElementById('r-cumplieron').innerText = `${d.cumplieron}/${d.totalAsesores}`;
+
+            // Tabla de asesores
+            const tbody = document.getElementById('r-equipo');
+            tbody.innerHTML = (d.equipo||[]).map(v => `
+                <tr>
+                    <td>${(v.Nombre||'').split(' ').slice(0,2).join(' ')}</td>
+                    <td style="color:#888">${v.Sucursal||''}</td>
+                    <td class="num">${fMg(v.Ventas)}</td>
+                    <td class="num">${fMg(v.Meta)}</td>
+                    <td class="${v.Cumple?'pct-ok':'pct-no'}">${v.Pct}%${v.Cumple?' ✓':''}</td>
+                </tr>
+            `).join('') || '<tr><td colspan="5" style="color:#888;text-align:center">Sin datos</td></tr>';
+
+            // Oportunidades del equipo
+            const ops = [];
+            if (d.pctEquipo < 100) ops.push(`El equipo alcanzó el ${d.pctEquipo}% — faltaron ${fMg(d.metaEquipo - d.totalEquipo)} para la meta grupal`);
+            const nocumplieron = (d.equipo||[]).filter(v => !v.Cumple);
+            if (nocumplieron.length) ops.push(`${nocumplieron.length} asesor(es) no alcanzaron su meta individual: ${nocumplieron.map(v=>v.Nombre.split(' ')[0]).join(', ')}`);
+            const top = (d.equipo||[]).filter(v => v.Cumple);
+            if (top.length) ops.push(`Destacados que cumplieron meta: ${top.map(v=>v.Nombre.split(' ')[0]).join(', ')}`);
+            if (d.pctEquipo >= 100) ops.push(`¡Excelente! El equipo superó la meta con ${d.pctEquipo}% — mantener el estándar`);
+
+            document.getElementById('r-oportunidades').innerHTML =
+                ops.map(o => `<div class="oportu-item">💡 ${o}</div>`).join('');
+
+        } catch(e) {
+            document.getElementById('r-total').innerText = 'Error: ' + e.message;
+        }
+    }
+
+    function cerrarResumen() {
+        document.getElementById('resumen-modal').classList.remove('open');
+    }
+
+    async function exportarResumenPDF() {
+        window.print();
+    }
+
+    async function exportarResumenPNG() {
+        const el = document.getElementById('resumen-content');
+        if (typeof html2canvas === 'undefined') {
+            const s = document.createElement('script');
+            s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+            document.head.appendChild(s);
+            await new Promise(r => s.onload = r);
+        }
+        const canvas = await html2canvas(el, { backgroundColor:'#111', scale:2 });
+        const a = document.createElement('a');
+        a.href = canvas.toDataURL('image/png');
+        const mes = document.getElementById('r-mes').innerText.replace(/ /g,'_');
+        a.download = `Resumen_Equipo_${mes}.png`;
+        a.click();
+    }
+
+    </script>
     <style>
         :root {
             --gold: #ffd700;
@@ -373,7 +513,35 @@
         .dias-verde { background:rgba(0,255,136,0.12); color:var(--grass); }
         .dias-ambar { background:rgba(255,215,0,0.12); color:var(--gold); }
         .dias-rojo  { background:rgba(255,75,43,0.15); color:var(--red); }
-    </style>
+    
+        /* ── RESUMEN MES MODAL GERENCIA ──────────────────── */
+        #resumen-modal { display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.85); overflow-y:auto; padding:16px; }
+        #resumen-modal.open { display:flex; align-items:flex-start; justify-content:center; }
+        .resumen-card { background:#111; border:1px solid var(--gold); border-radius:20px; width:100%; max-width:600px; padding:24px; margin:auto; }
+        .resumen-header { text-align:center; margin-bottom:20px; }
+        .resumen-header h2 { color:var(--gold); font-size:1.1rem; margin:0 0 4px; }
+        .resumen-header p  { color:#888; font-size:0.75rem; margin:0; }
+        .resumen-kpis { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:18px; }
+        .resumen-kpi  { background:#1a1a1a; border-radius:12px; padding:12px; text-align:center; }
+        .resumen-kpi .rk-val { font-size:1.2rem; font-weight:700; color:var(--gold); }
+        .resumen-kpi .rk-lbl { font-size:0.6rem; color:#888; margin-top:3px; }
+        .resumen-section { margin-bottom:16px; }
+        .resumen-section h3 { font-size:0.7rem; color:#888; text-transform:uppercase; letter-spacing:1px; margin:0 0 8px; }
+        .resumen-table { width:100%; border-collapse:collapse; font-size:0.72rem; }
+        .resumen-table th { color:#888; font-size:0.6rem; text-transform:uppercase; padding:5px 4px; border-bottom:1px solid #333; text-align:left; }
+        .resumen-table td { padding:6px 4px; border-bottom:1px solid #1e1e1e; }
+        .resumen-table td.num { text-align:right; color:var(--gold); }
+        .resumen-table td.pct-ok { color:#00ff88; text-align:right; }
+        .resumen-table td.pct-no { color:#ff4444; text-align:right; }
+        .oportu-item { background:#1a1a1a; border-left:3px solid var(--gold); border-radius:0 8px 8px 0; padding:8px 12px; margin-bottom:8px; font-size:0.75rem; line-height:1.4; }
+        .resumen-btns { display:flex; gap:10px; margin-top:20px; }
+        .resumen-btns button { flex:1; padding:12px; border-radius:12px; font-size:0.8rem; font-weight:600; cursor:pointer; border:none; }
+        .btn-pdf { background:var(--gold); color:#000; }
+        .btn-png { background:#1a1a1a; color:var(--gold); border:1px solid var(--gold) !important; }
+        .btn-close-resumen { background:#222; color:#888; }
+        @media print { body > *:not(#resumen-modal) { display:none !important; } #resumen-modal { display:flex !important; position:static; background:white; padding:0; } .resumen-btns { display:none; } .resumen-card { border:none; color:#000; background:white; } }
+
+        </style>
 </head>
 <body>
 
@@ -591,6 +759,9 @@
 
         <!-- RANKING -->
         <div class="card">
+            <button onclick="abrirResumen()" style="width:100%;padding:14px;background:linear-gradient(135deg,#1a1600,#3a2e00);border:1px solid var(--gold);border-radius:14px;color:var(--gold);font-size:0.85rem;font-weight:700;cursor:pointer;margin-bottom:14px;">
+                📊 Resumen del equipo — mes anterior
+            </button>
             <div class="card-title">🏅 Ranking de ventas</div>
             <div class="scroll-list" id="ranking-list"><div class="loading">Cargando...</div></div>
         </div>
@@ -1424,6 +1595,121 @@ function renderVisitas() {
             </div>`;
     });
 }
-</script>
+
+    // ── RESUMEN MES ANTERIOR GERENCIA ────────────────────────────────────
+    const fMg = n => new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN',minimumFractionDigits:0}).format(n||0);
+
+    async function abrirResumen() {
+        document.getElementById('resumen-modal').classList.add('open');
+        document.getElementById('r-total').innerText = '...';
+        try {
+            const d = await apiFetch('/api/resumen-mes?vendedor=');
+            const mesCapital = d.mes.charAt(0).toUpperCase() + d.mes.slice(1);
+
+            document.getElementById('r-mes').innerText       = mesCapital;
+            document.getElementById('r-total').innerText     = fMg(d.totalEquipo);
+            document.getElementById('r-meta-eq').innerText   = fMg(d.metaEquipo);
+            document.getElementById('r-pct').innerText       = d.pctEquipo + '%';
+            document.getElementById('r-cumplieron').innerText = `${d.cumplieron}/${d.totalAsesores}`;
+
+            // Tabla de asesores
+            const tbody = document.getElementById('r-equipo');
+            tbody.innerHTML = (d.equipo||[]).map(v => `
+                <tr>
+                    <td>${(v.Nombre||'').split(' ').slice(0,2).join(' ')}</td>
+                    <td style="color:#888">${v.Sucursal||''}</td>
+                    <td class="num">${fMg(v.Ventas)}</td>
+                    <td class="num">${fMg(v.Meta)}</td>
+                    <td class="${v.Cumple?'pct-ok':'pct-no'}">${v.Pct}%${v.Cumple?' ✓':''}</td>
+                </tr>
+            `).join('') || '<tr><td colspan="5" style="color:#888;text-align:center">Sin datos</td></tr>';
+
+            // Oportunidades del equipo
+            const ops = [];
+            if (d.pctEquipo < 100) ops.push(`El equipo alcanzó el ${d.pctEquipo}% — faltaron ${fMg(d.metaEquipo - d.totalEquipo)} para la meta grupal`);
+            const nocumplieron = (d.equipo||[]).filter(v => !v.Cumple);
+            if (nocumplieron.length) ops.push(`${nocumplieron.length} asesor(es) no alcanzaron su meta individual: ${nocumplieron.map(v=>v.Nombre.split(' ')[0]).join(', ')}`);
+            const top = (d.equipo||[]).filter(v => v.Cumple);
+            if (top.length) ops.push(`Destacados que cumplieron meta: ${top.map(v=>v.Nombre.split(' ')[0]).join(', ')}`);
+            if (d.pctEquipo >= 100) ops.push(`¡Excelente! El equipo superó la meta con ${d.pctEquipo}% — mantener el estándar`);
+
+            document.getElementById('r-oportunidades').innerHTML =
+                ops.map(o => `<div class="oportu-item">💡 ${o}</div>`).join('');
+
+        } catch(e) {
+            document.getElementById('r-total').innerText = 'Error: ' + e.message;
+        }
+    }
+
+    function cerrarResumen() {
+        document.getElementById('resumen-modal').classList.remove('open');
+    }
+
+    async function exportarResumenPDF() {
+        window.print();
+    }
+
+    async function exportarResumenPNG() {
+        const el = document.getElementById('resumen-content');
+        if (typeof html2canvas === 'undefined') {
+            const s = document.createElement('script');
+            s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+            document.head.appendChild(s);
+            await new Promise(r => s.onload = r);
+        }
+        const canvas = await html2canvas(el, { backgroundColor:'#111', scale:2 });
+        const a = document.createElement('a');
+        a.href = canvas.toDataURL('image/png');
+        const mes = document.getElementById('r-mes').innerText.replace(/ /g,'_');
+        a.download = `Resumen_Equipo_${mes}.png`;
+        a.click();
+    }
+
+    </script>
+
+    <!-- ── RESUMEN MES ANTERIOR GERENCIA ─────────────────── -->
+    <div id="resumen-modal">
+        <div class="resumen-card" id="resumen-content">
+            <div class="resumen-header">
+                <h2>📊 Resumen del Equipo — <span id="r-mes">—</span></h2>
+                <p>Refacciones International · Vista Gerencia</p>
+            </div>
+            <div class="resumen-kpis">
+                <div class="resumen-kpi">
+                    <div class="rk-val" id="r-total">—</div>
+                    <div class="rk-lbl">Venta Total</div>
+                </div>
+                <div class="resumen-kpi">
+                    <div class="rk-val" id="r-pct">—</div>
+                    <div class="rk-lbl">vs Meta Equipo</div>
+                </div>
+                <div class="resumen-kpi">
+                    <div class="rk-val" id="r-cumplieron">—</div>
+                    <div class="rk-lbl">Cumplieron Meta</div>
+                </div>
+                <div class="resumen-kpi">
+                    <div class="rk-val" id="r-meta-eq">—</div>
+                    <div class="rk-lbl">Meta Equipo</div>
+                </div>
+            </div>
+            <div class="resumen-section">
+                <h3>👥 Resultado por Asesor</h3>
+                <table class="resumen-table">
+                    <thead><tr><th>Asesor</th><th>Sucursal</th><th style="text-align:right">Ventas</th><th style="text-align:right">Meta</th><th style="text-align:right">%</th></tr></thead>
+                    <tbody id="r-equipo"></tbody>
+                </table>
+            </div>
+            <div class="resumen-section">
+                <h3>💡 Áreas de oportunidad del equipo</h3>
+                <div id="r-oportunidades"></div>
+            </div>
+            <div class="resumen-btns">
+                <button class="btn-pdf" onclick="exportarResumenPDF()">📄 Exportar PDF</button>
+                <button class="btn-png" onclick="exportarResumenPNG()">🖼️ Guardar PNG</button>
+                <button class="btn-close-resumen" onclick="cerrarResumen()">✕ Cerrar</button>
+            </div>
+        </div>
+    </div>
+
 </body>
 </html>
