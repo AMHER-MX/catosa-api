@@ -360,7 +360,7 @@ app.get('/api/aceite', async (req, res) => {
   try {
     const db      = await getPool();
     const hoy     = new Date();
-    const ini     = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-01`;
+    const ini     = '2026-05-01'; // Concurso acumulativo mayo-diciembre 2026
     const fin     = hoy.toISOString().split('T')[0];
     const vendedor = decodeURIComponent(req.query.vendedor || '');
 
@@ -425,7 +425,7 @@ app.get('/api/aceite-todos', async (req, res) => {
   try {
     const db  = await getPool();
     const hoy = new Date();
-    const ini = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-01`;
+    const ini = '2026-05-01'; // Concurso acumulativo mayo-diciembre 2026
     const fin = hoy.toISOString().split('T')[0];
     const npsLista = Object.keys(ACEITE_NPS).map(n => `'${n}'`).join(',');
 
@@ -486,7 +486,7 @@ app.get('/api/ventas-diarias', async (req, res) => {
   try {
     const db      = await getPool();
     const hoy     = new Date();
-    const ini     = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-01`;
+    const ini     = '2026-05-01'; // Concurso acumulativo mayo-diciembre 2026
     const fin     = hoy.toISOString().split('T')[0];
     const vendedor = decodeURIComponent(req.query.vendedor || '');
 
@@ -746,6 +746,174 @@ app.delete('/api/tableros/:area/:id', (req, res) => {
     guardarTableros(data);
   }
   res.json({ ok: true });
+});
+
+
+// ── RESUMEN MES ANTERIOR ───────────────────────────────────────────────────────
+app.get('/api/resumen-mes', async (req, res) => {
+  try {
+    const db      = await getPool();
+    const hoy     = new Date();
+    const vendedor = decodeURIComponent(req.query.vendedor || '');
+
+    // Mes anterior
+    const iniAnt  = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1);
+    const finAnt  = new Date(hoy.getFullYear(), hoy.getMonth(), 0);
+    const iniStr  = iniAnt.toISOString().split('T')[0];
+    const finStr  = finAnt.toISOString().split('T')[0];
+    const mesNombre = iniAnt.toLocaleString('es-MX', { month: 'long', year: 'numeric' });
+
+    // ── 1. Ventas del mes anterior (individual) ────────────────────────────
+    const rVentas = await db.request()
+      .input('ini',  sql.Date, iniStr)
+      .input('fin',  sql.Date, finStr)
+      .input('vend', sql.VarChar, vendedor)
+      .query(`
+        SELECT SUM(s.IMP_TOTAL_LINEA) AS Ventas
+        FROM FTSABI_PR s
+        WHERE s.FECHA >= @ini AND s.FECHA <= @fin
+          AND ${TIPO_EXCL_SQL}
+          AND s.NOM_ALMACEN_LIN IN (${SUCURSALES})
+          AND s.NOM_VENDEDOR = @vend
+      `);
+    const ventasAnt = parseFloat(rVentas.recordset[0]?.Ventas) || 0;
+
+    // ── 2. Meta del vendedor ───────────────────────────────────────────────
+    const vKey  = nombreKey(vendedor);
+    const metaD = Object.entries(metasMap).find(([k]) => k === vKey);
+    const meta  = metaD ? metaD[1].meta : 0;
+    const pct   = meta > 0 ? (ventasAnt / meta) * 100 : 0;
+
+    // ── 3. Top 5 productos mes anterior ───────────────────────────────────
+    const rProd = await db.request()
+      .input('ini',  sql.Date, iniStr)
+      .input('fin',  sql.Date, finStr)
+      .input('vend', sql.VarChar, `%${vendedor}%`)
+      .query(`
+        SELECT TOP 5
+          s.ARTICULO AS Parte, s.DES_ARTICULO AS Descripcion,
+          SUM(s.CANTIDAD) AS Unidades, SUM(s.IMP_TOTAL_LINEA) AS Monto
+        FROM FTSABI_PR s
+        WHERE s.FECHA >= @ini AND s.FECHA <= @fin
+          AND ${TIPO_EXCL_SQL}
+          AND s.NOM_ALMACEN_LIN IN (${SUCURSALES})
+          AND s.NOM_VENDEDOR LIKE @vend
+        GROUP BY s.ARTICULO, s.DES_ARTICULO
+        ORDER BY Monto DESC
+      `);
+
+    // ── 4. Top 5 clientes mes anterior ────────────────────────────────────
+    const rCli = await db.request()
+      .input('ini',  sql.Date, iniStr)
+      .input('fin',  sql.Date, finStr)
+      .input('vend', sql.VarChar, `%${vendedor}%`)
+      .query(`
+        SELECT TOP 5
+          s.CLIENTE AS Codigo,
+          MAX(s.NOMBRE_CLIENTE) AS Cliente,
+          SUM(s.IMP_TOTAL_LINEA) AS Monto
+        FROM FTSABI_PR s
+        WHERE s.FECHA >= @ini AND s.FECHA <= @fin
+          AND ${TIPO_EXCL_SQL}
+          AND s.NOM_ALMACEN_LIN IN (${SUCURSALES})
+          AND s.NOM_VENDEDOR LIKE @vend
+        GROUP BY s.CLIENTE
+        ORDER BY Monto DESC
+      `);
+
+    // ── 5. Días trabajados (días con al menos 1 venta) ────────────────────
+    const rDias = await db.request()
+      .input('ini',  sql.Date, iniStr)
+      .input('fin',  sql.Date, finStr)
+      .input('vend', sql.VarChar, `%${vendedor}%`)
+      .query(`
+        SELECT COUNT(DISTINCT CAST(s.FECHA AS DATE)) AS Dias
+        FROM FTSABI_PR s
+        WHERE s.FECHA >= @ini AND s.FECHA <= @fin
+          AND ${TIPO_EXCL_SQL}
+          AND s.NOM_ALMACEN_LIN IN (${SUCURSALES})
+          AND s.NOM_VENDEDOR LIKE @vend
+      `);
+    const diasTrabajados = parseInt(rDias.recordset[0]?.Dias) || 0;
+    const diasHabiles = 22; // promedio
+
+    // ── 6. Ventas mes anterior del equipo (para gerencia) ─────────────────
+    const rEquipo = await db.request()
+      .input('ini', sql.Date, iniStr)
+      .input('fin', sql.Date, finStr)
+      .query(`
+        SELECT
+          s.NOM_VENDEDOR AS Nombre,
+          s.NOM_ALMACEN_LIN AS Sucursal_SQL,
+          SUM(s.IMP_TOTAL_LINEA) AS Ventas
+        FROM FTSABI_PR s
+        WHERE s.FECHA >= @ini AND s.FECHA <= @fin
+          AND ${TIPO_EXCL_SQL}
+          AND s.NOM_ALMACEN_LIN IN (${SUCURSALES})
+          AND s.NOM_VENDEDOR IS NOT NULL AND s.NOM_VENDEDOR <> ''
+        GROUP BY s.NOM_VENDEDOR, s.NOM_ALMACEN_LIN
+        ORDER BY Ventas DESC
+      `);
+
+    const equipo = rEquipo.recordset.map(row => {
+      const m = buscarMeta(row.Nombre);
+      const metaV = m.meta || 0;
+      const pctV  = metaV > 0 ? (parseFloat(row.Ventas) / metaV) * 100 : 0;
+      return {
+        Nombre:   row.Nombre,
+        Sucursal: normSuc(m.sucursal || row.Sucursal_SQL),
+        Ventas:   parseFloat(row.Ventas) || 0,
+        Meta:     metaV,
+        Pct:      Math.round(pctV),
+        Cumple:   pctV >= 100,
+      };
+    });
+
+    const totalEquipo    = equipo.reduce((s, v) => s + v.Ventas, 0);
+    const metaEquipo     = equipo.reduce((s, v) => s + v.Meta, 0);
+    const pctEquipo      = metaEquipo > 0 ? (totalEquipo / metaEquipo) * 100 : 0;
+    const cumplieron     = equipo.filter(v => v.Cumple).length;
+
+    // ── Áreas de oportunidad ──────────────────────────────────────────────
+    const oportunidades = [];
+    if (pct < 100) {
+      const faltante = meta - ventasAnt;
+      oportunidades.push(`Faltaron ${new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN',minimumFractionDigits:0}).format(faltante)} para llegar a meta (${Math.round(pct)}% alcanzado)`);
+    }
+    if (diasTrabajados < diasHabiles * 0.8) {
+      oportunidades.push(`Solo se registraron ventas en ${diasTrabajados} días — mayor cobertura diaria puede impulsar el resultado`);
+    }
+    if (pct >= 100) {
+      oportunidades.push(`¡Meta cumplida! Mantén el ritmo y busca superar el ${Math.round(pct)}% este mes`);
+    }
+    if (rProd.recordset.length > 0) {
+      const top1 = rProd.recordset[0];
+      oportunidades.push(`Tu producto estrella fue ${top1.Descripcion || top1.Parte} — considera ampliar su penetración en más clientes`);
+    }
+
+    res.json({
+      mes: mesNombre,
+      vendedor,
+      ventasAnt,
+      meta,
+      pct: Math.round(pct),
+      cumpleMeta: pct >= 100,
+      diasTrabajados,
+      topProductos: rProd.recordset,
+      topClientes:  rCli.recordset,
+      oportunidades,
+      // Para gerencia
+      equipo,
+      totalEquipo,
+      metaEquipo,
+      pctEquipo: Math.round(pctEquipo),
+      cumplieron,
+      totalAsesores: equipo.length,
+    });
+  } catch (err) {
+    console.error('Error /api/resumen-mes:', err.message);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 
