@@ -72,6 +72,86 @@
         a.click();
     }
 
+    
+    // ── DETALLE CLIENTE ───────────────────────────────────────────────────
+    async function abrirDetalleCliente(codigoCod, nombre, nombreCompletoCod, ventaMes, promedio, dias) {
+        const codigo        = decodeURIComponent(codigoCod);
+        const nombreCompleto = decodeURIComponent(nombreCompletoCod);
+
+        // Fill static data immediately
+        document.getElementById('cli-nombre').textContent  = nombre || codigo;
+        document.getElementById('cli-codigo').textContent  = nombreCompleto && nombreCompleto !== nombre ? nombreCompleto + ' · ' + codigo : codigo;
+        document.getElementById('cli-mes-val').textContent  = fM(ventaMes);
+        document.getElementById('cli-prom-val').textContent = fM(promedio);
+        document.getElementById('cli-dias-val').textContent = dias + 'd';
+
+        // Color días
+        const kpiDias = document.getElementById('cli-kpi-dias');
+        kpiDias.className = 'cli-kpi ' + (dias <= 7 ? 'arriba' : dias <= 21 ? 'igual' : 'abajo');
+
+        // Color vs promedio
+        const kpiMes = document.getElementById('cli-kpi-mes');
+        if (promedio > 0) {
+            const pct = ventaMes / promedio;
+            kpiMes.className = 'cli-kpi ' + (pct >= 0.9 ? 'arriba' : pct >= 0.5 ? 'igual' : 'abajo');
+        }
+
+        document.getElementById('cli-modal').classList.add('open');
+
+        // Load detail from server
+        try {
+            const d = await apiFetch(`/api/cliente-detalle?cliente=${encodeURIComponent(codigo)}&vendedor=${encodeURIComponent(user?.Nombre||'')}`);
+
+            // ── Barras últimos 6 meses ────────────────────────────────────
+            const barsEl = document.getElementById('cli-bars');
+            if (d.meses && d.meses.length) {
+                const maxV = Math.max(...d.meses.map(m => parseFloat(m.Venta)||0), 1);
+                barsEl.innerHTML = d.meses.map(m => {
+                    const v   = parseFloat(m.Venta) || 0;
+                    const pct = Math.max(2, (v / maxV) * 100);
+                    const mes = m.Mes ? m.Mes.substring(5) + '/' + m.Mes.substring(2,4) : '—';
+                    const fmtK = v >= 1000 ? (v/1000).toFixed(0)+'k' : v.toFixed(0);
+                    return `<div class="cli-bar-row">
+                        <div class="cli-bar-lbl">${mes}</div>
+                        <div class="cli-bar-track">
+                            <div class="cli-bar-fill" style="width:${pct}%"></div>
+                            <div class="cli-bar-val">$${fmtK}</div>
+                        </div>
+                    </div>`;
+                }).join('');
+            } else {
+                barsEl.innerHTML = '<div style="color:#555;font-size:0.72rem;">Sin historial</div>';
+            }
+
+            // ── Top productos ─────────────────────────────────────────────
+            const prodEl = document.getElementById('cli-productos');
+            if (d.topProductos && d.topProductos.length) {
+                prodEl.innerHTML = d.topProductos.map((p, i) =>
+                    `<tr><td>${i+1}. ${(p.Descripcion||p.Parte||'').substring(0,30)}</td><td>${fM(p.Monto)}</td></tr>`
+                ).join('');
+            } else {
+                prodEl.innerHTML = '<tr><td colspan="2" style="color:#555;">Sin datos</td></tr>';
+            }
+
+            // ── Última compra ─────────────────────────────────────────────
+            if (d.ultimaCompra) {
+                const u = d.ultimaCompra;
+                const fecha = u.Fecha ? new Date(u.Fecha).toLocaleDateString('es-MX') : '—';
+                document.getElementById('cli-ultima').innerHTML =
+                    `📅 <b>${fecha}</b><br>
+                     🛒 ${(u.Producto||'').substring(0,35)}<br>
+                     💰 ${fM(u.Monto)}`;
+            }
+
+        } catch(e) {
+            document.getElementById('cli-bars').innerHTML = `<div style="color:#f44;font-size:0.72rem;">Error: ${e.message}</div>`;
+        }
+    }
+
+    function cerrarDetalleCliente() {
+        document.getElementById('cli-modal').classList.remove('open');
+    }
+
     </script>
     <style>
         :root { 
@@ -238,6 +318,35 @@
         .btn-png { background:#1a1a1a; color:var(--gold); border:1px solid var(--gold) !important; }
         .btn-close-resumen { background:#222; color:#888; }
         @media print { body > *:not(#resumen-modal) { display:none !important; } #resumen-modal { display:flex !important; position:static; background:white; padding:0; } .resumen-btns { display:none; } .resumen-card { border:none; } }
+
+        
+        /* ── DETALLE CLIENTE MODAL ───────────────────────── */
+        #cli-modal { display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.88); overflow-y:auto; padding:16px; }
+        #cli-modal.open { display:flex; align-items:flex-start; justify-content:center; }
+        .cli-card { background:#111; border:1px solid #2a2a2a; border-radius:20px; width:100%; max-width:480px; padding:22px; margin:auto; }
+        .cli-header { margin-bottom:16px; padding-bottom:14px; border-bottom:1px solid #1e1e1e; }
+        .cli-nombre { font-size:1rem; font-weight:800; font-family:'Syne',sans-serif; color:var(--gold); }
+        .cli-codigo { font-size:0.7rem; color:#555; margin-top:2px; }
+        .cli-kpis { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:16px; }
+        .cli-kpi { background:#1a1a1a; border-radius:12px; padding:10px; text-align:center; }
+        .cli-kpi .ck-val { font-size:1rem; font-weight:700; }
+        .cli-kpi .ck-lbl { font-size:0.6rem; color:#888; margin-top:2px; }
+        .cli-kpi.arriba .ck-val { color:#00ff88; }
+        .cli-kpi.abajo  .ck-val { color:#ff4444; }
+        .cli-kpi.igual  .ck-val { color:var(--gold); }
+        .cli-section { margin-bottom:14px; }
+        .cli-section h3 { font-size:0.65rem; color:#666; text-transform:uppercase; letter-spacing:1px; margin:0 0 8px; }
+        .cli-table { width:100%; border-collapse:collapse; font-size:0.72rem; }
+        .cli-table td { padding:5px 3px; border-bottom:1px solid #1a1a1a; }
+        .cli-table td:last-child { text-align:right; color:var(--gold); }
+        .cli-bars { display:flex; flex-direction:column; gap:5px; }
+        .cli-bar-row { display:flex; align-items:center; gap:8px; font-size:0.68rem; }
+        .cli-bar-lbl { width:42px; color:#888; text-align:right; flex-shrink:0; }
+        .cli-bar-track { flex:1; background:#1a1a1a; border-radius:4px; height:16px; position:relative; overflow:hidden; }
+        .cli-bar-fill { height:100%; border-radius:4px; background:rgba(200,168,75,0.7); transition:width .4s; }
+        .cli-bar-val { position:absolute; right:6px; top:50%; transform:translateY(-50%); font-size:0.62rem; color:#fff; }
+        .cli-ult { font-size:0.72rem; color:#888; background:#1a1a1a; border-radius:10px; padding:10px 12px; line-height:1.6; }
+        .cli-close { width:100%; padding:12px; margin-top:16px; background:#1a1a1a; border:none; border-radius:12px; color:#888; font-size:0.8rem; cursor:pointer; }
 
         </style>
 </head>
@@ -693,7 +802,7 @@
                 ? `<span style="display:inline-block;font-size:0.5rem;font-weight:900;padding:1px 6px;border-radius:10px;margin-left:6px;background:rgba(0,212,255,0.15);color:var(--blue);border:1px solid rgba(0,212,255,0.3);">⭐ CARTERA</span>`
                 : `<span style="display:inline-block;font-size:0.5rem;font-weight:900;padding:1px 6px;border-radius:10px;margin-left:6px;background:rgba(255,255,255,0.06);color:#666;border:1px solid #333;">VISITADO</span>`;
             ml.innerHTML += `
-                <div class="mapa-item ${col}">
+                <div class="mapa-item ${col}" onclick="abrirDetalleCliente('${encodeURIComponent(c.Codigo||'')}','${(c.Cliente||c.Codigo||'').replace(/'/g,"\\'")}','${encodeURIComponent(c.NombreCompleto||'')}',${c.Venta_Mes||0},${c.PromedioMensual||0},${parseInt(c.Dias)||0})" style="cursor:pointer;">
                     <div style="display:flex; justify-content:space-between; align-items:flex-start;">
                         <div style="flex:1; min-width:0;">
                             <b style="font-size:0.85rem;">${nom}</b>${badgeHTML}<br>
@@ -1260,6 +1369,86 @@
         a.click();
     }
 
+    
+    // ── DETALLE CLIENTE ───────────────────────────────────────────────────
+    async function abrirDetalleCliente(codigoCod, nombre, nombreCompletoCod, ventaMes, promedio, dias) {
+        const codigo        = decodeURIComponent(codigoCod);
+        const nombreCompleto = decodeURIComponent(nombreCompletoCod);
+
+        // Fill static data immediately
+        document.getElementById('cli-nombre').textContent  = nombre || codigo;
+        document.getElementById('cli-codigo').textContent  = nombreCompleto && nombreCompleto !== nombre ? nombreCompleto + ' · ' + codigo : codigo;
+        document.getElementById('cli-mes-val').textContent  = fM(ventaMes);
+        document.getElementById('cli-prom-val').textContent = fM(promedio);
+        document.getElementById('cli-dias-val').textContent = dias + 'd';
+
+        // Color días
+        const kpiDias = document.getElementById('cli-kpi-dias');
+        kpiDias.className = 'cli-kpi ' + (dias <= 7 ? 'arriba' : dias <= 21 ? 'igual' : 'abajo');
+
+        // Color vs promedio
+        const kpiMes = document.getElementById('cli-kpi-mes');
+        if (promedio > 0) {
+            const pct = ventaMes / promedio;
+            kpiMes.className = 'cli-kpi ' + (pct >= 0.9 ? 'arriba' : pct >= 0.5 ? 'igual' : 'abajo');
+        }
+
+        document.getElementById('cli-modal').classList.add('open');
+
+        // Load detail from server
+        try {
+            const d = await apiFetch(`/api/cliente-detalle?cliente=${encodeURIComponent(codigo)}&vendedor=${encodeURIComponent(user?.Nombre||'')}`);
+
+            // ── Barras últimos 6 meses ────────────────────────────────────
+            const barsEl = document.getElementById('cli-bars');
+            if (d.meses && d.meses.length) {
+                const maxV = Math.max(...d.meses.map(m => parseFloat(m.Venta)||0), 1);
+                barsEl.innerHTML = d.meses.map(m => {
+                    const v   = parseFloat(m.Venta) || 0;
+                    const pct = Math.max(2, (v / maxV) * 100);
+                    const mes = m.Mes ? m.Mes.substring(5) + '/' + m.Mes.substring(2,4) : '—';
+                    const fmtK = v >= 1000 ? (v/1000).toFixed(0)+'k' : v.toFixed(0);
+                    return `<div class="cli-bar-row">
+                        <div class="cli-bar-lbl">${mes}</div>
+                        <div class="cli-bar-track">
+                            <div class="cli-bar-fill" style="width:${pct}%"></div>
+                            <div class="cli-bar-val">$${fmtK}</div>
+                        </div>
+                    </div>`;
+                }).join('');
+            } else {
+                barsEl.innerHTML = '<div style="color:#555;font-size:0.72rem;">Sin historial</div>';
+            }
+
+            // ── Top productos ─────────────────────────────────────────────
+            const prodEl = document.getElementById('cli-productos');
+            if (d.topProductos && d.topProductos.length) {
+                prodEl.innerHTML = d.topProductos.map((p, i) =>
+                    `<tr><td>${i+1}. ${(p.Descripcion||p.Parte||'').substring(0,30)}</td><td>${fM(p.Monto)}</td></tr>`
+                ).join('');
+            } else {
+                prodEl.innerHTML = '<tr><td colspan="2" style="color:#555;">Sin datos</td></tr>';
+            }
+
+            // ── Última compra ─────────────────────────────────────────────
+            if (d.ultimaCompra) {
+                const u = d.ultimaCompra;
+                const fecha = u.Fecha ? new Date(u.Fecha).toLocaleDateString('es-MX') : '—';
+                document.getElementById('cli-ultima').innerHTML =
+                    `📅 <b>${fecha}</b><br>
+                     🛒 ${(u.Producto||'').substring(0,35)}<br>
+                     💰 ${fM(u.Monto)}`;
+            }
+
+        } catch(e) {
+            document.getElementById('cli-bars').innerHTML = `<div style="color:#f44;font-size:0.72rem;">Error: ${e.message}</div>`;
+        }
+    }
+
+    function cerrarDetalleCliente() {
+        document.getElementById('cli-modal').classList.remove('open');
+    }
+
     </script>
 
     <!-- ── RESUMEN MES ANTERIOR ───────────────────────────── -->
@@ -1304,6 +1493,48 @@
                 <button class="btn-png" onclick="exportarResumenPNG()">🖼️ Guardar PNG</button>
                 <button class="btn-close-resumen" onclick="cerrarResumen()">✕ Cerrar</button>
             </div>
+        </div>
+    </div>
+
+
+    <!-- ── DETALLE CLIENTE ───────────────────────────────── -->
+    <div id="cli-modal">
+        <div class="cli-card">
+            <div class="cli-header">
+                <div class="cli-nombre" id="cli-nombre">—</div>
+                <div class="cli-codigo" id="cli-codigo">—</div>
+            </div>
+            <div class="cli-kpis">
+                <div class="cli-kpi" id="cli-kpi-mes">
+                    <div class="ck-val" id="cli-mes-val">—</div>
+                    <div class="ck-lbl">Este mes</div>
+                </div>
+                <div class="cli-kpi" id="cli-kpi-prom">
+                    <div class="ck-val igual" id="cli-prom-val">—</div>
+                    <div class="ck-lbl">Prom. mensual</div>
+                </div>
+                <div class="cli-kpi" id="cli-kpi-dias">
+                    <div class="ck-val" id="cli-dias-val">—</div>
+                    <div class="ck-lbl">Días sin compra</div>
+                </div>
+            </div>
+            <div class="cli-section">
+                <h3>📈 Últimos 6 meses</h3>
+                <div class="cli-bars" id="cli-bars">
+                    <div style="color:#555;font-size:0.72rem;">Cargando...</div>
+                </div>
+            </div>
+            <div class="cli-section">
+                <h3>🏆 Top productos (último año)</h3>
+                <table class="cli-table" id="cli-productos">
+                    <tr><td colspan="2" style="color:#555;">Cargando...</td></tr>
+                </table>
+            </div>
+            <div class="cli-section" id="cli-ult-section">
+                <h3>🕐 Última compra</h3>
+                <div class="cli-ult" id="cli-ultima">—</div>
+            </div>
+            <button class="cli-close" onclick="cerrarDetalleCliente()">✕ Cerrar</button>
         </div>
     </div>
 
