@@ -922,47 +922,51 @@ app.get('/api/cliente-detalle', async (req, res) => {
   try {
     const db      = await getPool();
     const hoy     = new Date();
-    const ini     = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-01`;
     const hoyStr  = hoy.toISOString().split('T')[0];
+    const hace1a  = new Date(hoy); hace1a.setFullYear(hace1a.getFullYear()-1);
+    const hace6m  = new Date(hoy); hace6m.setMonth(hace6m.getMonth()-6);
+    const hace1aStr = hace1a.toISOString().split('T')[0];
+    const hace6mStr = hace6m.toISOString().split('T')[0];
     const cliente  = decodeURIComponent(req.query.cliente || '');
     const vendedor = decodeURIComponent(req.query.vendedor || '');
 
     // ── Top 5 productos ───────────────────────────────────────────────────
     const rProd = await db.request()
-      .input('cli',  sql.VarChar, cliente)
-      .input('vend', sql.VarChar, `%${vendedor}%`)
+      .input('cli',   sql.VarChar, cliente)
+      .input('vend',  sql.VarChar, `%${vendedor}%`)
+      .input('ini1a', sql.Date, hace1aStr)
       .query(`
         SELECT TOP 5
-          s.ARTICULO      AS Parte,
-          s.DES_ARTICULO  AS Descripcion,
-          SUM(s.CANTIDAD)          AS Unidades,
-          SUM(s.IMP_TOTAL_LINEA)   AS Monto,
-          MAX(s.FECHA)             AS UltimaCompra
+          s.ARTICULO                        AS Parte,
+          s.DES_ARTICULO                    AS Descripcion,
+          SUM(s.CANTIDAD)                   AS Unidades,
+          SUM(s.IMP_TOTAL_LINEA)            AS Monto
         FROM FTSABI_PR s
         WHERE s.CLIENTE = @cli
           AND s.NOM_VENDEDOR LIKE @vend
           AND ${TIPO_EXCL_SQL}
           AND s.NOM_ALMACEN_LIN IN (${SUCURSALES})
-          AND s.FECHA >= DATEADD(year,-1,GETDATE())
+          AND s.FECHA >= @ini1a
         GROUP BY s.ARTICULO, s.DES_ARTICULO
         ORDER BY Monto DESC
       `);
 
     // ── Ventas por mes (últimos 6 meses) ──────────────────────────────────
     const rMeses = await db.request()
-      .input('cli',  sql.VarChar, cliente)
-      .input('vend', sql.VarChar, `%${vendedor}%`)
+      .input('cli',   sql.VarChar, cliente)
+      .input('vend',  sql.VarChar, `%${vendedor}%`)
+      .input('ini6m', sql.Date, hace6mStr)
       .query(`
         SELECT
-          FORMAT(s.FECHA, 'yyyy-MM') AS Mes,
-          SUM(s.IMP_TOTAL_LINEA)     AS Venta
+          CONVERT(varchar(7), s.FECHA, 120)  AS Mes,
+          SUM(s.IMP_TOTAL_LINEA)             AS Venta
         FROM FTSABI_PR s
         WHERE s.CLIENTE = @cli
           AND s.NOM_VENDEDOR LIKE @vend
           AND ${TIPO_EXCL_SQL}
           AND s.NOM_ALMACEN_LIN IN (${SUCURSALES})
-          AND s.FECHA >= DATEADD(month,-6,GETDATE())
-        GROUP BY FORMAT(s.FECHA, 'yyyy-MM')
+          AND s.FECHA >= @ini6m
+        GROUP BY CONVERT(varchar(7), s.FECHA, 120)
         ORDER BY Mes ASC
       `);
 
@@ -972,9 +976,9 @@ app.get('/api/cliente-detalle', async (req, res) => {
       .input('vend', sql.VarChar, `%${vendedor}%`)
       .query(`
         SELECT TOP 1
-          s.FECHA          AS Fecha,
-          s.DES_ARTICULO   AS Producto,
-          s.IMP_TOTAL_LINEA AS Monto
+          s.FECHA               AS Fecha,
+          s.DES_ARTICULO        AS Producto,
+          s.IMP_TOTAL_LINEA     AS Monto
         FROM FTSABI_PR s
         WHERE s.CLIENTE = @cli
           AND s.NOM_VENDEDOR LIKE @vend
