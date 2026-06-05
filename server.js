@@ -934,7 +934,7 @@ app.get('/api/cliente-detalle', async (req, res) => {
     const rProd = await db.request()
       .input('cli',   sql.VarChar, cliente)
       .input('vend',  sql.VarChar, `%${vendedor}%`)
-      .input('ini1a', sql.Date, hace1aStr)
+      .input('ini1a', sql.VarChar, hace1aStr)
       .query(`
         SELECT TOP 5
           s.ARTICULO                        AS Parte,
@@ -955,18 +955,18 @@ app.get('/api/cliente-detalle', async (req, res) => {
     const rMeses = await db.request()
       .input('cli',   sql.VarChar, cliente)
       .input('vend',  sql.VarChar, `%${vendedor}%`)
-      .input('ini6m', sql.Date, hace6mStr)
+      .input('ini6m', sql.VarChar, hace6mStr)
       .query(`
         SELECT
-          CONVERT(varchar(7), s.FECHA, 120)  AS Mes,
-          SUM(s.IMP_TOTAL_LINEA)             AS Venta
+          LEFT(s.FECHA, 7)               AS Mes,
+          SUM(s.IMP_TOTAL_LINEA)         AS Venta
         FROM FTSABI_PR s
         WHERE s.CLIENTE = @cli
           AND s.NOM_VENDEDOR LIKE @vend
           AND ${TIPO_EXCL_SQL}
           AND s.NOM_ALMACEN_LIN IN (${SUCURSALES})
           AND s.FECHA >= @ini6m
-        GROUP BY CONVERT(varchar(7), s.FECHA, 120)
+        GROUP BY LEFT(s.FECHA, 7)
         ORDER BY Mes ASC
       `);
 
