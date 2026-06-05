@@ -917,5 +917,83 @@ app.get('/api/resumen-mes', async (req, res) => {
 });
 
 
+// ── DETALLE CLIENTE ───────────────────────────────────────────────────────────
+app.get('/api/cliente-detalle', async (req, res) => {
+  try {
+    const db      = await getPool();
+    const hoy     = new Date();
+    const ini     = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-01`;
+    const hoyStr  = hoy.toISOString().split('T')[0];
+    const cliente  = decodeURIComponent(req.query.cliente || '');
+    const vendedor = decodeURIComponent(req.query.vendedor || '');
+
+    // ── Top 5 productos ───────────────────────────────────────────────────
+    const rProd = await db.request()
+      .input('cli',  sql.VarChar, cliente)
+      .input('vend', sql.VarChar, `%${vendedor}%`)
+      .query(`
+        SELECT TOP 5
+          s.ARTICULO      AS Parte,
+          s.DES_ARTICULO  AS Descripcion,
+          SUM(s.CANTIDAD)          AS Unidades,
+          SUM(s.IMP_TOTAL_LINEA)   AS Monto,
+          MAX(s.FECHA)             AS UltimaCompra
+        FROM FTSABI_PR s
+        WHERE s.CLIENTE = @cli
+          AND s.NOM_VENDEDOR LIKE @vend
+          AND ${TIPO_EXCL_SQL}
+          AND s.NOM_ALMACEN_LIN IN (${SUCURSALES})
+          AND s.FECHA >= DATEADD(year,-1,GETDATE())
+        GROUP BY s.ARTICULO, s.DES_ARTICULO
+        ORDER BY Monto DESC
+      `);
+
+    // ── Ventas por mes (últimos 6 meses) ──────────────────────────────────
+    const rMeses = await db.request()
+      .input('cli',  sql.VarChar, cliente)
+      .input('vend', sql.VarChar, `%${vendedor}%`)
+      .query(`
+        SELECT
+          FORMAT(s.FECHA, 'yyyy-MM') AS Mes,
+          SUM(s.IMP_TOTAL_LINEA)     AS Venta
+        FROM FTSABI_PR s
+        WHERE s.CLIENTE = @cli
+          AND s.NOM_VENDEDOR LIKE @vend
+          AND ${TIPO_EXCL_SQL}
+          AND s.NOM_ALMACEN_LIN IN (${SUCURSALES})
+          AND s.FECHA >= DATEADD(month,-6,GETDATE())
+        GROUP BY FORMAT(s.FECHA, 'yyyy-MM')
+        ORDER BY Mes ASC
+      `);
+
+    // ── Última compra ─────────────────────────────────────────────────────
+    const rUlt = await db.request()
+      .input('cli',  sql.VarChar, cliente)
+      .input('vend', sql.VarChar, `%${vendedor}%`)
+      .query(`
+        SELECT TOP 1
+          s.FECHA          AS Fecha,
+          s.DES_ARTICULO   AS Producto,
+          s.IMP_TOTAL_LINEA AS Monto
+        FROM FTSABI_PR s
+        WHERE s.CLIENTE = @cli
+          AND s.NOM_VENDEDOR LIKE @vend
+          AND ${TIPO_EXCL_SQL}
+          AND s.NOM_ALMACEN_LIN IN (${SUCURSALES})
+        ORDER BY s.FECHA DESC
+      `);
+
+    res.json({
+      topProductos: rProd.recordset,
+      meses:        rMeses.recordset,
+      ultimaCompra: rUlt.recordset[0] || null,
+    });
+  } catch (err) {
+    console.error('Error /api/cliente-detalle:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, '0.0.0.0', () => console.log(`Catosa API en http://localhost:${PORT}`));
