@@ -1,4 +1,4 @@
-require('dotenv').config();
+require('dotenv').config({ path: 'C:\\catosa-api\\.env' });
 const express = require('express');
 const cors    = require('cors');
 const sql     = require('mssql');
@@ -999,5 +999,5 @@ app.get('/api/cliente-detalle', async (req, res) => {
 });
 
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, '0.0.0.0', () => console.log(`Catosa API en http://localhost:${PORT}`));
