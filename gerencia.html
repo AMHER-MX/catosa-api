@@ -1430,7 +1430,7 @@ function renderCartera() {
             ? `<span style="font-size:0.48rem;font-weight:900;padding:1px 5px;border-radius:8px;margin-left:5px;background:rgba(0,212,255,0.15);color:var(--blue);border:1px solid rgba(0,212,255,0.3);">⭐</span>`
             : '';
         el.innerHTML += `
-            <div class="v-row" onclick="abrirDetalleCliente('${encodeURIComponent(c.Codigo||'')}','${(c.Cliente||c.Codigo||'').replace(/'/g,"\\'")}','${encodeURIComponent(c.NombreCompleto||'')}',${c.Venta_Mes||0},${c.PromedioMensual||0},${parseInt(c.Dias)||0},'${encodeURIComponent(dbA||'')}')" style="cursor:pointer;">
+            <div class="v-row" onclick="abrirDetalleCliente('${encodeURIComponent(c.Codigo||'')}','${(c.Cliente||c.Codigo||'').replace(/'/g,"\\'")}','${encodeURIComponent(c.NombreCompleto||'')}',${c.Venta_Mes||0},${c.PromedioMensual||0},${parseInt(c.Dias)||0},'${encodeURIComponent(document.getElementById('f-vend')?.value||'')}')" style="cursor:pointer;">
                 <div class="v-row-left">
                     <div class="v-row-name"><span class="dot ${col2}"></span>${c.Cliente||c.Codigo||'—'}${badgeHTML}</div>
                     <div class="v-row-sub">${c.Direccion||''}</div>
