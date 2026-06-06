@@ -174,7 +174,7 @@
         try {
             const d = await apiFetch(`/api/aceite-reporte?mes=${mes}`);
             if (!d.filas || !d.filas.length) {
-                toast('Sin datos para ese mes', 'err');
+                alert('Sin datos para ese mes');
                 return;
             }
 
@@ -249,9 +249,9 @@
 
             // Download
             XLSX.writeFile(wb, `Reporte_Aceite_${mes}.xlsx`);
-            toast('Excel descargado ✓', 'ok');
+            alert('Excel descargado ✓');
         } catch(e) {
-            toast('Error: ' + e.message, 'err');
+            alert('Error: ' + e.message);
         } finally {
             btn.textContent = '⬇️ Excel';
             btn.disabled = false;
@@ -428,7 +428,7 @@
         try {
             const d = await apiFetch(`/api/aceite-reporte?mes=${mes}`);
             if (!d.filas || !d.filas.length) {
-                toast('Sin datos para ese mes', 'err');
+                alert('Sin datos para ese mes');
                 return;
             }
 
@@ -503,9 +503,9 @@
 
             // Download
             XLSX.writeFile(wb, `Reporte_Aceite_${mes}.xlsx`);
-            toast('Excel descargado ✓', 'ok');
+            alert('Excel descargado ✓');
         } catch(e) {
-            toast('Error: ' + e.message, 'err');
+            alert('Error: ' + e.message);
         } finally {
             btn.textContent = '⬇️ Excel';
             btn.disabled = false;
@@ -2174,7 +2174,7 @@ function renderVisitas() {
         try {
             const d = await apiFetch(`/api/aceite-reporte?mes=${mes}`);
             if (!d.filas || !d.filas.length) {
-                toast('Sin datos para ese mes', 'err');
+                alert('Sin datos para ese mes');
                 return;
             }
 
@@ -2249,9 +2249,9 @@ function renderVisitas() {
 
             // Download
             XLSX.writeFile(wb, `Reporte_Aceite_${mes}.xlsx`);
-            toast('Excel descargado ✓', 'ok');
+            alert('Excel descargado ✓');
         } catch(e) {
-            toast('Error: ' + e.message, 'err');
+            alert('Error: ' + e.message);
         } finally {
             btn.textContent = '⬇️ Excel';
             btn.disabled = false;
