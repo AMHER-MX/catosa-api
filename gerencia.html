@@ -164,6 +164,100 @@
         document.getElementById('cli-modal').classList.remove('open');
     }
 
+    
+    // ── REPORTE ACEITE EXCEL ──────────────────────────────────────────────
+    async function descargarReporteAceite() {
+        const mes = document.getElementById('sel-mes-reporte').value;
+        const btn = event.target;
+        btn.textContent = '⏳ Generando...';
+        btn.disabled = true;
+        try {
+            const d = await apiFetch(`/api/aceite-reporte?mes=${mes}`);
+            if (!d.filas || !d.filas.length) {
+                toast('Sin datos para ese mes', 'err');
+                return;
+            }
+
+            // Build Excel using SheetJS (xlsx)
+            const script = document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+            document.head.appendChild(script);
+            await new Promise(r => { script.onload = r; });
+
+            const wb = XLSX.utils.book_new();
+
+            // ── Hoja 1: Instrucciones ─────────────────────────────────────
+            const wsInfo = XLSX.utils.aoa_to_sheet([
+                ['Concurso de aceites para motor international y fleetrite'],
+                [],
+                ['Guia de usuario'],
+                [],
+                ['Pasos:'],
+                ['1', 'Llenar la hoja "volumen mensual" con la venta por litro, por asesor del mes'],
+                ['2', 'UNICAMENTE LLENAR LAS CELDAS EN COLOR AZUL'],
+                ['3', 'Seleccionar el mes venta (esta en lista desplegable)'],
+                ['4', 'Se debe poner el volumen total mensual por asesor'],
+                ['5', 'Seleccionar el numero de parte participante (esta en lista desplegable)'],
+                [],
+                ['** UNICAMENTE participan ACEITES DE MOTOR International y fleetrite PRODUCIDOS POR SHELL'],
+            ]);
+            XLSX.utils.book_append_sheet(wb, wsInfo, 'Instrucciones');
+
+            // ── Hoja 2: Volumen mensual ───────────────────────────────────
+            const headers = [
+                'Distribuidor', 'GFX (# distribuidor)', 'Vendedor', 'Mes Venta',
+                'Volumen Venta', 'Litros de aceite International', 'Litros de aceite Fleetrite',
+                'Numero de parte vendidos', 'Litros vendidos por taller', 'Total'
+            ];
+            const rows = d.filas.map((f, i) => [
+                f.Distribuidor,
+                f.GFX,
+                f.Vendedor,
+                f.Mes_Venta,
+                f.Volumen_Venta,
+                f.Litros_International,
+                f.Litros_Fleetrite,
+                f.Numeros_Parte_Vendidos,
+                f.Litros_Por_Taller,
+                f.Volumen_Venta + f.Litros_Por_Taller,
+            ]);
+
+            const wsData = XLSX.utils.aoa_to_sheet([
+                ['Formato de registro para base de venta de aceite 2026'],
+                ['Solo se debe considerar el aceite de motor por vendedor'],
+                [],
+                [],
+                [],
+                headers,
+                ...rows,
+            ]);
+
+            // Column widths
+            wsData['!cols'] = [
+                {wch:28},{wch:18},{wch:28},{wch:14},{wch:14},
+                {wch:24},{wch:22},{wch:50},{wch:22},{wch:10}
+            ];
+
+            // Style header row yellow
+            const range = XLSX.utils.decode_range(wsData['!ref']);
+            for (let C = range.s.c; C <= range.e.c; C++) {
+                const cell = wsData[XLSX.utils.encode_cell({r:5, c:C})];
+                if (cell) cell.s = { fill:{fgColor:{rgb:'FFD700'}}, font:{bold:true} };
+            }
+
+            XLSX.utils.book_append_sheet(wb, wsData, 'Volumen Mensual');
+
+            // Download
+            XLSX.writeFile(wb, `Reporte_Aceite_${mes}.xlsx`);
+            toast('Excel descargado ✓', 'ok');
+        } catch(e) {
+            toast('Error: ' + e.message, 'err');
+        } finally {
+            btn.textContent = '⬇️ Excel';
+            btn.disabled = false;
+        }
+    }
+
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js">
     // ── RESUMEN MES ANTERIOR GERENCIA ────────────────────────────────────
@@ -322,6 +416,100 @@
 
     function cerrarDetalleCliente() {
         document.getElementById('cli-modal').classList.remove('open');
+    }
+
+    
+    // ── REPORTE ACEITE EXCEL ──────────────────────────────────────────────
+    async function descargarReporteAceite() {
+        const mes = document.getElementById('sel-mes-reporte').value;
+        const btn = event.target;
+        btn.textContent = '⏳ Generando...';
+        btn.disabled = true;
+        try {
+            const d = await apiFetch(`/api/aceite-reporte?mes=${mes}`);
+            if (!d.filas || !d.filas.length) {
+                toast('Sin datos para ese mes', 'err');
+                return;
+            }
+
+            // Build Excel using SheetJS (xlsx)
+            const script = document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+            document.head.appendChild(script);
+            await new Promise(r => { script.onload = r; });
+
+            const wb = XLSX.utils.book_new();
+
+            // ── Hoja 1: Instrucciones ─────────────────────────────────────
+            const wsInfo = XLSX.utils.aoa_to_sheet([
+                ['Concurso de aceites para motor international y fleetrite'],
+                [],
+                ['Guia de usuario'],
+                [],
+                ['Pasos:'],
+                ['1', 'Llenar la hoja "volumen mensual" con la venta por litro, por asesor del mes'],
+                ['2', 'UNICAMENTE LLENAR LAS CELDAS EN COLOR AZUL'],
+                ['3', 'Seleccionar el mes venta (esta en lista desplegable)'],
+                ['4', 'Se debe poner el volumen total mensual por asesor'],
+                ['5', 'Seleccionar el numero de parte participante (esta en lista desplegable)'],
+                [],
+                ['** UNICAMENTE participan ACEITES DE MOTOR International y fleetrite PRODUCIDOS POR SHELL'],
+            ]);
+            XLSX.utils.book_append_sheet(wb, wsInfo, 'Instrucciones');
+
+            // ── Hoja 2: Volumen mensual ───────────────────────────────────
+            const headers = [
+                'Distribuidor', 'GFX (# distribuidor)', 'Vendedor', 'Mes Venta',
+                'Volumen Venta', 'Litros de aceite International', 'Litros de aceite Fleetrite',
+                'Numero de parte vendidos', 'Litros vendidos por taller', 'Total'
+            ];
+            const rows = d.filas.map((f, i) => [
+                f.Distribuidor,
+                f.GFX,
+                f.Vendedor,
+                f.Mes_Venta,
+                f.Volumen_Venta,
+                f.Litros_International,
+                f.Litros_Fleetrite,
+                f.Numeros_Parte_Vendidos,
+                f.Litros_Por_Taller,
+                f.Volumen_Venta + f.Litros_Por_Taller,
+            ]);
+
+            const wsData = XLSX.utils.aoa_to_sheet([
+                ['Formato de registro para base de venta de aceite 2026'],
+                ['Solo se debe considerar el aceite de motor por vendedor'],
+                [],
+                [],
+                [],
+                headers,
+                ...rows,
+            ]);
+
+            // Column widths
+            wsData['!cols'] = [
+                {wch:28},{wch:18},{wch:28},{wch:14},{wch:14},
+                {wch:24},{wch:22},{wch:50},{wch:22},{wch:10}
+            ];
+
+            // Style header row yellow
+            const range = XLSX.utils.decode_range(wsData['!ref']);
+            for (let C = range.s.c; C <= range.e.c; C++) {
+                const cell = wsData[XLSX.utils.encode_cell({r:5, c:C})];
+                if (cell) cell.s = { fill:{fgColor:{rgb:'FFD700'}}, font:{bold:true} };
+            }
+
+            XLSX.utils.book_append_sheet(wb, wsData, 'Volumen Mensual');
+
+            // Download
+            XLSX.writeFile(wb, `Reporte_Aceite_${mes}.xlsx`);
+            toast('Excel descargado ✓', 'ok');
+        } catch(e) {
+            toast('Error: ' + e.message, 'err');
+        } finally {
+            btn.textContent = '⬇️ Excel';
+            btn.disabled = false;
+        }
     }
 
     </script>
@@ -893,9 +1081,22 @@
 
     <!-- CANCHA CHALLENGE ACEITE MOTOR -->
     <div class="card" style="margin-bottom:14px; min-height:auto;">
-        <div class="card-title" style="color:var(--purple);">
-            🌟 CHALLENGE ACEITE MOTOR — LITROS INCREMENTALES
-            <span id="aceite-resumen" style="font-size:0.55rem; color:#555; font-weight:400;"></span>
+        <div class="card-title" style="color:var(--purple); display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
+            <div>🌟 CHALLENGE ACEITE MOTOR — LITROS INCREMENTALES
+            <span id="aceite-resumen" style="font-size:0.55rem; color:#555; font-weight:400;"></span></div>
+            <div style="display:flex; align-items:center; gap:8px;">
+                <select id="sel-mes-reporte" style="background:#1a1a1a; border:1px solid #333; color:#aaa; border-radius:8px; padding:4px 8px; font-size:0.7rem; cursor:pointer;">
+                    <option value="2026-05">Mayo 2026</option>
+                    <option value="2026-06" selected>Junio 2026</option>
+                    <option value="2026-07">Julio 2026</option>
+                    <option value="2026-08">Agosto 2026</option>
+                    <option value="2026-09">Septiembre 2026</option>
+                    <option value="2026-10">Octubre 2026</option>
+                    <option value="2026-11">Noviembre 2026</option>
+                    <option value="2026-12">Diciembre 2026</option>
+                </select>
+                <button onclick="descargarReporteAceite()" style="background:var(--gold); color:#000; border:none; border-radius:8px; padding:5px 12px; font-size:0.7rem; font-weight:700; cursor:pointer;">⬇️ Excel</button>
+            </div>
         </div>
         <div id="aceite-pista" style="border-radius:10px; overflow:hidden;">
             <div class="loading">Cargando...</div>
@@ -1961,6 +2162,100 @@ function renderVisitas() {
 
     function cerrarDetalleCliente() {
         document.getElementById('cli-modal').classList.remove('open');
+    }
+
+    
+    // ── REPORTE ACEITE EXCEL ──────────────────────────────────────────────
+    async function descargarReporteAceite() {
+        const mes = document.getElementById('sel-mes-reporte').value;
+        const btn = event.target;
+        btn.textContent = '⏳ Generando...';
+        btn.disabled = true;
+        try {
+            const d = await apiFetch(`/api/aceite-reporte?mes=${mes}`);
+            if (!d.filas || !d.filas.length) {
+                toast('Sin datos para ese mes', 'err');
+                return;
+            }
+
+            // Build Excel using SheetJS (xlsx)
+            const script = document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+            document.head.appendChild(script);
+            await new Promise(r => { script.onload = r; });
+
+            const wb = XLSX.utils.book_new();
+
+            // ── Hoja 1: Instrucciones ─────────────────────────────────────
+            const wsInfo = XLSX.utils.aoa_to_sheet([
+                ['Concurso de aceites para motor international y fleetrite'],
+                [],
+                ['Guia de usuario'],
+                [],
+                ['Pasos:'],
+                ['1', 'Llenar la hoja "volumen mensual" con la venta por litro, por asesor del mes'],
+                ['2', 'UNICAMENTE LLENAR LAS CELDAS EN COLOR AZUL'],
+                ['3', 'Seleccionar el mes venta (esta en lista desplegable)'],
+                ['4', 'Se debe poner el volumen total mensual por asesor'],
+                ['5', 'Seleccionar el numero de parte participante (esta en lista desplegable)'],
+                [],
+                ['** UNICAMENTE participan ACEITES DE MOTOR International y fleetrite PRODUCIDOS POR SHELL'],
+            ]);
+            XLSX.utils.book_append_sheet(wb, wsInfo, 'Instrucciones');
+
+            // ── Hoja 2: Volumen mensual ───────────────────────────────────
+            const headers = [
+                'Distribuidor', 'GFX (# distribuidor)', 'Vendedor', 'Mes Venta',
+                'Volumen Venta', 'Litros de aceite International', 'Litros de aceite Fleetrite',
+                'Numero de parte vendidos', 'Litros vendidos por taller', 'Total'
+            ];
+            const rows = d.filas.map((f, i) => [
+                f.Distribuidor,
+                f.GFX,
+                f.Vendedor,
+                f.Mes_Venta,
+                f.Volumen_Venta,
+                f.Litros_International,
+                f.Litros_Fleetrite,
+                f.Numeros_Parte_Vendidos,
+                f.Litros_Por_Taller,
+                f.Volumen_Venta + f.Litros_Por_Taller,
+            ]);
+
+            const wsData = XLSX.utils.aoa_to_sheet([
+                ['Formato de registro para base de venta de aceite 2026'],
+                ['Solo se debe considerar el aceite de motor por vendedor'],
+                [],
+                [],
+                [],
+                headers,
+                ...rows,
+            ]);
+
+            // Column widths
+            wsData['!cols'] = [
+                {wch:28},{wch:18},{wch:28},{wch:14},{wch:14},
+                {wch:24},{wch:22},{wch:50},{wch:22},{wch:10}
+            ];
+
+            // Style header row yellow
+            const range = XLSX.utils.decode_range(wsData['!ref']);
+            for (let C = range.s.c; C <= range.e.c; C++) {
+                const cell = wsData[XLSX.utils.encode_cell({r:5, c:C})];
+                if (cell) cell.s = { fill:{fgColor:{rgb:'FFD700'}}, font:{bold:true} };
+            }
+
+            XLSX.utils.book_append_sheet(wb, wsData, 'Volumen Mensual');
+
+            // Download
+            XLSX.writeFile(wb, `Reporte_Aceite_${mes}.xlsx`);
+            toast('Excel descargado ✓', 'ok');
+        } catch(e) {
+            toast('Error: ' + e.message, 'err');
+        } finally {
+            btn.textContent = '⬇️ Excel';
+            btn.disabled = false;
+        }
     }
 
     </script>
