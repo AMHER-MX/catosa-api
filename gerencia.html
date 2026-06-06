@@ -186,63 +186,37 @@
 
             const wb = XLSX.utils.book_new();
 
-            // ── Hoja 1: Instrucciones ─────────────────────────────────────
-            const wsInfo = XLSX.utils.aoa_to_sheet([
-                ['Concurso de aceites para motor international y fleetrite'],
-                [],
-                ['Guia de usuario'],
-                [],
-                ['Pasos:'],
-                ['1', 'Llenar la hoja "volumen mensual" con la venta por litro, por asesor del mes'],
-                ['2', 'UNICAMENTE LLENAR LAS CELDAS EN COLOR AZUL'],
-                ['3', 'Seleccionar el mes venta (esta en lista desplegable)'],
-                ['4', 'Se debe poner el volumen total mensual por asesor'],
-                ['5', 'Seleccionar el numero de parte participante (esta en lista desplegable)'],
-                [],
-                ['** UNICAMENTE participan ACEITES DE MOTOR International y fleetrite PRODUCIDOS POR SHELL'],
-            ]);
-            XLSX.utils.book_append_sheet(wb, wsInfo, 'Instrucciones');
-
-            // ── Hoja 2: Volumen mensual ───────────────────────────────────
+            // ── Hoja única: Volumen mensual ───────────────────────────────
             const headers = [
                 'Distribuidor', 'GFX (# distribuidor)', 'Vendedor', 'Mes Venta',
                 'Volumen Venta', 'Litros de aceite International', 'Litros de aceite Fleetrite',
                 'Numero de parte vendidos', 'Litros vendidos por taller', 'Total'
             ];
-            const rows = d.filas.map((f, i) => [
-                f.Distribuidor,
-                f.GFX,
-                f.Vendedor,
-                f.Mes_Venta,
-                f.Volumen_Venta,
-                f.Litros_International,
-                f.Litros_Fleetrite,
-                f.Numeros_Parte_Vendidos,
-                f.Litros_Por_Taller,
+            const rows = d.filas.map(f => [
+                f.Distribuidor, f.GFX, f.Vendedor, f.Mes_Venta,
+                f.Volumen_Venta, f.Litros_International, f.Litros_Fleetrite,
+                f.Numeros_Parte_Vendidos, f.Litros_Por_Taller,
                 f.Volumen_Venta + f.Litros_Por_Taller,
             ]);
 
-            const wsData = XLSX.utils.aoa_to_sheet([
-                ['Formato de registro para base de venta de aceite 2026'],
-                ['Solo se debe considerar el aceite de motor por vendedor'],
-                [],
-                [],
-                [],
-                headers,
-                ...rows,
-            ]);
+            const wsData = XLSX.utils.aoa_to_sheet([headers, ...rows]);
 
             // Column widths
             wsData['!cols'] = [
-                {wch:28},{wch:18},{wch:28},{wch:14},{wch:14},
-                {wch:24},{wch:22},{wch:50},{wch:22},{wch:10}
+                {wch:28},{wch:18},{wch:28},{wch:16},{wch:14},
+                {wch:26},{wch:24},{wch:50},{wch:22},{wch:10}
             ];
 
-            // Style header row yellow
+            // Style header row: gold background + bold
             const range = XLSX.utils.decode_range(wsData['!ref']);
             for (let C = range.s.c; C <= range.e.c; C++) {
-                const cell = wsData[XLSX.utils.encode_cell({r:5, c:C})];
-                if (cell) cell.s = { fill:{fgColor:{rgb:'FFD700'}}, font:{bold:true} };
+                const cellRef = XLSX.utils.encode_cell({r:0, c:C});
+                if (!wsData[cellRef]) continue;
+                wsData[cellRef].s = {
+                    fill: { patternType:'solid', fgColor:{ rgb:'FFD700' } },
+                    font: { bold:true, color:{ rgb:'000000' } },
+                    alignment: { horizontal:'center', wrapText:true }
+                };
             }
 
             XLSX.utils.book_append_sheet(wb, wsData, 'Volumen Mensual');
@@ -440,63 +414,37 @@
 
             const wb = XLSX.utils.book_new();
 
-            // ── Hoja 1: Instrucciones ─────────────────────────────────────
-            const wsInfo = XLSX.utils.aoa_to_sheet([
-                ['Concurso de aceites para motor international y fleetrite'],
-                [],
-                ['Guia de usuario'],
-                [],
-                ['Pasos:'],
-                ['1', 'Llenar la hoja "volumen mensual" con la venta por litro, por asesor del mes'],
-                ['2', 'UNICAMENTE LLENAR LAS CELDAS EN COLOR AZUL'],
-                ['3', 'Seleccionar el mes venta (esta en lista desplegable)'],
-                ['4', 'Se debe poner el volumen total mensual por asesor'],
-                ['5', 'Seleccionar el numero de parte participante (esta en lista desplegable)'],
-                [],
-                ['** UNICAMENTE participan ACEITES DE MOTOR International y fleetrite PRODUCIDOS POR SHELL'],
-            ]);
-            XLSX.utils.book_append_sheet(wb, wsInfo, 'Instrucciones');
-
-            // ── Hoja 2: Volumen mensual ───────────────────────────────────
+            // ── Hoja única: Volumen mensual ───────────────────────────────
             const headers = [
                 'Distribuidor', 'GFX (# distribuidor)', 'Vendedor', 'Mes Venta',
                 'Volumen Venta', 'Litros de aceite International', 'Litros de aceite Fleetrite',
                 'Numero de parte vendidos', 'Litros vendidos por taller', 'Total'
             ];
-            const rows = d.filas.map((f, i) => [
-                f.Distribuidor,
-                f.GFX,
-                f.Vendedor,
-                f.Mes_Venta,
-                f.Volumen_Venta,
-                f.Litros_International,
-                f.Litros_Fleetrite,
-                f.Numeros_Parte_Vendidos,
-                f.Litros_Por_Taller,
+            const rows = d.filas.map(f => [
+                f.Distribuidor, f.GFX, f.Vendedor, f.Mes_Venta,
+                f.Volumen_Venta, f.Litros_International, f.Litros_Fleetrite,
+                f.Numeros_Parte_Vendidos, f.Litros_Por_Taller,
                 f.Volumen_Venta + f.Litros_Por_Taller,
             ]);
 
-            const wsData = XLSX.utils.aoa_to_sheet([
-                ['Formato de registro para base de venta de aceite 2026'],
-                ['Solo se debe considerar el aceite de motor por vendedor'],
-                [],
-                [],
-                [],
-                headers,
-                ...rows,
-            ]);
+            const wsData = XLSX.utils.aoa_to_sheet([headers, ...rows]);
 
             // Column widths
             wsData['!cols'] = [
-                {wch:28},{wch:18},{wch:28},{wch:14},{wch:14},
-                {wch:24},{wch:22},{wch:50},{wch:22},{wch:10}
+                {wch:28},{wch:18},{wch:28},{wch:16},{wch:14},
+                {wch:26},{wch:24},{wch:50},{wch:22},{wch:10}
             ];
 
-            // Style header row yellow
+            // Style header row: gold background + bold
             const range = XLSX.utils.decode_range(wsData['!ref']);
             for (let C = range.s.c; C <= range.e.c; C++) {
-                const cell = wsData[XLSX.utils.encode_cell({r:5, c:C})];
-                if (cell) cell.s = { fill:{fgColor:{rgb:'FFD700'}}, font:{bold:true} };
+                const cellRef = XLSX.utils.encode_cell({r:0, c:C});
+                if (!wsData[cellRef]) continue;
+                wsData[cellRef].s = {
+                    fill: { patternType:'solid', fgColor:{ rgb:'FFD700' } },
+                    font: { bold:true, color:{ rgb:'000000' } },
+                    alignment: { horizontal:'center', wrapText:true }
+                };
             }
 
             XLSX.utils.book_append_sheet(wb, wsData, 'Volumen Mensual');
@@ -2186,63 +2134,37 @@ function renderVisitas() {
 
             const wb = XLSX.utils.book_new();
 
-            // ── Hoja 1: Instrucciones ─────────────────────────────────────
-            const wsInfo = XLSX.utils.aoa_to_sheet([
-                ['Concurso de aceites para motor international y fleetrite'],
-                [],
-                ['Guia de usuario'],
-                [],
-                ['Pasos:'],
-                ['1', 'Llenar la hoja "volumen mensual" con la venta por litro, por asesor del mes'],
-                ['2', 'UNICAMENTE LLENAR LAS CELDAS EN COLOR AZUL'],
-                ['3', 'Seleccionar el mes venta (esta en lista desplegable)'],
-                ['4', 'Se debe poner el volumen total mensual por asesor'],
-                ['5', 'Seleccionar el numero de parte participante (esta en lista desplegable)'],
-                [],
-                ['** UNICAMENTE participan ACEITES DE MOTOR International y fleetrite PRODUCIDOS POR SHELL'],
-            ]);
-            XLSX.utils.book_append_sheet(wb, wsInfo, 'Instrucciones');
-
-            // ── Hoja 2: Volumen mensual ───────────────────────────────────
+            // ── Hoja única: Volumen mensual ───────────────────────────────
             const headers = [
                 'Distribuidor', 'GFX (# distribuidor)', 'Vendedor', 'Mes Venta',
                 'Volumen Venta', 'Litros de aceite International', 'Litros de aceite Fleetrite',
                 'Numero de parte vendidos', 'Litros vendidos por taller', 'Total'
             ];
-            const rows = d.filas.map((f, i) => [
-                f.Distribuidor,
-                f.GFX,
-                f.Vendedor,
-                f.Mes_Venta,
-                f.Volumen_Venta,
-                f.Litros_International,
-                f.Litros_Fleetrite,
-                f.Numeros_Parte_Vendidos,
-                f.Litros_Por_Taller,
+            const rows = d.filas.map(f => [
+                f.Distribuidor, f.GFX, f.Vendedor, f.Mes_Venta,
+                f.Volumen_Venta, f.Litros_International, f.Litros_Fleetrite,
+                f.Numeros_Parte_Vendidos, f.Litros_Por_Taller,
                 f.Volumen_Venta + f.Litros_Por_Taller,
             ]);
 
-            const wsData = XLSX.utils.aoa_to_sheet([
-                ['Formato de registro para base de venta de aceite 2026'],
-                ['Solo se debe considerar el aceite de motor por vendedor'],
-                [],
-                [],
-                [],
-                headers,
-                ...rows,
-            ]);
+            const wsData = XLSX.utils.aoa_to_sheet([headers, ...rows]);
 
             // Column widths
             wsData['!cols'] = [
-                {wch:28},{wch:18},{wch:28},{wch:14},{wch:14},
-                {wch:24},{wch:22},{wch:50},{wch:22},{wch:10}
+                {wch:28},{wch:18},{wch:28},{wch:16},{wch:14},
+                {wch:26},{wch:24},{wch:50},{wch:22},{wch:10}
             ];
 
-            // Style header row yellow
+            // Style header row: gold background + bold
             const range = XLSX.utils.decode_range(wsData['!ref']);
             for (let C = range.s.c; C <= range.e.c; C++) {
-                const cell = wsData[XLSX.utils.encode_cell({r:5, c:C})];
-                if (cell) cell.s = { fill:{fgColor:{rgb:'FFD700'}}, font:{bold:true} };
+                const cellRef = XLSX.utils.encode_cell({r:0, c:C});
+                if (!wsData[cellRef]) continue;
+                wsData[cellRef].s = {
+                    fill: { patternType:'solid', fgColor:{ rgb:'FFD700' } },
+                    font: { bold:true, color:{ rgb:'000000' } },
+                    alignment: { horizontal:'center', wrapText:true }
+                };
             }
 
             XLSX.utils.book_append_sheet(wb, wsData, 'Volumen Mensual');
