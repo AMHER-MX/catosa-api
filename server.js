@@ -674,10 +674,26 @@ app.get('/api/torneo', async (req, res) => {
 app.get('/api/tables', async (req, res) => {
   try {
     const db = await getPool();
-    const result = await db.request().query(
+    // Get all tables
+    const tResult = await db.request().query(
       "SELECT name FROM sys.tables ORDER BY name"
     );
-    res.json({ tables: result.recordset.map(r => r.name) });
+    // Get friendly names from CATALOGO_TABLAS
+    let catalogoMap = {};
+    try {
+      const cResult = await db.request().query(
+        "SELECT TABLA, DESCRIPCION FROM CATALOGO_TABLAS"
+      );
+      cResult.recordset.forEach(r => {
+        if (r.TABLA) catalogoMap[r.TABLA.trim()] = r.DESCRIPCION || r.TABLA;
+      });
+    } catch(e) { /* catalogo not available */ }
+
+    const tables = tResult.recordset.map(r => ({
+      name:  r.name,
+      label: catalogoMap[r.name] ? `${catalogoMap[r.name]} (${r.name})` : r.name,
+    }));
+    res.json({ tables });
   } catch (err) {
     pool = null;
     res.status(500).json({ error: err.message });
@@ -994,79 +1010,6 @@ app.get('/api/cliente-detalle', async (req, res) => {
     });
   } catch (err) {
     console.error('Error /api/cliente-detalle:', err.message);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-
-// ── REPORTE ACEITE POR MES (para Excel) ──────────────────────────────────────
-app.get('/api/aceite-reporte', async (req, res) => {
-  try {
-    const db  = await getPool();
-    const mes = req.query.mes || ''; // formato YYYY-MM
-    if (!mes) return res.status(400).json({ error: 'Parámetro mes requerido (YYYY-MM)' });
-
-    const ini = `${mes}-01`;
-    // Último día del mes
-    const [y, m] = mes.split('-').map(Number);
-    const fin = new Date(y, m, 0).toISOString().split('T')[0];
-
-    const npsLista = Object.keys(ACEITE_NPS).map(n => `'${n}'`).join(',');
-    const mesNombre = new Date(y, m-1, 1).toLocaleString('es-MX', { month: 'long', year: 'numeric' })
-                        .toUpperCase();
-
-    const result = await db.request()
-      .input('ini', sql.VarChar, ini)
-      .input('fin', sql.VarChar, fin)
-      .query(`
-        SELECT
-          s.NOM_VENDEDOR  AS Vendedor,
-          s.ARTICULO      AS NumeroParte,
-          SUM(s.CANTIDAD) AS Cantidad
-        FROM FTSABI_PR s
-        WHERE s.FECHA >= @ini AND s.FECHA <= @fin
-          AND s.ARTICULO IN (${npsLista})
-          AND s.NOM_ALMACEN_LIN IN (${SUCURSALES})
-          AND ${TIPO_EXCL_SQL}
-        GROUP BY s.NOM_VENDEDOR, s.ARTICULO
-        ORDER BY s.NOM_VENDEDOR
-      `);
-
-    // Agrupar por vendedor
-    const porVendedor = {};
-    result.recordset.forEach(row => {
-      const v = row.Vendedor;
-      if (!porVendedor[v]) porVendedor[v] = { partes: {}, litrosTotal: 0, litrosIntl: 0, litrosFlrt: 0 };
-      const factor = ACEITE_NPS[row.NumeroParte] || 1;
-      const litros = (parseFloat(row.Cantidad) || 0) * factor;
-      porVendedor[v].litrosTotal += litros;
-      porVendedor[v].partes[row.NumeroParte] = (porVendedor[v].partes[row.NumeroParte] || 0) + litros;
-      if (NPS_INTL.has(row.NumeroParte)) porVendedor[v].litrosIntl += litros;
-      else porVendedor[v].litrosFlrt += litros;
-    });
-
-    // Construir filas del reporte
-    const filas = Object.entries(porVendedor).map(([vendedor, data]) => {
-      const npsVendidos = Object.entries(data.partes)
-        .sort((a, b) => b[1] - a[1])
-        .map(([np, lts]) => `${np} (${Math.round(lts)}L)`)
-        .join(', ');
-      return {
-        Distribuidor:           'CATOSA INTERNATIONAL',
-        GFX:                    'zz001',
-        Vendedor:               vendedor,
-        Mes_Venta:              mesNombre,
-        Volumen_Venta:          Math.round(data.litrosTotal),
-        Litros_International:   Math.round(data.litrosIntl),
-        Litros_Fleetrite:       Math.round(data.litrosFlrt),
-        Numeros_Parte_Vendidos: npsVendidos,
-        Litros_Por_Taller:      0,
-      };
-    }).sort((a, b) => b.Volumen_Venta - a.Volumen_Venta);
-
-    res.json({ mes: mesNombre, filas });
-  } catch (err) {
-    console.error('Error /api/aceite-reporte:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
