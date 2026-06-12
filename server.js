@@ -674,26 +674,10 @@ app.get('/api/torneo', async (req, res) => {
 app.get('/api/tables', async (req, res) => {
   try {
     const db = await getPool();
-    // Get all tables
-    const tResult = await db.request().query(
+    const result = await db.request().query(
       "SELECT name FROM sys.tables ORDER BY name"
     );
-    // Get friendly names from CATALOGO_TABLAS
-    let catalogoMap = {};
-    try {
-      const cResult = await db.request().query(
-        "SELECT TABLA, DESCRIPCION FROM CATALOGO_TABLAS"
-      );
-      cResult.recordset.forEach(r => {
-        if (r.TABLA) catalogoMap[r.TABLA.trim()] = r.DESCRIPCION || r.TABLA;
-      });
-    } catch(e) { /* catalogo not available */ }
-
-    const tables = tResult.recordset.map(r => ({
-      name:  r.name,
-      label: catalogoMap[r.name] ? `${catalogoMap[r.name]} (${r.name})` : r.name,
-    }));
-    res.json({ tables });
+    res.json({ tables: result.recordset.map(r => r.name) });
   } catch (err) {
     pool = null;
     res.status(500).json({ error: err.message });
@@ -826,14 +810,15 @@ app.get('/api/resumen-mes', async (req, res) => {
       .query(`
         SELECT TOP 5
           s.CLIENTE AS Codigo,
-          MAX(s.NOMBRE_CLIENTE) AS Cliente,
+          COALESCE(NULLIF(c.NOMBRE_COMERCIAL,''), c.NOMBRE, s.CLIENTE) AS Cliente,
           SUM(s.IMP_TOTAL_LINEA) AS Monto
         FROM FTSABI_PR s
+        LEFT JOIN FMCUBI_PR c ON c.CUENTA = s.CLIENTE
         WHERE s.FECHA >= @ini AND s.FECHA <= @fin
           AND ${TIPO_EXCL_SQL}
           AND s.NOM_ALMACEN_LIN IN (${SUCURSALES})
           AND s.NOM_VENDEDOR LIKE @vend
-        GROUP BY s.CLIENTE
+        GROUP BY s.CLIENTE, c.NOMBRE_COMERCIAL, c.NOMBRE
         ORDER BY Monto DESC
       `);
 
