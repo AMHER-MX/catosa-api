@@ -1058,5 +1058,294 @@ app.get('/api/aceite-reporte', async (req, res) => {
 });
 
 
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PROGRAMA CLIENTES RECUPERADOS — REFACCIONES
+// Todos los datos en SQL Server (RECUPERADOS_CONFIG + RECUPERADOS_REGISTROS)
+// ═══════════════════════════════════════════════════════════════════════════
+
+const SUCURSALES_REC_SQL = `'REFACCIONES CATOSA','REFACCIONES CATOSA ORIENTE','REFACCIONES CATOSA NORTE','REFACCIONES CATOSA SUR','REFACCIONES CATOSA PONIENTE'`;
+const TIPOS_EXCL_REC_SQL = `'PRESUPUESTO','PRESUPUESTO 8%','Traspaso salida almacen'`;
+
+// ── GET /api/recuperados/config ──────────────────────────────────────────────
+app.get('/api/recuperados/config', async (req, res) => {
+  try {
+    const pool = await sql.connect(dbConfig);
+    const r = await pool.request().query(`SELECT * FROM RECUPERADOS_CONFIG WHERE ID = 1`);
+    if (!r.recordset.length) return res.status(404).json({ error: 'Sin configuración' });
+    const row = r.recordset[0];
+    res.json({
+      meses:     row.MESES,
+      periodo:   row.PERIODO,
+      compraMin: parseFloat(row.COMPRA_MIN),
+      niveles: {
+        bronce: { clientes: row.B_CLIENTES, monto: parseFloat(row.B_MONTO), premio: row.B_PREMIO },
+        plata:  { clientes: row.S_CLIENTES, monto: parseFloat(row.S_MONTO), premio: row.S_PREMIO },
+        oro:    { clientes: row.G_CLIENTES, monto: parseFloat(row.G_MONTO), premio: row.G_PREMIO },
+      }
+    });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── POST /api/recuperados/config ─────────────────────────────────────────────
+app.post('/api/recuperados/config', async (req, res) => {
+  const { meses, periodo, compraMin, niveles } = req.body;
+  try {
+    const pool = await sql.connect(dbConfig);
+    await pool.request()
+      .input('meses',      sql.Int,           meses      || 60)
+      .input('periodo',    sql.NVarChar(20),   periodo    || 'trimestre')
+      .input('compraMin',  sql.Decimal(18,2),  compraMin  || 5000)
+      .input('bCli',       sql.Int,            niveles?.bronce?.clientes || 1)
+      .input('bMonto',     sql.Decimal(18,2),  niveles?.bronce?.monto    || 10000)
+      .input('bPremio',    sql.NVarChar(200),  niveles?.bronce?.premio   || '')
+      .input('sCli',       sql.Int,            niveles?.plata?.clientes  || 3)
+      .input('sMonto',     sql.Decimal(18,2),  niveles?.plata?.monto     || 30000)
+      .input('sPremio',    sql.NVarChar(200),  niveles?.plata?.premio    || '')
+      .input('gCli',       sql.Int,            niveles?.oro?.clientes    || 5)
+      .input('gMonto',     sql.Decimal(18,2),  niveles?.oro?.monto       || 60000)
+      .input('gPremio',    sql.NVarChar(200),  niveles?.oro?.premio      || '')
+      .query(`
+        UPDATE RECUPERADOS_CONFIG SET
+          MESES = @meses, PERIODO = @periodo, COMPRA_MIN = @compraMin,
+          B_CLIENTES = @bCli,  B_MONTO = @bMonto,  B_PREMIO = @bPremio,
+          S_CLIENTES = @sCli,  S_MONTO = @sMonto,  S_PREMIO = @sPremio,
+          G_CLIENTES = @gCli,  G_MONTO = @gMonto,  G_PREMIO = @gPremio
+        WHERE ID = 1
+      `);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── GET /api/recuperados/registros ───────────────────────────────────────────
+app.get('/api/recuperados/registros', async (req, res) => {
+  try {
+    const pool = await sql.connect(dbConfig);
+    const r = await pool.request().query(`
+      SELECT
+        ID                id,
+        CLIENTE_CODIGO    clienteCodigo,
+        CLIENTE_NOMBRE    clienteNombre,
+        VENDEDOR_CODIGO   vendedorCodigo,
+        VENDEDOR_NOMBRE   vendedorNombre,
+        SEDE              sede,
+        CONVERT(VARCHAR(10), ULTIMA_COMPRA, 120) ultimaCompra,
+        CONVERT(VARCHAR(10), FECHA_REC,     120) fechaRec,
+        MONTO             monto,
+        NOTAS             notas,
+        CREADO_EN         creadoEn
+      FROM RECUPERADOS_REGISTROS
+      WHERE ACTIVO = 1
+      ORDER BY FECHA_REC DESC
+    `);
+    res.json(r.recordset);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── POST /api/recuperados/registros ──────────────────────────────────────────
+app.post('/api/recuperados/registros', async (req, res) => {
+  const { clienteCodigo, clienteNombre, vendedorCodigo, vendedorNombre,
+          sede, ultimaCompra, fechaRec, monto, notas } = req.body;
+  try {
+    const pool = await sql.connect(dbConfig);
+    const r = await pool.request()
+      .input('clienteCodigo',  sql.NVarChar(50),   clienteCodigo  || '')
+      .input('clienteNombre',  sql.NVarChar(200),  clienteNombre  || '')
+      .input('vendedorCodigo', sql.NVarChar(50),   vendedorCodigo || '')
+      .input('vendedorNombre', sql.NVarChar(200),  vendedorNombre || '')
+      .input('sede',           sql.NVarChar(100),  sede           || '')
+      .input('ultimaCompra',   sql.Date,           ultimaCompra   || null)
+      .input('fechaRec',       sql.Date,           fechaRec)
+      .input('monto',          sql.Decimal(18,2),  monto          || 0)
+      .input('notas',          sql.NVarChar(500),  notas          || '')
+      .query(`
+        INSERT INTO RECUPERADOS_REGISTROS
+          (CLIENTE_CODIGO, CLIENTE_NOMBRE, VENDEDOR_CODIGO, VENDEDOR_NOMBRE,
+           SEDE, ULTIMA_COMPRA, FECHA_REC, MONTO, NOTAS)
+        OUTPUT INSERTED.ID
+        VALUES
+          (@clienteCodigo, @clienteNombre, @vendedorCodigo, @vendedorNombre,
+           @sede, @ultimaCompra, @fechaRec, @monto, @notas)
+      `);
+    res.json({ ok: true, id: r.recordset[0].ID });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── DELETE /api/recuperados/registros/:id ────────────────────────────────────
+app.delete('/api/recuperados/registros/:id', async (req, res) => {
+  try {
+    const pool = await sql.connect(dbConfig);
+    await pool.request()
+      .input('id', sql.BigInt, req.params.id)
+      .query(`UPDATE RECUPERADOS_REGISTROS SET ACTIVO = 0 WHERE ID = @id`);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── GET /api/recuperados/buscar-cliente?q=TERMINO ────────────────────────────
+app.get('/api/recuperados/buscar-cliente', async (req, res) => {
+  const q = (req.query.q || '').trim();
+  if (!q) return res.json([]);
+  try {
+    const pool = await sql.connect(dbConfig);
+    const r = await pool.request()
+      .input('q', sql.NVarChar(200), `%${q}%`)
+      .query(`
+        SELECT TOP 15
+          c.CUENTA,
+          c.NOMBRE,
+          c.NOMBRE_COMERCIAL,
+          CASE
+            WHEN MAX(LEFT(v.FECHA,8)) IS NULL THEN NULL
+            ELSE LEFT(MAX(LEFT(v.FECHA,8)),4) + '-' +
+                 SUBSTRING(MAX(LEFT(v.FECHA,8)),5,2) + '-' +
+                 RIGHT(MAX(LEFT(v.FECHA,8)),2)
+          END AS ULTIMA_COMPRA
+        FROM FMCUBI_PR c
+        LEFT JOIN FTSABI_PR v
+          ON  v.CLIENTE = c.CUENTA
+          AND v.NOM_ALMACEN_LIN IN (${SUCURSALES_REC_SQL})
+          AND v.DES_TIPO_VENTA  NOT IN (${TIPOS_EXCL_REC_SQL})
+        WHERE c.NOMBRE_COMERCIAL LIKE @q
+           OR c.NOMBRE           LIKE @q
+           OR c.CUENTA           LIKE @q
+        GROUP BY c.CUENTA, c.NOMBRE, c.NOMBRE_COMERCIAL
+        ORDER BY ULTIMA_COMPRA ASC
+      `);
+    res.json(r.recordset);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── GET /api/recuperados/candidatos?meses=60 ─────────────────────────────────
+app.get('/api/recuperados/candidatos', async (req, res) => {
+  const meses = parseInt(req.query.meses) || 60;
+  const fechaCorte = new Date();
+  fechaCorte.setMonth(fechaCorte.getMonth() - meses);
+  const fechaStr = fechaCorte.toISOString().slice(0,10).replace(/-/g,'');
+  try {
+    const pool = await sql.connect(dbConfig);
+    const r = await pool.request().query(`
+      SELECT TOP 300
+        c.CUENTA,
+        c.NOMBRE,
+        c.NOMBRE_COMERCIAL,
+        LEFT(MAX(LEFT(v.FECHA,8)),4) + '-' +
+        SUBSTRING(MAX(LEFT(v.FECHA,8)),5,2) + '-' +
+        RIGHT(MAX(LEFT(v.FECHA,8)),2) AS ULTIMA_COMPRA
+      FROM FMCUBI_PR c
+      INNER JOIN FTSABI_PR v
+        ON  v.CLIENTE = c.CUENTA
+        AND v.NOM_ALMACEN_LIN IN (${SUCURSALES_REC_SQL})
+        AND v.DES_TIPO_VENTA  NOT IN (${TIPOS_EXCL_REC_SQL})
+      GROUP BY c.CUENTA, c.NOMBRE, c.NOMBRE_COMERCIAL
+      HAVING MAX(LEFT(v.FECHA,8)) <= '${fechaStr}'
+      ORDER BY MAX(LEFT(v.FECHA,8)) ASC
+    `);
+    res.json(r.recordset);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── GET /api/recuperados/vendedores ──────────────────────────────────────────
+app.get('/api/recuperados/vendedores', async (req, res) => {
+  try {
+    const pool = await sql.connect(dbConfig);
+    const r = await pool.request().query(`
+      SELECT DISTINCT
+        COD_VENDEDOR,
+        NOM_VENDEDOR,
+        NOM_ALMACEN_LIN AS SEDE
+      FROM FMVENBI_PR
+      WHERE NOM_ALMACEN_LIN IN (${SUCURSALES_REC_SQL})
+      ORDER BY NOM_VENDEDOR
+    `);
+    res.json(r.recordset);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── GET /api/recuperados/historial-cliente/:cuenta ───────────────────────────
+app.get('/api/recuperados/historial-cliente/:cuenta', async (req, res) => {
+  try {
+    const pool = await sql.connect(dbConfig);
+    const r = await pool.request()
+      .input('cuenta', sql.NVarChar(50), req.params.cuenta)
+      .query(`
+        SELECT TOP 24
+          LEFT(v.FECHA,4) + '-' + SUBSTRING(v.FECHA,5,2) AS MES,
+          SUM(v.IMPORTE)  AS MONTO_MES,
+          COUNT(*)        AS NUM_FACTURAS
+        FROM FTSABI_PR v
+        WHERE v.CLIENTE = @cuenta
+          AND v.NOM_ALMACEN_LIN IN (${SUCURSALES_REC_SQL})
+          AND v.DES_TIPO_VENTA  NOT IN (${TIPOS_EXCL_REC_SQL})
+        GROUP BY LEFT(v.FECHA,7)
+        ORDER BY LEFT(v.FECHA,7) DESC
+      `);
+    res.json(r.recordset);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// AUTO-INIT: Crear tablas de Recuperados si no existen
+// Se ejecuta una vez al arrancar el servidor
+// ═══════════════════════════════════════════════════════════════════════════
+async function initRecuperadosTables() {
+  try {
+    const pool = await sql.connect(dbConfig);
+
+    await pool.request().query(`
+      IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='RECUPERADOS_CONFIG' AND xtype='U')
+      CREATE TABLE RECUPERADOS_CONFIG (
+        ID          INT           NOT NULL DEFAULT 1,
+        MESES       INT           NOT NULL DEFAULT 60,
+        PERIODO     NVARCHAR(20)  NOT NULL DEFAULT 'trimestre',
+        COMPRA_MIN  DECIMAL(18,2) NOT NULL DEFAULT 5000,
+        B_CLIENTES  INT           NOT NULL DEFAULT 1,
+        B_MONTO     DECIMAL(18,2) NOT NULL DEFAULT 10000,
+        B_PREMIO    NVARCHAR(200) NOT NULL DEFAULT 'Smartwatch básico o vale $500 Liverpool',
+        S_CLIENTES  INT           NOT NULL DEFAULT 3,
+        S_MONTO     DECIMAL(18,2) NOT NULL DEFAULT 30000,
+        S_PREMIO    NVARCHAR(200) NOT NULL DEFAULT 'Cafetera Nespresso o auriculares Sony',
+        G_CLIENTES  INT           NOT NULL DEFAULT 5,
+        G_MONTO     DECIMAL(18,2) NOT NULL DEFAULT 60000,
+        G_PREMIO    NVARCHAR(200) NOT NULL DEFAULT 'iPad Air 11 o televisor 50 Smart TV',
+        CONSTRAINT PK_RECUPERADOS_CONFIG PRIMARY KEY (ID)
+      )
+    `);
+
+    await pool.request().query(`
+      IF NOT EXISTS (SELECT 1 FROM RECUPERADOS_CONFIG WHERE ID = 1)
+      INSERT INTO RECUPERADOS_CONFIG (ID) VALUES (1)
+    `);
+
+    await pool.request().query(`
+      IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='RECUPERADOS_REGISTROS' AND xtype='U')
+      CREATE TABLE RECUPERADOS_REGISTROS (
+        ID               BIGINT        IDENTITY(1,1) PRIMARY KEY,
+        CLIENTE_CODIGO   NVARCHAR(50)  NOT NULL,
+        CLIENTE_NOMBRE   NVARCHAR(200) NOT NULL,
+        VENDEDOR_CODIGO  NVARCHAR(50)  NOT NULL,
+        VENDEDOR_NOMBRE  NVARCHAR(200) NOT NULL,
+        SEDE             NVARCHAR(100) NOT NULL DEFAULT '',
+        ULTIMA_COMPRA    DATE          NULL,
+        FECHA_REC        DATE          NOT NULL,
+        MONTO            DECIMAL(18,2) NOT NULL DEFAULT 0,
+        NOTAS            NVARCHAR(500) NOT NULL DEFAULT '',
+        CREADO_EN        DATETIME      NOT NULL DEFAULT GETDATE(),
+        ACTIVO           BIT           NOT NULL DEFAULT 1
+      )
+    `);
+
+    console.log('✓ Tablas RECUPERADOS listas');
+  } catch (e) {
+    console.error('⚠ Error inicializando tablas Recuperados:', e.message);
+    // No crashea el servidor — las tablas pueden ya existir o BD no disponible aún
+  }
+}
+
+
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, '0.0.0.0', () => console.log(`Catosa API en http://localhost:${PORT}`));
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Catosa API en http://localhost:${PORT}`);
+  initRecuperadosTables();
+});
