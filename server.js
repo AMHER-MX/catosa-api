@@ -1251,12 +1251,17 @@ app.get('/api/recuperados/vendedores', async (req, res) => {
     const pool = await sql.connect(dbConfig);
     const r = await pool.request().query(`
       SELECT DISTINCT
-        COD_VENDEDOR,
-        NOM_VENDEDOR,
-        NOM_ALMACEN_LIN AS SEDE
-      FROM FMVENBI_PR
-      WHERE NOM_ALMACEN_LIN IN (${SUCURSALES_REC_SQL})
-      ORDER BY NOM_VENDEDOR
+        v.COD_VENDEDOR,
+        v.NOM_VENDEDOR,
+        s.NOM_ALMACEN_LIN AS SEDE
+      FROM FMVENBI_PR v
+      INNER JOIN (
+        SELECT DISTINCT COD_VENDEDOR, NOM_ALMACEN_LIN
+        FROM FTSABI_PR
+        WHERE NOM_ALMACEN_LIN IN (${SUCURSALES_REC_SQL})
+          AND DES_TIPO_VENTA  NOT IN (${TIPOS_EXCL_REC_SQL})
+      ) s ON s.COD_VENDEDOR = v.COD_VENDEDOR
+      ORDER BY v.NOM_VENDEDOR
     `);
     res.json(r.recordset);
   } catch (e) { res.status(500).json({ error: e.message }); }
