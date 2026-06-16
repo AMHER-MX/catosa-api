@@ -1251,19 +1251,21 @@ app.get('/api/recuperados/vendedores', async (req, res) => {
     const pool = await sql.connect(dbConfig);
     const r = await pool.request().query(`
       SELECT DISTINCT
-        v.COD_VENDEDOR,
-        v.NOM_VENDEDOR,
-        s.NOM_ALMACEN_LIN AS SEDE
-      FROM FMVENBI_PR v
-      INNER JOIN (
-        SELECT DISTINCT COD_VENDEDOR, NOM_ALMACEN_LIN
-        FROM FTSABI_PR
-        WHERE NOM_ALMACEN_LIN IN (${SUCURSALES_REC_SQL})
-          AND DES_TIPO_VENTA  NOT IN (${TIPOS_EXCL_REC_SQL})
-      ) s ON s.COD_VENDEDOR = v.COD_VENDEDOR
-      ORDER BY v.NOM_VENDEDOR
+        NOM_VENDEDOR   AS NOM_VENDEDOR,
+        NOM_ALMACEN_LIN AS SEDE
+      FROM FTSABI_PR
+      WHERE NOM_ALMACEN_LIN IN (${SUCURSALES_REC_SQL})
+        AND DES_TIPO_VENTA  NOT IN (${TIPOS_EXCL_REC_SQL})
+        AND NOM_VENDEDOR IS NOT NULL
+        AND NOM_VENDEDOR <> ''
+      ORDER BY NOM_VENDEDOR
     `);
-    res.json(r.recordset);
+    // Usar NOM_VENDEDOR como código también (igual que las otras apps)
+    res.json(r.recordset.map(v => ({
+      COD_VENDEDOR: v.NOM_VENDEDOR,
+      NOM_VENDEDOR: v.NOM_VENDEDOR,
+      SEDE:         v.SEDE
+    })));
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
