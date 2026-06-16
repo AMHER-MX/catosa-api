@@ -1199,8 +1199,7 @@ app.get('/api/recuperados/buscar-cliente', async (req, res) => {
         FROM FMCUBI_PR c
         LEFT JOIN FTSABI_PR v
           ON  v.CLIENTE = c.CUENTA
-          AND v.NOM_ALMACEN_LIN IN (${SUCURSALES_REC_SQL})
-          AND v.DES_TIPO_VENTA  NOT IN (${TIPOS_EXCL_REC_SQL})
+          AND v.DES_TIPO_VENTA NOT IN (${TIPOS_EXCL_REC_SQL})
         WHERE c.NOMBRE_COMERCIAL LIKE @q
            OR c.NOMBRE           LIKE @q
            OR c.CUENTA           LIKE @q
