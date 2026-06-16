@@ -1195,12 +1195,7 @@ app.get('/api/recuperados/buscar-cliente', async (req, res) => {
           c.CUENTA,
           c.NOMBRE,
           c.NOMBRE_COMERCIAL,
-          CASE
-            WHEN MAX(LEFT(v.FECHA,8)) IS NULL THEN NULL
-            ELSE LEFT(MAX(LEFT(v.FECHA,8)),4) + '-' +
-                 SUBSTRING(MAX(LEFT(v.FECHA,8)),5,2) + '-' +
-                 RIGHT(MAX(LEFT(v.FECHA,8)),2)
-          END AS ULTIMA_COMPRA
+          CONVERT(VARCHAR(10), MAX(v.FECHA), 23) AS ULTIMA_COMPRA
         FROM FMCUBI_PR c
         LEFT JOIN FTSABI_PR v
           ON  v.CLIENTE = c.CUENTA
@@ -1210,7 +1205,7 @@ app.get('/api/recuperados/buscar-cliente', async (req, res) => {
            OR c.NOMBRE           LIKE @q
            OR c.CUENTA           LIKE @q
         GROUP BY c.CUENTA, c.NOMBRE, c.NOMBRE_COMERCIAL
-        ORDER BY ULTIMA_COMPRA ASC
+        ORDER BY MAX(v.FECHA) ASC
       `);
     res.json(r.recordset);
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -1219,28 +1214,25 @@ app.get('/api/recuperados/buscar-cliente', async (req, res) => {
 // ── GET /api/recuperados/candidatos?meses=60 ─────────────────────────────────
 app.get('/api/recuperados/candidatos', async (req, res) => {
   const meses = parseInt(req.query.meses) || 60;
-  const fechaCorte = new Date();
-  fechaCorte.setMonth(fechaCorte.getMonth() - meses);
-  const fechaStr = fechaCorte.toISOString().slice(0,10).replace(/-/g,'');
   try {
     const pool = await sql.connect(dbConfig);
-    const r = await pool.request().query(`
-      SELECT TOP 300
-        c.CUENTA,
-        c.NOMBRE,
-        c.NOMBRE_COMERCIAL,
-        LEFT(MAX(LEFT(v.FECHA,8)),4) + '-' +
-        SUBSTRING(MAX(LEFT(v.FECHA,8)),5,2) + '-' +
-        RIGHT(MAX(LEFT(v.FECHA,8)),2) AS ULTIMA_COMPRA
-      FROM FMCUBI_PR c
-      INNER JOIN FTSABI_PR v
-        ON  v.CLIENTE = c.CUENTA
-        AND v.NOM_ALMACEN_LIN IN (${SUCURSALES_REC_SQL})
-        AND v.DES_TIPO_VENTA  NOT IN (${TIPOS_EXCL_REC_SQL})
-      GROUP BY c.CUENTA, c.NOMBRE, c.NOMBRE_COMERCIAL
-      HAVING MAX(LEFT(v.FECHA,8)) <= '${fechaStr}'
-      ORDER BY MAX(LEFT(v.FECHA,8)) ASC
-    `);
+    const r = await pool.request()
+      .input('fechaCorte', sql.Date, new Date(new Date().setMonth(new Date().getMonth() - meses)))
+      .query(`
+        SELECT TOP 300
+          c.CUENTA,
+          c.NOMBRE,
+          c.NOMBRE_COMERCIAL,
+          CONVERT(VARCHAR(10), MAX(v.FECHA), 23) AS ULTIMA_COMPRA
+        FROM FMCUBI_PR c
+        INNER JOIN FTSABI_PR v
+          ON  v.CLIENTE = c.CUENTA
+          AND v.NOM_ALMACEN_LIN IN (${SUCURSALES_REC_SQL})
+          AND v.DES_TIPO_VENTA  NOT IN (${TIPOS_EXCL_REC_SQL})
+        GROUP BY c.CUENTA, c.NOMBRE, c.NOMBRE_COMERCIAL
+        HAVING MAX(v.FECHA) <= @fechaCorte
+        ORDER BY MAX(v.FECHA) ASC
+      `);
     res.json(r.recordset);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -1277,15 +1269,15 @@ app.get('/api/recuperados/historial-cliente/:cuenta', async (req, res) => {
       .input('cuenta', sql.NVarChar(50), req.params.cuenta)
       .query(`
         SELECT TOP 24
-          LEFT(v.FECHA,4) + '-' + SUBSTRING(v.FECHA,5,2) AS MES,
-          SUM(v.IMPORTE)  AS MONTO_MES,
-          COUNT(*)        AS NUM_FACTURAS
+          FORMAT(v.FECHA, 'yyyy-MM') AS MES,
+          SUM(v.IMP_TOTAL_LINEA)     AS MONTO_MES,
+          COUNT(*)                   AS NUM_FACTURAS
         FROM FTSABI_PR v
         WHERE v.CLIENTE = @cuenta
           AND v.NOM_ALMACEN_LIN IN (${SUCURSALES_REC_SQL})
           AND v.DES_TIPO_VENTA  NOT IN (${TIPOS_EXCL_REC_SQL})
-        GROUP BY LEFT(v.FECHA,7)
-        ORDER BY LEFT(v.FECHA,7) DESC
+        GROUP BY FORMAT(v.FECHA, 'yyyy-MM')
+        ORDER BY FORMAT(v.FECHA, 'yyyy-MM') DESC
       `);
     res.json(r.recordset);
   } catch (e) { res.status(500).json({ error: e.message }); }
