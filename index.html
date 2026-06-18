@@ -832,13 +832,9 @@
         const enGrupos  = (mes === 5 && dia >= 18) || mes === 6;
         const enFinal   = mes === 7 && dia >= 1 && dia <= 17;
         const terminado = (mes === 7 && dia >= 18) || mes > 7;
-        const keyMayo  = `wc_oro_mayo_${anio}_${user.Nombre}`;
-        const keyJunio = `wc_oro_junio_${anio}_${user.Nombre}`;
-        if (pct >= 120) {
-            if (mes === 5 && dia >= 18) localStorage.setItem(keyMayo,  '1');
-            if (mes === 6)              localStorage.setItem(keyJunio, '1');
-        }
-        const clasificado = localStorage.getItem(keyMayo) === '1' || localStorage.getItem(keyJunio) === '1';
+        // Usar datos del servidor en lugar de localStorage para evitar clasificaciones incorrectas
+        const miTorneo = (dbT || []).find(v => v.Nombre === user.Nombre);
+        const clasificado = miTorneo ? (miTorneo.ClasifMayo || miTorneo.ClasifJunio) : false;
         const badge = document.getElementById('wc-badge');
         const texto = document.getElementById('wc-estado-txt');
         if (!badge || !texto) return;
