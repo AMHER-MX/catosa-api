@@ -1342,6 +1342,41 @@ async function initRecuperadosTables() {
 }
 
 
+// ── DETALLE VENTAS DE UN DÍA ──────────────────────────────────────────────────
+app.get('/api/ventas-dia', async (req, res) => {
+  try {
+    const db      = await getPool();
+    const vendedor = decodeURIComponent(req.query.vendedor || '');
+    const fecha    = req.query.fecha || ''; // YYYY-MM-DD
+
+    if (!fecha) return res.status(400).json({ error: 'Parámetro fecha requerido' });
+
+    const result = await db.request()
+      .input('fecha', sql.VarChar, fecha)
+      .input('vend',  sql.VarChar, vendedor)
+      .query(`
+        SELECT
+          COALESCE(NULLIF(c.NOMBRE_COMERCIAL,''), c.NOMBRE, s.CLIENTE) AS Cliente,
+          s.DES_ARTICULO  AS Producto,
+          s.IMP_TOTAL_LINEA AS Monto
+        FROM FTSABI_PR s
+        LEFT JOIN FMCUBI_PR c ON c.CUENTA = s.CLIENTE
+        WHERE s.FECHA = @fecha
+          AND s.NOM_VENDEDOR = @vend
+          AND ${TIPO_EXCL_SQL}
+          AND s.NOM_ALMACEN_LIN IN (${SUCURSALES})
+        ORDER BY s.IMP_TOTAL_LINEA DESC
+      `);
+
+    const total = result.recordset.reduce((sum, r) => sum + (parseFloat(r.Monto)||0), 0);
+    res.json({ fecha, total, ventas: result.recordset });
+  } catch (err) {
+    console.error('Error /api/ventas-dia:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Catosa API en http://localhost:${PORT}`);
