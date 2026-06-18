@@ -152,6 +152,58 @@
         document.getElementById('cli-modal').classList.remove('open');
     }
 
+    
+    // ── DETALLE DÍA ───────────────────────────────────────────────────────
+    async function abrirDetalleDia(dia) {
+        const hoy = new Date().getDate();
+        if (dia > hoy) return; // día futuro
+
+        const venta = parseFloat(document.getElementById('in_day_' + dia)?.innerText?.replace(/[$k,]/g,'')) || 0;
+        if (venta === 0 && dia < hoy) {
+            // día sin ventas — no abrir
+            return;
+        }
+
+        const hoyDate = new Date();
+        const mes   = String(hoyDate.getMonth()+1).padStart(2,'0');
+        const anio  = hoyDate.getFullYear();
+        const diaStr = String(dia).padStart(2,'0');
+        const fecha = `${anio}-${mes}-${diaStr}`;
+        const fechaLabel = `${dia} de ${hoyDate.toLocaleString('es-MX',{month:'long'})} ${anio}`;
+
+        document.getElementById('day-fecha').textContent  = '📅 ' + fechaLabel;
+        document.getElementById('day-total').textContent  = document.getElementById('in_day_' + dia)?.innerText || '—';
+        document.getElementById('day-rows').innerHTML     = '<tr><td colspan="3" style="color:#555;text-align:center;">Cargando...</td></tr>';
+        document.getElementById('day-modal').classList.add('open');
+
+        try {
+            const nombre = encodeURIComponent(user.Nombre);
+            const d = await apiFetch(`/api/ventas-dia?vendedor=${nombre}&fecha=${fecha}`);
+
+            if (!d.ventas || !d.ventas.length) {
+                document.getElementById('day-rows').innerHTML =
+                    '<tr><td colspan="3" style="color:#555;text-align:center;">Sin ventas registradas</td></tr>';
+                return;
+            }
+
+            document.getElementById('day-total').textContent = fM(d.total);
+            document.getElementById('day-rows').innerHTML = d.ventas.map(v => `
+                <tr>
+                    <td style="max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${v.Cliente}">${(v.Cliente||'').substring(0,18)}</td>
+                    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${v.Producto}">${(v.Producto||'').substring(0,22)}</td>
+                    <td>${fM(v.Monto)}</td>
+                </tr>
+            `).join('');
+        } catch(e) {
+            document.getElementById('day-rows').innerHTML =
+                `<tr><td colspan="3" style="color:#f44;text-align:center;">${e.message}</td></tr>`;
+        }
+    }
+
+    function cerrarDetalleDia() {
+        document.getElementById('day-modal').classList.remove('open');
+    }
+
     </script>
     <style>
         :root { 
@@ -347,6 +399,22 @@
         .cli-bar-val { position:absolute; right:6px; top:50%; transform:translateY(-50%); font-size:0.62rem; color:#fff; }
         .cli-ult { font-size:0.72rem; color:#888; background:#1a1a1a; border-radius:10px; padding:10px 12px; line-height:1.6; }
         .cli-close { width:100%; padding:12px; margin-top:16px; background:#1a1a1a; border:none; border-radius:12px; color:#888; font-size:0.8rem; cursor:pointer; }
+
+        
+        /* ── DETALLE DÍA MODAL ───────────────────────────── */
+        #day-modal { display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.88); overflow-y:auto; padding:16px; }
+        #day-modal.open { display:flex; align-items:flex-start; justify-content:center; }
+        .day-card { background:#111; border:1px solid var(--grass); border-radius:20px; width:100%; max-width:480px; padding:22px; margin:auto; }
+        .day-header { margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid #1e1e1e; display:flex; justify-content:space-between; align-items:center; }
+        .day-header h2 { color:var(--grass); font-size:1rem; font-family:'Syne',sans-serif; margin:0; }
+        .day-total { font-size:1.3rem; font-weight:800; color:var(--grass); }
+        .day-table { width:100%; border-collapse:collapse; font-size:0.72rem; }
+        .day-table th { color:#555; font-size:0.6rem; text-transform:uppercase; padding:5px 4px; border-bottom:1px solid #222; text-align:left; }
+        .day-table td { padding:6px 4px; border-bottom:1px solid #1a1a1a; }
+        .day-table td:last-child { text-align:right; color:var(--grass); }
+        .day-close { width:100%; padding:12px; margin-top:16px; background:#1a1a1a; border:none; border-radius:12px; color:#888; font-size:0.8rem; cursor:pointer; }
+        .day-box { cursor:pointer; transition:transform .15s; }
+        .day-box:hover { transform:scale(1.05); }
 
         </style>
 </head>
@@ -642,7 +710,7 @@
         const cg = document.getElementById('cal-grid');
         const diasMes = new Date(new Date().getFullYear(), new Date().getMonth()+1, 0).getDate();
         for (let i = 1; i <= diasMes; i++) {
-            cg.innerHTML += `<div class="day-box" id="dbox_${i}">
+            cg.innerHTML += `<div class="day-box" id="dbox_${i}" onclick="abrirDetalleDia(${i})">
                 <span style="font-size:0.5rem;color:#555;">${i}</span>
                 <div class="day-in" id="in_day_${i}" style="color:#333;">—</div>
             </div>`;
@@ -1446,6 +1514,58 @@
         document.getElementById('cli-modal').classList.remove('open');
     }
 
+    
+    // ── DETALLE DÍA ───────────────────────────────────────────────────────
+    async function abrirDetalleDia(dia) {
+        const hoy = new Date().getDate();
+        if (dia > hoy) return; // día futuro
+
+        const venta = parseFloat(document.getElementById('in_day_' + dia)?.innerText?.replace(/[$k,]/g,'')) || 0;
+        if (venta === 0 && dia < hoy) {
+            // día sin ventas — no abrir
+            return;
+        }
+
+        const hoyDate = new Date();
+        const mes   = String(hoyDate.getMonth()+1).padStart(2,'0');
+        const anio  = hoyDate.getFullYear();
+        const diaStr = String(dia).padStart(2,'0');
+        const fecha = `${anio}-${mes}-${diaStr}`;
+        const fechaLabel = `${dia} de ${hoyDate.toLocaleString('es-MX',{month:'long'})} ${anio}`;
+
+        document.getElementById('day-fecha').textContent  = '📅 ' + fechaLabel;
+        document.getElementById('day-total').textContent  = document.getElementById('in_day_' + dia)?.innerText || '—';
+        document.getElementById('day-rows').innerHTML     = '<tr><td colspan="3" style="color:#555;text-align:center;">Cargando...</td></tr>';
+        document.getElementById('day-modal').classList.add('open');
+
+        try {
+            const nombre = encodeURIComponent(user.Nombre);
+            const d = await apiFetch(`/api/ventas-dia?vendedor=${nombre}&fecha=${fecha}`);
+
+            if (!d.ventas || !d.ventas.length) {
+                document.getElementById('day-rows').innerHTML =
+                    '<tr><td colspan="3" style="color:#555;text-align:center;">Sin ventas registradas</td></tr>';
+                return;
+            }
+
+            document.getElementById('day-total').textContent = fM(d.total);
+            document.getElementById('day-rows').innerHTML = d.ventas.map(v => `
+                <tr>
+                    <td style="max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${v.Cliente}">${(v.Cliente||'').substring(0,18)}</td>
+                    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${v.Producto}">${(v.Producto||'').substring(0,22)}</td>
+                    <td>${fM(v.Monto)}</td>
+                </tr>
+            `).join('');
+        } catch(e) {
+            document.getElementById('day-rows').innerHTML =
+                `<tr><td colspan="3" style="color:#f44;text-align:center;">${e.message}</td></tr>`;
+        }
+    }
+
+    function cerrarDetalleDia() {
+        document.getElementById('day-modal').classList.remove('open');
+    }
+
     </script>
 
     <!-- ── RESUMEN MES ANTERIOR ───────────────────────────── -->
@@ -1532,6 +1652,22 @@
                 <div class="cli-ult" id="cli-ultima">—</div>
             </div>
             <button class="cli-close" onclick="cerrarDetalleCliente()">✕ Cerrar</button>
+        </div>
+    </div>
+
+
+    <!-- ── DETALLE DÍA ───────────────────────────────────── -->
+    <div id="day-modal">
+        <div class="day-card">
+            <div class="day-header">
+                <h2 id="day-fecha">—</h2>
+                <div class="day-total" id="day-total">—</div>
+            </div>
+            <table class="day-table">
+                <thead><tr><th>Cliente</th><th>Producto</th><th style="text-align:right">Monto</th></tr></thead>
+                <tbody id="day-rows"><tr><td colspan="3" style="color:#555;text-align:center;">Cargando...</td></tr></tbody>
+            </table>
+            <button class="day-close" onclick="cerrarDetalleDia()">✕ Cerrar</button>
         </div>
     </div>
 
