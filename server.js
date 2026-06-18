@@ -486,7 +486,7 @@ app.get('/api/ventas-diarias', async (req, res) => {
   try {
     const db      = await getPool();
     const hoy     = new Date();
-    const ini     = '2026-05-01'; // Concurso acumulativo mayo-diciembre 2026
+    const ini     = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-01`;
     const fin     = hoy.toISOString().split('T')[0];
     const vendedor = decodeURIComponent(req.query.vendedor || '');
 
