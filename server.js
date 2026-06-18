@@ -491,19 +491,19 @@ app.get('/api/ventas-diarias', async (req, res) => {
     const vendedor = decodeURIComponent(req.query.vendedor || '');
 
     const result = await db.request()
-      .input('ini',  sql.Date, ini)
-      .input('fin',  sql.Date, fin)
+      .input('ini',  sql.VarChar, ini)
+      .input('fin',  sql.VarChar, fin)
       .input('vend', sql.VarChar, vendedor)
       .query(`
         SELECT
-          DAY(s.FECHA)               AS Dia,
-          SUM(s.IMP_TOTAL_LINEA)     AS Venta
+          CAST(RIGHT(LEFT(s.FECHA, 10), 2) AS INT) AS Dia,
+          SUM(s.IMP_TOTAL_LINEA)                   AS Venta
         FROM FTSABI_PR s
         WHERE s.FECHA >= @ini AND s.FECHA <= @fin
           AND ${TIPO_EXCL_SQL}
           AND s.NOM_ALMACEN_LIN IN (${SUCURSALES})
           AND s.NOM_VENDEDOR = @vend
-        GROUP BY DAY(s.FECHA)
+        GROUP BY RIGHT(LEFT(s.FECHA, 10), 2)
         ORDER BY Dia ASC
       `);
 
