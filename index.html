@@ -625,7 +625,7 @@
     const API = 'https://api.catosaapps.lat';
 
     // ─── ESTADO GLOBAL ──────────────────────────────────────────────────────
-    let dbV = [], user = null, cotList = [], cnf = false;
+    let dbV = [], dbT = [], user = null, cotList = [], cnf = false;
 
     // ─── UTILIDADES ─────────────────────────────────────────────────────────
     const fM = n => new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', minimumFractionDigits: 0 }).format(n || 0);
@@ -652,6 +652,7 @@
         try {
             document.getElementById('login-status').textContent = 'Conectando con servidor...';
             dbV = await apiFetch('/api/ventas');
+            try { dbT = await apiFetch('/api/torneo'); } catch(e) { dbT = []; }
             document.getElementById('login-status').textContent = `✅ ${dbV.length} asesores cargados`;
             document.getElementById('btn-login').disabled = false;
             document.getElementById('btn-login').textContent = 'PATEAR INICIO';
