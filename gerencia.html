@@ -318,10 +318,9 @@
                 return `<div class="tv-ac-row">
                     <div class="tv-ac-name">${nombre}</div>
                     <div class="tv-ac-track">
-                        <span class="tv-ac-truck" style="left:calc(${trackPct}% - 10px)">${inc>0?'🚛':'🚚'}</span>
+                        <span class="tv-ac-truck" style="left:calc(${trackPct}% - 10px);transform:translateY(-50%) scaleX(-1)">${inc>0?'🚛':'🚚'}</span>
                     </div>
-                    <div class="tv-ac-litros">${v.LitrosTotal}L</div>
-                    <div class="tv-ac-inc" style="color:${inc>0?'#a855f7':'#444'}">${inc>0?'+'+inc+'L':'—'}</div>
+                    <div class="tv-ac-inc" style="color:${inc>0?'#a855f7':'#444'}">${inc>0?'+'+Math.round((inc/Math.max(v.BasePromedio,1))*100)+'%':'—'}</div>
                 </div>`;
             }).join('');
         } catch(e) {
@@ -349,8 +348,7 @@
                         <div class="tv-suc-fill ${cls}" style="width:${pct}%"></div>
                     </div>
                     <div class="tv-suc-stats">
-                        <span style="color:${color};font-weight:700;">${pct.toFixed(1)}%</span>
-                        <span style="color:#444;">${meta>0?'meta: '+new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN',minimumFractionDigits:0}).format(meta):''}</span>
+                        <span style="color:${color};font-weight:700;font-size:0.75rem;">${pct.toFixed(1)}%</span>
                     </div>
                 </div>`;
             }).join('');
@@ -694,10 +692,9 @@
                 return `<div class="tv-ac-row">
                     <div class="tv-ac-name">${nombre}</div>
                     <div class="tv-ac-track">
-                        <span class="tv-ac-truck" style="left:calc(${trackPct}% - 10px)">${inc>0?'🚛':'🚚'}</span>
+                        <span class="tv-ac-truck" style="left:calc(${trackPct}% - 10px);transform:translateY(-50%) scaleX(-1)">${inc>0?'🚛':'🚚'}</span>
                     </div>
-                    <div class="tv-ac-litros">${v.LitrosTotal}L</div>
-                    <div class="tv-ac-inc" style="color:${inc>0?'#a855f7':'#444'}">${inc>0?'+'+inc+'L':'—'}</div>
+                    <div class="tv-ac-inc" style="color:${inc>0?'#a855f7':'#444'}">${inc>0?'+'+Math.round((inc/Math.max(v.BasePromedio,1))*100)+'%':'—'}</div>
                 </div>`;
             }).join('');
         } catch(e) {
@@ -725,8 +722,7 @@
                         <div class="tv-suc-fill ${cls}" style="width:${pct}%"></div>
                     </div>
                     <div class="tv-suc-stats">
-                        <span style="color:${color};font-weight:700;">${pct.toFixed(1)}%</span>
-                        <span style="color:#444;">${meta>0?'meta: '+new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN',minimumFractionDigits:0}).format(meta):''}</span>
+                        <span style="color:${color};font-weight:700;font-size:0.75rem;">${pct.toFixed(1)}%</span>
                     </div>
                 </div>`;
             }).join('');
@@ -1184,7 +1180,9 @@
 
         
         /* ── PANTALLA TV ─────────────────────────────────── */
-        #tv-overlay { display:none; position:fixed; inset:0; z-index:99999; background:#060608; overflow:hidden; flex-direction:column; }
+        #tv-overlay { display:none; position:fixed; inset:0; z-index:99999; background:#060608 url('https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/PAPEL%20TAPIZ%20COPA%20DEL%20MUNDO.png') center/cover no-repeat; overflow:hidden; flex-direction:column; }
+        #tv-overlay::before { content:''; position:absolute; inset:0; background:rgba(6,6,8,0.82); z-index:0; pointer-events:none; }
+        #tv-overlay > * { position:relative; z-index:1; }
         #tv-overlay.open { display:flex; }
         .tv-header { display:flex; align-items:center; justify-content:space-between; padding:10px 24px; border-bottom:1px solid #1a1a1a; flex-shrink:0; background:#0a0a0f; }
         .tv-logos { display:flex; align-items:center; gap:20px; }
@@ -1217,8 +1215,8 @@
         .tv-ac-row { display:flex; align-items:center; gap:8px; margin-bottom:5px; }
         .tv-ac-name { width:110px; font-size:0.68rem; font-weight:700; flex-shrink:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
         .tv-ac-track { flex:1; background:linear-gradient(90deg,#150a2a 50%,#120826 50%); background-size:30px 100%; border-radius:20px; height:24px; position:relative; overflow:hidden; border:1px solid #2a1a4a; }
-        .tv-ac-truck { position:absolute; top:50%; transform:translateY(-50%); font-size:16px; transition:left 1.2s cubic-bezier(.4,0,.2,1); z-index:3; }
-        .tv-ac-litros { width:45px; text-align:right; font-size:0.62rem; color:#a855f7; font-weight:700; flex-shrink:0; }
+        .tv-ac-truck { position:absolute; top:50%; font-size:16px; transition:left 1.2s cubic-bezier(.4,0,.2,1); z-index:3; }
+
         .tv-ac-inc { width:55px; text-align:right; font-size:0.62rem; flex-shrink:0; }
         /* Bottom sucursales */
         .tv-suc-panel { flex:1; padding:10px 20px; display:flex; flex-direction:column; justify-content:center; border-right:1px solid #1a1a1a; }
@@ -2616,10 +2614,9 @@ function renderVisitas() {
                 return `<div class="tv-ac-row">
                     <div class="tv-ac-name">${nombre}</div>
                     <div class="tv-ac-track">
-                        <span class="tv-ac-truck" style="left:calc(${trackPct}% - 10px)">${inc>0?'🚛':'🚚'}</span>
+                        <span class="tv-ac-truck" style="left:calc(${trackPct}% - 10px);transform:translateY(-50%) scaleX(-1)">${inc>0?'🚛':'🚚'}</span>
                     </div>
-                    <div class="tv-ac-litros">${v.LitrosTotal}L</div>
-                    <div class="tv-ac-inc" style="color:${inc>0?'#a855f7':'#444'}">${inc>0?'+'+inc+'L':'—'}</div>
+                    <div class="tv-ac-inc" style="color:${inc>0?'#a855f7':'#444'}">${inc>0?'+'+Math.round((inc/Math.max(v.BasePromedio,1))*100)+'%':'—'}</div>
                 </div>`;
             }).join('');
         } catch(e) {
@@ -2647,8 +2644,7 @@ function renderVisitas() {
                         <div class="tv-suc-fill ${cls}" style="width:${pct}%"></div>
                     </div>
                     <div class="tv-suc-stats">
-                        <span style="color:${color};font-weight:700;">${pct.toFixed(1)}%</span>
-                        <span style="color:#444;">${meta>0?'meta: '+new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN',minimumFractionDigits:0}).format(meta):''}</span>
+                        <span style="color:${color};font-weight:700;font-size:0.75rem;">${pct.toFixed(1)}%</span>
                     </div>
                 </div>`;
             }).join('');
