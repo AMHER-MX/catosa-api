@@ -235,20 +235,25 @@
     
     // ── PANTALLA TV ───────────────────────────────────────────────────────
     let tvTimer = null, tvTick = null, tvSecs = 300;
+    const SUCURSAL_METAS = {
+        'TORREON':        5000000,
+        'GOMEZ PALACIO':  7000000,
+        'MONCLOVA':       2100000,
+        'PIEDRAS NEGRAS': 2100000,
+        'ANA':            0,
+    };
 
     async function abrirTV() {
         document.getElementById('tv-overlay').classList.add('open');
         await refreshTV();
         startTVTimer();
-        // Pantalla completa
         const el = document.getElementById('tv-overlay');
         if (el.requestFullscreen) el.requestFullscreen();
         else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
     }
 
     function cerrarTV() {
-        clearInterval(tvTimer);
-        clearInterval(tvTick);
+        clearInterval(tvTimer); clearInterval(tvTick);
         document.getElementById('tv-overlay').classList.remove('open');
         if (document.fullscreenElement) document.exitFullscreen();
     }
@@ -256,7 +261,7 @@
     async function refreshTV() {
         document.getElementById('tv-updated').textContent =
             '⟳ Actualizado: ' + new Date().toLocaleTimeString('es-MX');
-        await Promise.all([renderTVTorneo(), renderTVAceite()]);
+        await Promise.all([renderTVTorneo(), renderTVAceite(), renderTVSucursales()]);
     }
 
     async function renderTVTorneo() {
@@ -265,40 +270,36 @@
             const data = await apiFetch('/api/torneo');
             const hoy = new Date(), mes = hoy.getMonth()+1;
             const enFinal = mes === 7;
-
             const getMetrica = v => enFinal ? v.PctJulio : mes === 6 ? v.PctJunio : v.PctMayo;
-
             const sorted = [...data].sort((a,b) => {
                 if (b.Clasificado !== a.Clasificado) return b.Clasificado - a.Clasificado;
                 return getMetrica(b) - getMetrica(a);
             });
-
             const clasif = sorted.filter(v => v.Clasificado).length;
             document.getElementById('tv-wc-clasif').textContent = clasif;
             document.getElementById('tv-wc-pend').textContent   = sorted.length - clasif;
-
-            const faseLabel = enFinal ? '🏆 FASE FINAL' : mes === 6 ? '⚽ FASE DE GRUPOS — JUNIO' : '⚽ FASE DE GRUPOS — MAYO';
-            document.getElementById('tv-wc-fase').textContent = faseLabel;
+            document.getElementById('tv-wc-fase').textContent   =
+                enFinal ? '🏆 FASE FINAL' : mes === 6 ? '⚽ FASE GRUPOS — JUNIO' : '⚽ FASE GRUPOS — MAYO';
 
             container.innerHTML = sorted.map(v => {
-                const pct     = Math.min(getMetrica(v), 150);
-                const barW    = Math.min(100, (pct / 120) * 100);
+                const pct      = Math.min(getMetrica(v), 150);
+                const trackPct = Math.min(98, (pct / 120) * 92); // 92% = posición de la meta
                 const esClasif = v.Clasificado;
-                const colorClass = esClasif ? 'clasif' : pct >= 80 ? 'cerca' : 'lejos';
-                const nombre  = v.Nombre.split(' ').slice(0,2).join(' ');
-                const falta   = esClasif ? '' : `faltan ${Math.round(120 - pct)}%`;
-
+                const nombre   = v.Nombre.split(' ').slice(0,2).join(' ');
+                const falta    = esClasif ? '✅ CLASIFICADO' : `${Math.round(pct)}% · faltan ${Math.round(120-pct)}%`;
+                const ballCls  = esClasif ? '' : 'noclasif';
                 return `<div class="tv-wc-row">
                     <div class="tv-wc-name">${nombre}</div>
-                    <div class="tv-wc-bar-wrap">
-                        <div class="tv-wc-bar-fill ${colorClass}" style="width:${barW}%"></div>
+                    <div class="tv-wc-track ${esClasif?'':'noclaif'}">
+                        <div class="tv-wc-meta" style="left:92%"></div>
+                        <span class="tv-wc-ball ${ballCls}" style="left:calc(${trackPct}% - 10px)">⚽</span>
                     </div>
                     <div class="tv-wc-pct" style="color:${esClasif?'#00ff88':pct>=80?'var(--gold)':'#666'}">${Math.round(pct)}%</div>
-                    <div class="tv-wc-badge ${esClasif?'ok':'no'}">${esClasif?'✅ CLASIFICADO':falta}</div>
+                    <div class="tv-wc-badge ${esClasif?'ok':'no'}">${falta}</div>
                 </div>`;
             }).join('');
         } catch(e) {
-            container.innerHTML = `<div style="color:#f44;font-size:12px;">${e.message}</div>`;
+            container.innerHTML = `<div style="color:#f44;font-size:11px;">${e.message}</div>`;
         }
     }
 
@@ -307,52 +308,76 @@
         try {
             const data = await apiFetch('/api/aceite-todos');
             const maxLitros = Math.max(...data.map(v => v.LitrosTotal), 1);
-
             document.getElementById('tv-ac-resumen').textContent =
-                `${data.reduce((s,v)=>s+v.LitrosIncrementales,0)} litros incrementales totales del equipo`;
+                `${data.reduce((s,v)=>s+v.LitrosIncrementales,0)} L incrementales del equipo`;
 
             container.innerHTML = data.map(v => {
-                const barW    = Math.min(100, (v.LitrosTotal / maxLitros) * 100);
-                const inc     = v.LitrosIncrementales;
-                const nombre  = v.Nombre.split(' ').slice(0,2).join(' ');
-                const pctInc  = v.BasePromedio > 0
-                    ? Math.round((inc / v.BasePromedio) * 100) : 0;
-
+                const trackPct = Math.min(92, (v.LitrosTotal / maxLitros) * 90);
+                const inc      = v.LitrosIncrementales;
+                const nombre   = v.Nombre.split(' ').slice(0,2).join(' ');
                 return `<div class="tv-ac-row">
                     <div class="tv-ac-name">${nombre}</div>
-                    <div class="tv-ac-bar-wrap">
-                        <div class="tv-ac-bar-fill ${inc>0?'pos':'neg'}" style="width:${barW}%"></div>
+                    <div class="tv-ac-track">
+                        <span class="tv-ac-truck" style="left:calc(${trackPct}% - 10px)">${inc>0?'🚛':'🚚'}</span>
                     </div>
                     <div class="tv-ac-litros">${v.LitrosTotal}L</div>
-                    <div class="tv-ac-pct" style="color:${inc>0?'#a855f7':'#444'}">${inc>0?'+'+inc+'L':'-'}</div>
+                    <div class="tv-ac-inc" style="color:${inc>0?'#a855f7':'#444'}">${inc>0?'+'+inc+'L':'—'}</div>
                 </div>`;
             }).join('');
         } catch(e) {
-            container.innerHTML = `<div style="color:#f44;font-size:12px;">${e.message}</div>`;
+            container.innerHTML = `<div style="color:#f44;font-size:11px;">${e.message}</div>`;
+        }
+    }
+
+    async function renderTVSucursales() {
+        const bottom = document.getElementById('tv-suc-bottom');
+        try {
+            const d = await apiFetch('/api/ventas-totales');
+            const sucursales = ['TORREON','GOMEZ PALACIO','MONCLOVA','PIEDRAS NEGRAS'];
+            const nombres = {'TORREON':'Torreón','GOMEZ PALACIO':'Gómez Palacio','MONCLOVA':'Monclova','PIEDRAS NEGRAS':'Piedras Negras'};
+
+            bottom.innerHTML = sucursales.map(suc => {
+                const row  = d.porSucursal.find(r => r.Sucursal === suc);
+                const venta = parseFloat(row?.Ventas) || 0;
+                const meta  = SUCURSAL_METAS[suc] || 0;
+                const pct   = meta > 0 ? Math.min((venta/meta)*100, 100) : 0;
+                const cls   = pct >= 100 ? 'ok' : pct >= 70 ? 'mid' : 'low';
+                const color = pct >= 100 ? '#00ff88' : pct >= 70 ? 'var(--gold)' : '#8b3a3a';
+                return `<div class="tv-suc-panel">
+                    <div class="tv-suc-name">${nombres[suc]}</div>
+                    <div class="tv-suc-track">
+                        <div class="tv-suc-fill ${cls}" style="width:${pct}%"></div>
+                    </div>
+                    <div class="tv-suc-stats">
+                        <span style="color:${color};font-weight:700;">${pct.toFixed(1)}%</span>
+                        <span style="color:#444;">${meta>0?'meta: '+new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN',minimumFractionDigits:0}).format(meta):''}</span>
+                    </div>
+                </div>`;
+            }).join('');
+        } catch(e) {
+            bottom.innerHTML = `<div style="color:#f44;padding:16px;font-size:11px;">${e.message}</div>`;
         }
     }
 
     function startTVTimer() {
         clearInterval(tvTimer); clearInterval(tvTick);
-        const sel = document.getElementById('tv-refresh-sel');
-        tvSecs = parseInt(sel.value) || 0;
+        tvSecs = parseInt(document.getElementById('tv-refresh-sel').value) || 0;
         if (!tvSecs) { document.getElementById('tv-countdown').textContent=''; return; }
         let rem = tvSecs;
-        const fmt = s => s >= 60 ? `${Math.floor(s/60)}m ${s%60}s` : `${s}s`;
+        const fmt = s => s>=60?`${Math.floor(s/60)}m ${s%60}s`:`${s}s`;
         document.getElementById('tv-countdown').textContent = `↻ en ${fmt(rem)}`;
         tvTick = setInterval(() => {
             rem--;
             document.getElementById('tv-countdown').textContent = `↻ en ${fmt(rem)}`;
-            if (rem <= 0) { rem = tvSecs; refreshTV(); }
+            if (rem<=0) { rem=tvSecs; refreshTV(); }
         }, 1000);
     }
 
-    function setTVRefresh(val) { tvSecs = parseInt(val)||0; startTVTimer(); }
+    function setTVRefresh(val) { tvSecs=parseInt(val)||0; startTVTimer(); }
 
     document.addEventListener('keydown', e => {
-        if (e.key === 'Escape' && document.getElementById('tv-overlay').classList.contains('open')) {
+        if (e.key==='Escape' && document.getElementById('tv-overlay').classList.contains('open'))
             if (!document.fullscreenElement) cerrarTV();
-        }
     });
 
     </script>
@@ -586,20 +611,25 @@
     
     // ── PANTALLA TV ───────────────────────────────────────────────────────
     let tvTimer = null, tvTick = null, tvSecs = 300;
+    const SUCURSAL_METAS = {
+        'TORREON':        5000000,
+        'GOMEZ PALACIO':  7000000,
+        'MONCLOVA':       2100000,
+        'PIEDRAS NEGRAS': 2100000,
+        'ANA':            0,
+    };
 
     async function abrirTV() {
         document.getElementById('tv-overlay').classList.add('open');
         await refreshTV();
         startTVTimer();
-        // Pantalla completa
         const el = document.getElementById('tv-overlay');
         if (el.requestFullscreen) el.requestFullscreen();
         else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
     }
 
     function cerrarTV() {
-        clearInterval(tvTimer);
-        clearInterval(tvTick);
+        clearInterval(tvTimer); clearInterval(tvTick);
         document.getElementById('tv-overlay').classList.remove('open');
         if (document.fullscreenElement) document.exitFullscreen();
     }
@@ -607,7 +637,7 @@
     async function refreshTV() {
         document.getElementById('tv-updated').textContent =
             '⟳ Actualizado: ' + new Date().toLocaleTimeString('es-MX');
-        await Promise.all([renderTVTorneo(), renderTVAceite()]);
+        await Promise.all([renderTVTorneo(), renderTVAceite(), renderTVSucursales()]);
     }
 
     async function renderTVTorneo() {
@@ -616,40 +646,36 @@
             const data = await apiFetch('/api/torneo');
             const hoy = new Date(), mes = hoy.getMonth()+1;
             const enFinal = mes === 7;
-
             const getMetrica = v => enFinal ? v.PctJulio : mes === 6 ? v.PctJunio : v.PctMayo;
-
             const sorted = [...data].sort((a,b) => {
                 if (b.Clasificado !== a.Clasificado) return b.Clasificado - a.Clasificado;
                 return getMetrica(b) - getMetrica(a);
             });
-
             const clasif = sorted.filter(v => v.Clasificado).length;
             document.getElementById('tv-wc-clasif').textContent = clasif;
             document.getElementById('tv-wc-pend').textContent   = sorted.length - clasif;
-
-            const faseLabel = enFinal ? '🏆 FASE FINAL' : mes === 6 ? '⚽ FASE DE GRUPOS — JUNIO' : '⚽ FASE DE GRUPOS — MAYO';
-            document.getElementById('tv-wc-fase').textContent = faseLabel;
+            document.getElementById('tv-wc-fase').textContent   =
+                enFinal ? '🏆 FASE FINAL' : mes === 6 ? '⚽ FASE GRUPOS — JUNIO' : '⚽ FASE GRUPOS — MAYO';
 
             container.innerHTML = sorted.map(v => {
-                const pct     = Math.min(getMetrica(v), 150);
-                const barW    = Math.min(100, (pct / 120) * 100);
+                const pct      = Math.min(getMetrica(v), 150);
+                const trackPct = Math.min(98, (pct / 120) * 92); // 92% = posición de la meta
                 const esClasif = v.Clasificado;
-                const colorClass = esClasif ? 'clasif' : pct >= 80 ? 'cerca' : 'lejos';
-                const nombre  = v.Nombre.split(' ').slice(0,2).join(' ');
-                const falta   = esClasif ? '' : `faltan ${Math.round(120 - pct)}%`;
-
+                const nombre   = v.Nombre.split(' ').slice(0,2).join(' ');
+                const falta    = esClasif ? '✅ CLASIFICADO' : `${Math.round(pct)}% · faltan ${Math.round(120-pct)}%`;
+                const ballCls  = esClasif ? '' : 'noclasif';
                 return `<div class="tv-wc-row">
                     <div class="tv-wc-name">${nombre}</div>
-                    <div class="tv-wc-bar-wrap">
-                        <div class="tv-wc-bar-fill ${colorClass}" style="width:${barW}%"></div>
+                    <div class="tv-wc-track ${esClasif?'':'noclaif'}">
+                        <div class="tv-wc-meta" style="left:92%"></div>
+                        <span class="tv-wc-ball ${ballCls}" style="left:calc(${trackPct}% - 10px)">⚽</span>
                     </div>
                     <div class="tv-wc-pct" style="color:${esClasif?'#00ff88':pct>=80?'var(--gold)':'#666'}">${Math.round(pct)}%</div>
-                    <div class="tv-wc-badge ${esClasif?'ok':'no'}">${esClasif?'✅ CLASIFICADO':falta}</div>
+                    <div class="tv-wc-badge ${esClasif?'ok':'no'}">${falta}</div>
                 </div>`;
             }).join('');
         } catch(e) {
-            container.innerHTML = `<div style="color:#f44;font-size:12px;">${e.message}</div>`;
+            container.innerHTML = `<div style="color:#f44;font-size:11px;">${e.message}</div>`;
         }
     }
 
@@ -658,52 +684,76 @@
         try {
             const data = await apiFetch('/api/aceite-todos');
             const maxLitros = Math.max(...data.map(v => v.LitrosTotal), 1);
-
             document.getElementById('tv-ac-resumen').textContent =
-                `${data.reduce((s,v)=>s+v.LitrosIncrementales,0)} litros incrementales totales del equipo`;
+                `${data.reduce((s,v)=>s+v.LitrosIncrementales,0)} L incrementales del equipo`;
 
             container.innerHTML = data.map(v => {
-                const barW    = Math.min(100, (v.LitrosTotal / maxLitros) * 100);
-                const inc     = v.LitrosIncrementales;
-                const nombre  = v.Nombre.split(' ').slice(0,2).join(' ');
-                const pctInc  = v.BasePromedio > 0
-                    ? Math.round((inc / v.BasePromedio) * 100) : 0;
-
+                const trackPct = Math.min(92, (v.LitrosTotal / maxLitros) * 90);
+                const inc      = v.LitrosIncrementales;
+                const nombre   = v.Nombre.split(' ').slice(0,2).join(' ');
                 return `<div class="tv-ac-row">
                     <div class="tv-ac-name">${nombre}</div>
-                    <div class="tv-ac-bar-wrap">
-                        <div class="tv-ac-bar-fill ${inc>0?'pos':'neg'}" style="width:${barW}%"></div>
+                    <div class="tv-ac-track">
+                        <span class="tv-ac-truck" style="left:calc(${trackPct}% - 10px)">${inc>0?'🚛':'🚚'}</span>
                     </div>
                     <div class="tv-ac-litros">${v.LitrosTotal}L</div>
-                    <div class="tv-ac-pct" style="color:${inc>0?'#a855f7':'#444'}">${inc>0?'+'+inc+'L':'-'}</div>
+                    <div class="tv-ac-inc" style="color:${inc>0?'#a855f7':'#444'}">${inc>0?'+'+inc+'L':'—'}</div>
                 </div>`;
             }).join('');
         } catch(e) {
-            container.innerHTML = `<div style="color:#f44;font-size:12px;">${e.message}</div>`;
+            container.innerHTML = `<div style="color:#f44;font-size:11px;">${e.message}</div>`;
+        }
+    }
+
+    async function renderTVSucursales() {
+        const bottom = document.getElementById('tv-suc-bottom');
+        try {
+            const d = await apiFetch('/api/ventas-totales');
+            const sucursales = ['TORREON','GOMEZ PALACIO','MONCLOVA','PIEDRAS NEGRAS'];
+            const nombres = {'TORREON':'Torreón','GOMEZ PALACIO':'Gómez Palacio','MONCLOVA':'Monclova','PIEDRAS NEGRAS':'Piedras Negras'};
+
+            bottom.innerHTML = sucursales.map(suc => {
+                const row  = d.porSucursal.find(r => r.Sucursal === suc);
+                const venta = parseFloat(row?.Ventas) || 0;
+                const meta  = SUCURSAL_METAS[suc] || 0;
+                const pct   = meta > 0 ? Math.min((venta/meta)*100, 100) : 0;
+                const cls   = pct >= 100 ? 'ok' : pct >= 70 ? 'mid' : 'low';
+                const color = pct >= 100 ? '#00ff88' : pct >= 70 ? 'var(--gold)' : '#8b3a3a';
+                return `<div class="tv-suc-panel">
+                    <div class="tv-suc-name">${nombres[suc]}</div>
+                    <div class="tv-suc-track">
+                        <div class="tv-suc-fill ${cls}" style="width:${pct}%"></div>
+                    </div>
+                    <div class="tv-suc-stats">
+                        <span style="color:${color};font-weight:700;">${pct.toFixed(1)}%</span>
+                        <span style="color:#444;">${meta>0?'meta: '+new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN',minimumFractionDigits:0}).format(meta):''}</span>
+                    </div>
+                </div>`;
+            }).join('');
+        } catch(e) {
+            bottom.innerHTML = `<div style="color:#f44;padding:16px;font-size:11px;">${e.message}</div>`;
         }
     }
 
     function startTVTimer() {
         clearInterval(tvTimer); clearInterval(tvTick);
-        const sel = document.getElementById('tv-refresh-sel');
-        tvSecs = parseInt(sel.value) || 0;
+        tvSecs = parseInt(document.getElementById('tv-refresh-sel').value) || 0;
         if (!tvSecs) { document.getElementById('tv-countdown').textContent=''; return; }
         let rem = tvSecs;
-        const fmt = s => s >= 60 ? `${Math.floor(s/60)}m ${s%60}s` : `${s}s`;
+        const fmt = s => s>=60?`${Math.floor(s/60)}m ${s%60}s`:`${s}s`;
         document.getElementById('tv-countdown').textContent = `↻ en ${fmt(rem)}`;
         tvTick = setInterval(() => {
             rem--;
             document.getElementById('tv-countdown').textContent = `↻ en ${fmt(rem)}`;
-            if (rem <= 0) { rem = tvSecs; refreshTV(); }
+            if (rem<=0) { rem=tvSecs; refreshTV(); }
         }, 1000);
     }
 
-    function setTVRefresh(val) { tvSecs = parseInt(val)||0; startTVTimer(); }
+    function setTVRefresh(val) { tvSecs=parseInt(val)||0; startTVTimer(); }
 
     document.addEventListener('keydown', e => {
-        if (e.key === 'Escape' && document.getElementById('tv-overlay').classList.contains('open')) {
+        if (e.key==='Escape' && document.getElementById('tv-overlay').classList.contains('open'))
             if (!document.fullscreenElement) cerrarTV();
-        }
     });
 
     </script>
@@ -1134,43 +1184,53 @@
 
         
         /* ── PANTALLA TV ─────────────────────────────────── */
-        #tv-overlay { display:none; position:fixed; inset:0; z-index:99999; background:#0a0a0a; overflow:hidden; flex-direction:column; }
+        #tv-overlay { display:none; position:fixed; inset:0; z-index:99999; background:#060608; overflow:hidden; flex-direction:column; }
         #tv-overlay.open { display:flex; }
-        .tv-header { display:flex; align-items:center; justify-content:space-between; padding:16px 28px; border-bottom:1px solid #1a1a1a; flex-shrink:0; }
+        .tv-header { display:flex; align-items:center; justify-content:space-between; padding:10px 24px; border-bottom:1px solid #1a1a1a; flex-shrink:0; background:#0a0a0f; }
         .tv-logos { display:flex; align-items:center; gap:20px; }
-        .tv-logos img { height:36px; object-fit:contain; }
-        .tv-title { font-family:'Syne',sans-serif; font-size:1.1rem; font-weight:800; color:var(--gold); letter-spacing:2px; text-align:center; }
-        .tv-controls { display:flex; align-items:center; gap:10px; }
-        .tv-controls select { background:#111; border:1px solid #2a2a2a; color:#888; border-radius:8px; padding:5px 10px; font-size:11px; cursor:pointer; }
-        .tv-controls button { background:none; border:1px solid #2a2a2a; color:#666; padding:5px 14px; border-radius:8px; cursor:pointer; font-size:11px; }
+        .tv-logos img { height:32px; object-fit:contain; }
+        .tv-title { font-family:'Syne',sans-serif; font-size:1rem; font-weight:800; color:var(--gold); letter-spacing:3px; text-align:center; }
+        .tv-controls { display:flex; align-items:center; gap:8px; }
+        .tv-controls select { background:#111; border:1px solid #2a2a2a; color:#888; border-radius:8px; padding:4px 8px; font-size:10px; cursor:pointer; }
+        .tv-controls button { background:none; border:1px solid #2a2a2a; color:#666; padding:4px 12px; border-radius:8px; cursor:pointer; font-size:10px; }
         .tv-controls button:hover { border-color:var(--gold); color:var(--gold); }
-        .tv-body { flex:1; display:grid; grid-template-columns:1fr 1fr; gap:0; overflow:hidden; }
-        .tv-panel { padding:20px 24px; display:flex; flex-direction:column; overflow:hidden; }
+        /* Layout */
+        .tv-main { flex:1; display:grid; grid-template-columns:1fr 1fr; overflow:hidden; }
+        .tv-bottom { height:130px; flex-shrink:0; border-top:1px solid #1a1a1a; display:flex; align-items:stretch; background:#080810; }
+        .tv-panel { padding:12px 20px; display:flex; flex-direction:column; overflow:hidden; }
         .tv-panel:first-child { border-right:1px solid #1a1a1a; }
-        .tv-panel-title { font-size:0.65rem; color:#555; text-transform:uppercase; letter-spacing:2px; margin-bottom:12px; flex-shrink:0; display:flex; align-items:center; gap:8px; }
+        .tv-panel-title { font-size:0.55rem; color:#555; text-transform:uppercase; letter-spacing:2px; margin-bottom:8px; flex-shrink:0; display:flex; align-items:center; gap:8px; }
         .tv-panel-title span { color:var(--gold); }
-        /* World Cup rows */
-        .tv-wc-row { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
-        .tv-wc-name { width:130px; font-size:0.75rem; font-weight:700; flex-shrink:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-        .tv-wc-bar-wrap { flex:1; background:#111; border-radius:20px; height:22px; position:relative; overflow:hidden; }
-        .tv-wc-bar-fill { height:100%; border-radius:20px; transition:width 1s ease; }
-        .tv-wc-bar-fill.clasif { background:linear-gradient(90deg, #00b04f, #00ff88); }
-        .tv-wc-bar-fill.cerca  { background:linear-gradient(90deg, #d4a017, var(--gold)); }
-        .tv-wc-bar-fill.lejos  { background:linear-gradient(90deg, #3a2020, #8b3a3a); }
-        .tv-wc-pct { width:52px; text-align:right; font-size:0.75rem; font-weight:700; flex-shrink:0; }
-        .tv-wc-badge { width:70px; text-align:center; font-size:0.6rem; flex-shrink:0; }
-        .tv-wc-badge.ok { color:#00ff88; background:rgba(0,255,136,0.1); border-radius:20px; padding:2px 6px; }
-        .tv-wc-badge.no { color:#888; }
-        /* Aceite rows */
-        .tv-ac-row { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
-        .tv-ac-name { width:130px; font-size:0.75rem; font-weight:700; flex-shrink:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-        .tv-ac-bar-wrap { flex:1; background:#111; border-radius:20px; height:22px; position:relative; overflow:hidden; }
-        .tv-ac-bar-fill { height:100%; border-radius:20px; transition:width 1s ease; }
-        .tv-ac-bar-fill.pos { background:linear-gradient(90deg, #4c1d95, #a855f7); }
-        .tv-ac-bar-fill.neg { background:#1a1a1a; }
-        .tv-ac-pct { width:60px; text-align:right; font-size:0.75rem; font-weight:700; color:#a855f7; flex-shrink:0; }
-        .tv-ac-litros { width:60px; text-align:right; font-size:0.65rem; color:#888; flex-shrink:0; }
-        .tv-footer { padding:8px 28px; border-top:1px solid #111; font-size:10px; color:#333; display:flex; justify-content:space-between; flex-shrink:0; }
+        /* Race track World Cup */
+        .tv-wc-row { display:flex; align-items:center; gap:8px; margin-bottom:5px; }
+        .tv-wc-name { width:110px; font-size:0.68rem; font-weight:700; flex-shrink:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .tv-wc-track { flex:1; background:linear-gradient(90deg,#0d1f0d 50%,#0a1a0a 50%); background-size:30px 100%; border-radius:20px; height:24px; position:relative; overflow:hidden; border:1px solid #1a2e1a; }
+        .tv-wc-track.noclaif { background:linear-gradient(90deg,#1a1010 50%,#150d0d 50%); background-size:30px 100%; border:1px solid #2a1a1a; }
+        .tv-wc-meta { position:absolute; top:0; bottom:0; width:2px; background:rgba(255,215,0,0.5); z-index:2; }
+        .tv-wc-ball { position:absolute; top:50%; transform:translateY(-50%); font-size:16px; transition:left 1.2s cubic-bezier(.4,0,.2,1); z-index:3; filter:drop-shadow(0 0 4px rgba(0,255,136,0.6)); }
+        .tv-wc-ball.noclasif { filter:none; opacity:0.5; }
+        .tv-wc-pct { width:42px; text-align:right; font-size:0.68rem; font-weight:700; flex-shrink:0; }
+        .tv-wc-badge { width:80px; text-align:center; font-size:0.55rem; flex-shrink:0; border-radius:20px; padding:2px 4px; }
+        .tv-wc-badge.ok { color:#00ff88; background:rgba(0,255,136,0.1); }
+        .tv-wc-badge.no { color:#555; }
+        /* Race track Aceite */
+        .tv-ac-row { display:flex; align-items:center; gap:8px; margin-bottom:5px; }
+        .tv-ac-name { width:110px; font-size:0.68rem; font-weight:700; flex-shrink:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .tv-ac-track { flex:1; background:linear-gradient(90deg,#150a2a 50%,#120826 50%); background-size:30px 100%; border-radius:20px; height:24px; position:relative; overflow:hidden; border:1px solid #2a1a4a; }
+        .tv-ac-truck { position:absolute; top:50%; transform:translateY(-50%); font-size:16px; transition:left 1.2s cubic-bezier(.4,0,.2,1); z-index:3; }
+        .tv-ac-litros { width:45px; text-align:right; font-size:0.62rem; color:#a855f7; font-weight:700; flex-shrink:0; }
+        .tv-ac-inc { width:55px; text-align:right; font-size:0.62rem; flex-shrink:0; }
+        /* Bottom sucursales */
+        .tv-suc-panel { flex:1; padding:10px 20px; display:flex; flex-direction:column; justify-content:center; border-right:1px solid #1a1a1a; }
+        .tv-suc-panel:last-child { border-right:none; }
+        .tv-suc-name { font-size:0.6rem; color:#888; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px; }
+        .tv-suc-track { background:#111; border-radius:20px; height:18px; position:relative; overflow:hidden; margin-bottom:4px; }
+        .tv-suc-fill { height:100%; border-radius:20px; transition:width 1s; }
+        .tv-suc-fill.ok  { background:linear-gradient(90deg,#00b04f,#00ff88); }
+        .tv-suc-fill.mid { background:linear-gradient(90deg,#b07800,var(--gold)); }
+        .tv-suc-fill.low { background:linear-gradient(90deg,#5a1a1a,#8b3a3a); }
+        .tv-suc-stats { display:flex; justify-content:space-between; font-size:0.6rem; }
+        .tv-footer { padding:5px 24px; border-top:1px solid #111; font-size:9px; color:#2a2a2a; display:flex; justify-content:space-between; flex-shrink:0; }
         #tv-countdown { color:var(--gold); }
 
         </style>
@@ -2473,20 +2533,25 @@ function renderVisitas() {
     
     // ── PANTALLA TV ───────────────────────────────────────────────────────
     let tvTimer = null, tvTick = null, tvSecs = 300;
+    const SUCURSAL_METAS = {
+        'TORREON':        5000000,
+        'GOMEZ PALACIO':  7000000,
+        'MONCLOVA':       2100000,
+        'PIEDRAS NEGRAS': 2100000,
+        'ANA':            0,
+    };
 
     async function abrirTV() {
         document.getElementById('tv-overlay').classList.add('open');
         await refreshTV();
         startTVTimer();
-        // Pantalla completa
         const el = document.getElementById('tv-overlay');
         if (el.requestFullscreen) el.requestFullscreen();
         else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
     }
 
     function cerrarTV() {
-        clearInterval(tvTimer);
-        clearInterval(tvTick);
+        clearInterval(tvTimer); clearInterval(tvTick);
         document.getElementById('tv-overlay').classList.remove('open');
         if (document.fullscreenElement) document.exitFullscreen();
     }
@@ -2494,7 +2559,7 @@ function renderVisitas() {
     async function refreshTV() {
         document.getElementById('tv-updated').textContent =
             '⟳ Actualizado: ' + new Date().toLocaleTimeString('es-MX');
-        await Promise.all([renderTVTorneo(), renderTVAceite()]);
+        await Promise.all([renderTVTorneo(), renderTVAceite(), renderTVSucursales()]);
     }
 
     async function renderTVTorneo() {
@@ -2503,40 +2568,36 @@ function renderVisitas() {
             const data = await apiFetch('/api/torneo');
             const hoy = new Date(), mes = hoy.getMonth()+1;
             const enFinal = mes === 7;
-
             const getMetrica = v => enFinal ? v.PctJulio : mes === 6 ? v.PctJunio : v.PctMayo;
-
             const sorted = [...data].sort((a,b) => {
                 if (b.Clasificado !== a.Clasificado) return b.Clasificado - a.Clasificado;
                 return getMetrica(b) - getMetrica(a);
             });
-
             const clasif = sorted.filter(v => v.Clasificado).length;
             document.getElementById('tv-wc-clasif').textContent = clasif;
             document.getElementById('tv-wc-pend').textContent   = sorted.length - clasif;
-
-            const faseLabel = enFinal ? '🏆 FASE FINAL' : mes === 6 ? '⚽ FASE DE GRUPOS — JUNIO' : '⚽ FASE DE GRUPOS — MAYO';
-            document.getElementById('tv-wc-fase').textContent = faseLabel;
+            document.getElementById('tv-wc-fase').textContent   =
+                enFinal ? '🏆 FASE FINAL' : mes === 6 ? '⚽ FASE GRUPOS — JUNIO' : '⚽ FASE GRUPOS — MAYO';
 
             container.innerHTML = sorted.map(v => {
-                const pct     = Math.min(getMetrica(v), 150);
-                const barW    = Math.min(100, (pct / 120) * 100);
+                const pct      = Math.min(getMetrica(v), 150);
+                const trackPct = Math.min(98, (pct / 120) * 92); // 92% = posición de la meta
                 const esClasif = v.Clasificado;
-                const colorClass = esClasif ? 'clasif' : pct >= 80 ? 'cerca' : 'lejos';
-                const nombre  = v.Nombre.split(' ').slice(0,2).join(' ');
-                const falta   = esClasif ? '' : `faltan ${Math.round(120 - pct)}%`;
-
+                const nombre   = v.Nombre.split(' ').slice(0,2).join(' ');
+                const falta    = esClasif ? '✅ CLASIFICADO' : `${Math.round(pct)}% · faltan ${Math.round(120-pct)}%`;
+                const ballCls  = esClasif ? '' : 'noclasif';
                 return `<div class="tv-wc-row">
                     <div class="tv-wc-name">${nombre}</div>
-                    <div class="tv-wc-bar-wrap">
-                        <div class="tv-wc-bar-fill ${colorClass}" style="width:${barW}%"></div>
+                    <div class="tv-wc-track ${esClasif?'':'noclaif'}">
+                        <div class="tv-wc-meta" style="left:92%"></div>
+                        <span class="tv-wc-ball ${ballCls}" style="left:calc(${trackPct}% - 10px)">⚽</span>
                     </div>
                     <div class="tv-wc-pct" style="color:${esClasif?'#00ff88':pct>=80?'var(--gold)':'#666'}">${Math.round(pct)}%</div>
-                    <div class="tv-wc-badge ${esClasif?'ok':'no'}">${esClasif?'✅ CLASIFICADO':falta}</div>
+                    <div class="tv-wc-badge ${esClasif?'ok':'no'}">${falta}</div>
                 </div>`;
             }).join('');
         } catch(e) {
-            container.innerHTML = `<div style="color:#f44;font-size:12px;">${e.message}</div>`;
+            container.innerHTML = `<div style="color:#f44;font-size:11px;">${e.message}</div>`;
         }
     }
 
@@ -2545,52 +2606,76 @@ function renderVisitas() {
         try {
             const data = await apiFetch('/api/aceite-todos');
             const maxLitros = Math.max(...data.map(v => v.LitrosTotal), 1);
-
             document.getElementById('tv-ac-resumen').textContent =
-                `${data.reduce((s,v)=>s+v.LitrosIncrementales,0)} litros incrementales totales del equipo`;
+                `${data.reduce((s,v)=>s+v.LitrosIncrementales,0)} L incrementales del equipo`;
 
             container.innerHTML = data.map(v => {
-                const barW    = Math.min(100, (v.LitrosTotal / maxLitros) * 100);
-                const inc     = v.LitrosIncrementales;
-                const nombre  = v.Nombre.split(' ').slice(0,2).join(' ');
-                const pctInc  = v.BasePromedio > 0
-                    ? Math.round((inc / v.BasePromedio) * 100) : 0;
-
+                const trackPct = Math.min(92, (v.LitrosTotal / maxLitros) * 90);
+                const inc      = v.LitrosIncrementales;
+                const nombre   = v.Nombre.split(' ').slice(0,2).join(' ');
                 return `<div class="tv-ac-row">
                     <div class="tv-ac-name">${nombre}</div>
-                    <div class="tv-ac-bar-wrap">
-                        <div class="tv-ac-bar-fill ${inc>0?'pos':'neg'}" style="width:${barW}%"></div>
+                    <div class="tv-ac-track">
+                        <span class="tv-ac-truck" style="left:calc(${trackPct}% - 10px)">${inc>0?'🚛':'🚚'}</span>
                     </div>
                     <div class="tv-ac-litros">${v.LitrosTotal}L</div>
-                    <div class="tv-ac-pct" style="color:${inc>0?'#a855f7':'#444'}">${inc>0?'+'+inc+'L':'-'}</div>
+                    <div class="tv-ac-inc" style="color:${inc>0?'#a855f7':'#444'}">${inc>0?'+'+inc+'L':'—'}</div>
                 </div>`;
             }).join('');
         } catch(e) {
-            container.innerHTML = `<div style="color:#f44;font-size:12px;">${e.message}</div>`;
+            container.innerHTML = `<div style="color:#f44;font-size:11px;">${e.message}</div>`;
+        }
+    }
+
+    async function renderTVSucursales() {
+        const bottom = document.getElementById('tv-suc-bottom');
+        try {
+            const d = await apiFetch('/api/ventas-totales');
+            const sucursales = ['TORREON','GOMEZ PALACIO','MONCLOVA','PIEDRAS NEGRAS'];
+            const nombres = {'TORREON':'Torreón','GOMEZ PALACIO':'Gómez Palacio','MONCLOVA':'Monclova','PIEDRAS NEGRAS':'Piedras Negras'};
+
+            bottom.innerHTML = sucursales.map(suc => {
+                const row  = d.porSucursal.find(r => r.Sucursal === suc);
+                const venta = parseFloat(row?.Ventas) || 0;
+                const meta  = SUCURSAL_METAS[suc] || 0;
+                const pct   = meta > 0 ? Math.min((venta/meta)*100, 100) : 0;
+                const cls   = pct >= 100 ? 'ok' : pct >= 70 ? 'mid' : 'low';
+                const color = pct >= 100 ? '#00ff88' : pct >= 70 ? 'var(--gold)' : '#8b3a3a';
+                return `<div class="tv-suc-panel">
+                    <div class="tv-suc-name">${nombres[suc]}</div>
+                    <div class="tv-suc-track">
+                        <div class="tv-suc-fill ${cls}" style="width:${pct}%"></div>
+                    </div>
+                    <div class="tv-suc-stats">
+                        <span style="color:${color};font-weight:700;">${pct.toFixed(1)}%</span>
+                        <span style="color:#444;">${meta>0?'meta: '+new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN',minimumFractionDigits:0}).format(meta):''}</span>
+                    </div>
+                </div>`;
+            }).join('');
+        } catch(e) {
+            bottom.innerHTML = `<div style="color:#f44;padding:16px;font-size:11px;">${e.message}</div>`;
         }
     }
 
     function startTVTimer() {
         clearInterval(tvTimer); clearInterval(tvTick);
-        const sel = document.getElementById('tv-refresh-sel');
-        tvSecs = parseInt(sel.value) || 0;
+        tvSecs = parseInt(document.getElementById('tv-refresh-sel').value) || 0;
         if (!tvSecs) { document.getElementById('tv-countdown').textContent=''; return; }
         let rem = tvSecs;
-        const fmt = s => s >= 60 ? `${Math.floor(s/60)}m ${s%60}s` : `${s}s`;
+        const fmt = s => s>=60?`${Math.floor(s/60)}m ${s%60}s`:`${s}s`;
         document.getElementById('tv-countdown').textContent = `↻ en ${fmt(rem)}`;
         tvTick = setInterval(() => {
             rem--;
             document.getElementById('tv-countdown').textContent = `↻ en ${fmt(rem)}`;
-            if (rem <= 0) { rem = tvSecs; refreshTV(); }
+            if (rem<=0) { rem=tvSecs; refreshTV(); }
         }, 1000);
     }
 
-    function setTVRefresh(val) { tvSecs = parseInt(val)||0; startTVTimer(); }
+    function setTVRefresh(val) { tvSecs=parseInt(val)||0; startTVTimer(); }
 
     document.addEventListener('keydown', e => {
-        if (e.key === 'Escape' && document.getElementById('tv-overlay').classList.contains('open')) {
+        if (e.key==='Escape' && document.getElementById('tv-overlay').classList.contains('open'))
             if (!document.fullscreenElement) cerrarTV();
-        }
     });
 
     </script>
@@ -2703,29 +2788,29 @@ function renderVisitas() {
                 <button onclick="cerrarTV()">✕ Salir</button>
             </div>
         </div>
-        <div class="tv-body">
+        <div class="tv-main">
             <!-- Panel izquierdo: World Cup -->
             <div class="tv-panel">
                 <div class="tv-panel-title">
                     🏆 WORLD CUP CATOSA &nbsp;·&nbsp; <span id="tv-wc-fase">—</span>
+                    &nbsp;&nbsp; 🟢 <span id="tv-wc-clasif" style="color:#00ff88;">—</span> clasificados
+                    &nbsp; ⚪ <span id="tv-wc-pend" style="color:#555;">—</span> pendientes
                 </div>
-                <div id="tv-wc-rows" style="flex:1;overflow-y:auto;">
-                    <div style="color:#555;font-size:12px;">Cargando...</div>
-                </div>
-                <div style="margin-top:10px;font-size:10px;color:#333;display:flex;gap:16px;flex-shrink:0;">
-                    <span>🟢 <span id="tv-wc-clasif" style="color:#00ff88;">—</span> clasificados</span>
-                    <span>⚪ <span id="tv-wc-pend" style="color:#555;">—</span> pendientes</span>
-                </div>
+                <div id="tv-wc-rows" style="flex:1;overflow-y:auto;"></div>
             </div>
             <!-- Panel derecho: Aceite -->
             <div class="tv-panel">
                 <div class="tv-panel-title">
-                    🛢️ CHALLENGE ACEITE MOTOR &nbsp;·&nbsp; <span style="color:#a855f7;">LITROS INCREMENTALES</span>
+                    🚛 CHALLENGE ACEITE MOTOR &nbsp;·&nbsp; <span style="color:#a855f7;">LITROS INCREMENTALES</span>
+                    &nbsp;&nbsp; <span id="tv-ac-resumen" style="color:#444;">—</span>
                 </div>
-                <div id="tv-ac-rows" style="flex:1;overflow-y:auto;">
-                    <div style="color:#555;font-size:12px;">Cargando...</div>
-                </div>
-                <div style="margin-top:10px;font-size:10px;color:#333;flex-shrink:0;" id="tv-ac-resumen">—</div>
+                <div id="tv-ac-rows" style="flex:1;overflow-y:auto;"></div>
+            </div>
+        </div>
+        <!-- Bottom: Metas por sucursal -->
+        <div class="tv-bottom" id="tv-suc-bottom">
+            <div class="tv-suc-panel" style="border-right:1px solid #1a1a1a;display:flex;align-items:center;padding:0 20px;">
+                <div style="font-size:0.55rem;color:#444;text-transform:uppercase;letter-spacing:2px;white-space:nowrap;margin-right:16px;">META POR SUCURSAL</div>
             </div>
         </div>
         <div class="tv-footer">
