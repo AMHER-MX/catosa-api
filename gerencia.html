@@ -320,7 +320,7 @@
                     <div class="tv-ac-track">
                         <span class="tv-ac-truck" style="left:calc(${trackPct}% - 10px);transform:translateY(-50%) scaleX(-1)">${inc>0?'🚛':'🚚'}</span>
                     </div>
-                    <div class="tv-ac-inc" style="color:${inc>0?'#a855f7':'#444'}">${inc>0?'+'+Math.round((inc/Math.max(v.BasePromedio,1))*100)+'%':'—'}</div>
+                    <div class="tv-ac-inc" style="color:${inc>0?'#a855f7':'#444'}">${inc>0?'+'+Math.round((inc/Math.max(v.BasePromedio,1))*100)+'%':'—'}${v.Bloques>0?' <span style="color:#ffd700;font-size:0.75em;margin-left:4px;">🛢 '+v.Bloques+' blq</span>':''}</div>
                 </div>`;
             }).join('');
         } catch(e) {
@@ -694,7 +694,7 @@
                     <div class="tv-ac-track">
                         <span class="tv-ac-truck" style="left:calc(${trackPct}% - 10px);transform:translateY(-50%) scaleX(-1)">${inc>0?'🚛':'🚚'}</span>
                     </div>
-                    <div class="tv-ac-inc" style="color:${inc>0?'#a855f7':'#444'}">${inc>0?'+'+Math.round((inc/Math.max(v.BasePromedio,1))*100)+'%':'—'}</div>
+                    <div class="tv-ac-inc" style="color:${inc>0?'#a855f7':'#444'}">${inc>0?'+'+Math.round((inc/Math.max(v.BasePromedio,1))*100)+'%':'—'}${v.Bloques>0?' <span style="color:#ffd700;font-size:0.75em;margin-left:4px;">🛢 '+v.Bloques+' blq</span>':''}</div>
                 </div>`;
             }).join('');
         } catch(e) {
@@ -1217,7 +1217,7 @@
         .tv-ac-track { flex:1; background:linear-gradient(90deg,#150a2a 50%,#120826 50%); background-size:30px 100%; border-radius:20px; height:24px; position:relative; overflow:hidden; border:1px solid #2a1a4a; }
         .tv-ac-truck { position:absolute; top:50%; font-size:16px; transition:left 1.2s cubic-bezier(.4,0,.2,1); z-index:3; }
 
-        .tv-ac-inc { width:55px; text-align:right; font-size:0.62rem; flex-shrink:0; }
+        .tv-ac-inc { width:90px; text-align:right; font-size:0.62rem; flex-shrink:0; }
         /* Bottom sucursales */
         .tv-suc-panel { flex:1; padding:10px 20px; display:flex; flex-direction:column; justify-content:center; border-right:1px solid #1a1a1a; }
         .tv-suc-panel:last-child { border-right:none; }
@@ -2616,7 +2616,7 @@ function renderVisitas() {
                     <div class="tv-ac-track">
                         <span class="tv-ac-truck" style="left:calc(${trackPct}% - 10px);transform:translateY(-50%) scaleX(-1)">${inc>0?'🚛':'🚚'}</span>
                     </div>
-                    <div class="tv-ac-inc" style="color:${inc>0?'#a855f7':'#444'}">${inc>0?'+'+Math.round((inc/Math.max(v.BasePromedio,1))*100)+'%':'—'}</div>
+                    <div class="tv-ac-inc" style="color:${inc>0?'#a855f7':'#444'}">${inc>0?'+'+Math.round((inc/Math.max(v.BasePromedio,1))*100)+'%':'—'}${v.Bloques>0?' <span style="color:#ffd700;font-size:0.75em;margin-left:4px;">🛢 '+v.Bloques+' blq</span>':''}</div>
                 </div>`;
             }).join('');
         } catch(e) {
