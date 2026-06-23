@@ -27,7 +27,7 @@ async function getPool() {
 }
 
 // ── EXCEL DE METAS ────────────────────────────────────────────────────────────
-let metasMap = {}, carteraMap = {}, aceiteBaseMap = {};
+let metasMap = {}, carteraMap = {}, aceiteBaseMap = {}, wcSet = new Set();
 
 function cargarExcel() {
   try {
@@ -55,13 +55,19 @@ function cargarExcel() {
       const prom   = parseFloat(row['PROMEDIO_LITROS_2025']) || 0;
       if (nombre) aceiteBaseMap[nombre] = prom;
     });
-    console.log(`Excel cargado: ${Object.keys(metasMap).length} asesores, ${Object.values(carteraMap).flat().length} clientes, ${Object.keys(aceiteBaseMap).length} bases de aceite`);
+    // Carga participantes World Cup desde Hoja1
+    const hoja1 = XLSX.utils.sheet_to_json(wb.Sheets['Hoja1'], { defval: null });
+    hoja1.forEach(row => {
+      const nombre = (row['NOMBRE ASESOR'] || '').toString().trim().toUpperCase();
+      if (nombre) wcSet.add(nombre);
+    });
+    console.log(`Excel cargado: ${Object.keys(metasMap).length} asesores, ${Object.values(carteraMap).flat().length} clientes, ${Object.keys(aceiteBaseMap).length} bases de aceite, ${wcSet.size} concursantes WC, ${Object.keys(aceiteBaseMap).length} concursantes aceite`);
   } catch (err) { console.error('Error leyendo metas.xlsx:', err.message); }
 }
 cargarExcel();
 
 app.get('/api/recargar-metas', (req, res) => {
-  metasMap = {}; carteraMap = {};
+  metasMap = {}; carteraMap = {}; aceiteBaseMap = {}; wcSet = new Set();
   cargarExcel();
   res.json({ ok: true, asesores: Object.keys(metasMap).length });
 });
@@ -106,6 +112,8 @@ function normSuc(s) { const k = (s||'').toUpperCase().trim(); return SUCURSAL_NO
 const SUCURSALES    = `'ANA','GOMEZ PALACIO','MONCLOVA','PIEDRAS NEGRAS','TORREON'`;
 const TIPOS_EXCL    = `'PRESUPUESTO','PRESUPUESTO 8%','Traspaso salida almacen'`;
 const TIPO_EXCL_SQL = `(s.DES_TIPO_VENTA NOT IN (${TIPOS_EXCL}) AND s.DES_TIPO_VENTA IS NOT NULL AND LTRIM(RTRIM(s.DES_TIPO_VENTA)) <> '')`;
+const TIPOS_EXCL_ACEITE = `${TIPOS_EXCL},'Venta O.R. Filiales','Venta O.R. Internas','Ventas internas refacciones'`;
+const TIPO_EXCL_ACEITE_SQL = `(s.DES_TIPO_VENTA NOT IN (${TIPOS_EXCL_ACEITE}) AND s.DES_TIPO_VENTA IS NOT NULL AND LTRIM(RTRIM(s.DES_TIPO_VENTA)) <> '')`;
 
 // ── HEALTH CHECK ──────────────────────────────────────────────────────────────
 app.get('/', (req, res) => res.json({ status: 'ok', servidor: 'Catosa API' }));
@@ -378,7 +386,7 @@ app.get('/api/aceite', async (req, res) => {
           AND s.ARTICULO IN (${npsLista})
           AND s.NOM_ALMACEN_LIN IN (${SUCURSALES})
           AND s.NOM_VENDEDOR = @vend
-          AND ${TIPO_EXCL_SQL}
+          AND ${TIPO_EXCL_ACEITE_SQL}
         GROUP BY s.ARTICULO
       `);
 
@@ -438,7 +446,7 @@ app.get('/api/aceite-todos', async (req, res) => {
         WHERE s.FECHA >= @ini AND s.FECHA <= @fin
           AND s.ARTICULO IN (${npsLista})
           AND s.NOM_ALMACEN_LIN IN (${SUCURSALES})
-          AND ${TIPO_EXCL_SQL}
+          AND ${TIPO_EXCL_ACEITE_SQL}
         GROUP BY s.NOM_VENDEDOR, s.ARTICULO
       `);
 
@@ -453,18 +461,18 @@ app.get('/api/aceite-todos', async (req, res) => {
       if (NPS_INTL.has(row.ARTICULO)) porVendedor[v].litrosIntl += litros;
     });
 
-    // Construir respuesta para cada vendedor con meta
-    const datos = Object.entries(metasMap).map(([nombre, datos]) => {
+    // Construir respuesta solo para concursantes de ACEITE_BASE
+    const datos = Object.entries(aceiteBaseMap).map(([nombre, base]) => {
+      const mData = metasMap[nombre] || { sucursal: '' };
       const nombreSQL = Object.keys(porVendedor).find(k => nombreKey(k) === nombre) || '';
       const vData = porVendedor[nombreSQL] || { litrosTotal: 0, litrosIntl: 0 };
-      const base  = aceiteBaseMap[nombre] || 0;
       const litrosIncrementales = Math.max(0, vData.litrosTotal - base);
       const bloques = Math.floor(litrosIncrementales / 500);
       const pctIntl = vData.litrosTotal > 0 ? (vData.litrosIntl / vData.litrosTotal) * 100 : 0;
       const premioPorBloque = pctIntl >= 30 ? 500 : 400;
       return {
         Nombre:              nombreSQL || nombre,
-        Sucursal:            datos.sucursal,
+        Sucursal:            mData.sucursal,
         LitrosTotal:         Math.round(vData.litrosTotal),
         LitrosIncrementales: Math.round(litrosIncrementales),
         BasePromedio:        Math.round(base),
@@ -637,8 +645,9 @@ app.get('/api/torneo', async (req, res) => {
     const ventaJulio = {};
     rJulio.recordset.forEach(r => { ventaJulio[nombreKey(r.NOM_VENDEDOR)] = parseFloat(r.VentaJulio)||0; });
 
-    // Armar resultado por vendedor
-    const resultado = Object.entries(metasMap).map(([nombre, datos]) => {
+    // Armar resultado solo para concursantes de Hoja1
+    const resultado = [...wcSet].map(nombre => {
+      const datos  = metasMap[nombre] || { meta: 1, sucursal: '' };
       const meta     = datos.meta || 1;
       const vMayo    = ventaMayo[nombre]  || 0;
       const vJunio   = ventaJunio[nombre] || 0;
@@ -1023,7 +1032,7 @@ app.get('/api/aceite-reporte', async (req, res) => {
         WHERE s.FECHA >= @ini AND s.FECHA <= @fin
           AND s.ARTICULO IN (${npsLista})
           AND s.NOM_ALMACEN_LIN IN (${SUCURSALES})
-          AND ${TIPO_EXCL_SQL}
+          AND ${TIPO_EXCL_ACEITE_SQL}
         GROUP BY s.NOM_VENDEDOR, s.ARTICULO
         ORDER BY s.NOM_VENDEDOR
       `);
