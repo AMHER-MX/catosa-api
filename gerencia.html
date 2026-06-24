@@ -247,6 +247,7 @@
         document.getElementById('tv-overlay').classList.add('open');
         await refreshTV();
         startTVTimer();
+        startFinMesTimer();
         const el = document.getElementById('tv-overlay');
         if (el.requestFullscreen) el.requestFullscreen();
         else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
@@ -355,6 +356,24 @@
         } catch(e) {
             bottom.innerHTML = `<div style="color:#f44;padding:16px;font-size:11px;">${e.message}</div>`;
         }
+    }
+
+    function startFinMesTimer() {
+        function update() {
+            const ahora = new Date();
+            const fin = new Date(ahora.getFullYear(), ahora.getMonth() + 1, 1, 0, 0, 0);
+            const diff = fin - ahora;
+            if (diff <= 0) { document.getElementById('tv-fin-mes').textContent = '¡Fin de mes!'; return; }
+            const dias  = Math.floor(diff / 86400000);
+            const horas = Math.floor((diff % 86400000) / 3600000);
+            const mins  = Math.floor((diff % 3600000) / 60000);
+            const segs  = Math.floor((diff % 60000) / 1000);
+            const pad = n => String(n).padStart(2,'0');
+            document.getElementById('tv-fin-mes').textContent =
+                `${dias}d ${pad(horas)}h ${pad(mins)}m ${pad(segs)}s`;
+        }
+        update();
+        setInterval(update, 1000);
     }
 
     function startTVTimer() {
@@ -621,6 +640,7 @@
         document.getElementById('tv-overlay').classList.add('open');
         await refreshTV();
         startTVTimer();
+        startFinMesTimer();
         const el = document.getElementById('tv-overlay');
         if (el.requestFullscreen) el.requestFullscreen();
         else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
@@ -729,6 +749,24 @@
         } catch(e) {
             bottom.innerHTML = `<div style="color:#f44;padding:16px;font-size:11px;">${e.message}</div>`;
         }
+    }
+
+    function startFinMesTimer() {
+        function update() {
+            const ahora = new Date();
+            const fin = new Date(ahora.getFullYear(), ahora.getMonth() + 1, 1, 0, 0, 0);
+            const diff = fin - ahora;
+            if (diff <= 0) { document.getElementById('tv-fin-mes').textContent = '¡Fin de mes!'; return; }
+            const dias  = Math.floor(diff / 86400000);
+            const horas = Math.floor((diff % 86400000) / 3600000);
+            const mins  = Math.floor((diff % 3600000) / 60000);
+            const segs  = Math.floor((diff % 60000) / 1000);
+            const pad = n => String(n).padStart(2,'0');
+            document.getElementById('tv-fin-mes').textContent =
+                `${dias}d ${pad(horas)}h ${pad(mins)}m ${pad(segs)}s`;
+        }
+        update();
+        setInterval(update, 1000);
     }
 
     function startTVTimer() {
@@ -1192,6 +1230,9 @@
         .tv-controls select { background:#111; border:1px solid #2a2a2a; color:#888; border-radius:8px; padding:4px 8px; font-size:10px; cursor:pointer; }
         .tv-controls button { background:none; border:1px solid #2a2a2a; color:#666; padding:4px 12px; border-radius:8px; cursor:pointer; font-size:10px; }
         .tv-controls button:hover { border-color:var(--gold); color:var(--gold); }
+        .tv-countdown-mes { display:flex; flex-direction:column; align-items:flex-end; line-height:1.1; }
+        .tv-countdown-mes .label { font-size:0.52rem; color:#666; letter-spacing:1px; text-transform:uppercase; }
+        .tv-countdown-mes .timer { font-family:'Syne',sans-serif; font-size:0.78rem; font-weight:700; color:var(--gold); letter-spacing:1px; }
         /* Layout */
         .tv-main { flex:1; display:grid; grid-template-columns:1fr 1fr; overflow:hidden; }
         .tv-bottom { height:130px; flex-shrink:0; border-top:1px solid #1a1a1a; display:flex; align-items:stretch; background:#080810; }
@@ -2543,6 +2584,7 @@ function renderVisitas() {
         document.getElementById('tv-overlay').classList.add('open');
         await refreshTV();
         startTVTimer();
+        startFinMesTimer();
         const el = document.getElementById('tv-overlay');
         if (el.requestFullscreen) el.requestFullscreen();
         else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
@@ -2651,6 +2693,24 @@ function renderVisitas() {
         } catch(e) {
             bottom.innerHTML = `<div style="color:#f44;padding:16px;font-size:11px;">${e.message}</div>`;
         }
+    }
+
+    function startFinMesTimer() {
+        function update() {
+            const ahora = new Date();
+            const fin = new Date(ahora.getFullYear(), ahora.getMonth() + 1, 1, 0, 0, 0);
+            const diff = fin - ahora;
+            if (diff <= 0) { document.getElementById('tv-fin-mes').textContent = '¡Fin de mes!'; return; }
+            const dias  = Math.floor(diff / 86400000);
+            const horas = Math.floor((diff % 86400000) / 3600000);
+            const mins  = Math.floor((diff % 3600000) / 60000);
+            const segs  = Math.floor((diff % 60000) / 1000);
+            const pad = n => String(n).padStart(2,'0');
+            document.getElementById('tv-fin-mes').textContent =
+                `${dias}d ${pad(horas)}h ${pad(mins)}m ${pad(segs)}s`;
+        }
+        update();
+        setInterval(update, 1000);
     }
 
     function startTVTimer() {
@@ -2773,6 +2833,11 @@ function renderVisitas() {
                 <img src="https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/logo-international.png" alt="International">
             </div>
             <div class="tv-title">⚡ CATOSA PERFORMANCE 2026</div>
+            <div style="display:flex;align-items:center;gap:16px;">
+                <div class="tv-countdown-mes">
+                    <span class="label">Faltan</span>
+                    <span class="timer" id="tv-fin-mes">—</span>
+                </div>
             <div class="tv-controls">
                 <select id="tv-refresh-sel" onchange="setTVRefresh(this.value)">
                     <option value="0">Sin refresh</option>
@@ -2782,6 +2847,7 @@ function renderVisitas() {
                 </select>
                 <button onclick="refreshTV()">↺ Actualizar</button>
                 <button onclick="cerrarTV()">✕ Salir</button>
+            </div>
             </div>
         </div>
         <div class="tv-main">
