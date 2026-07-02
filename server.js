@@ -55,12 +55,23 @@ function cargarExcel() {
       const prom   = parseFloat(row['PROMEDIO_LITROS_2025']) || 0;
       if (nombre) aceiteBaseMap[nombre] = prom;
     });
-    // Carga participantes World Cup desde Hoja1
-    const hoja1 = XLSX.utils.sheet_to_json(wb.Sheets['Hoja1'], { defval: null });
+    // Carga participantes World Cup desde Hoja1 (sin encabezado, nombres en columna A)
+    const hoja1 = XLSX.utils.sheet_to_json(wb.Sheets['Hoja1'], { header: 1, defval: null });
     hoja1.forEach(row => {
-      const nombre = (row['NOMBRE ASESOR'] || '').toString().trim().toUpperCase();
+      const nombre = (row[0] || '').toString().trim().toUpperCase();
       if (nombre) wcSet.add(nombre);
     });
+    // Resolver nombres cortos de Hoja1 contra nombres completos de metasMap
+    const wcSetResuelto = new Set();
+    wcSet.forEach(nombreCorto => {
+      // Buscar nombre completo en metasMap que contenga el nombre corto
+      const match = Object.keys(metasMap).find(completo =>
+        completo.includes(nombreCorto) || nombreCorto.split(' ').every(p => completo.includes(p))
+      );
+      wcSetResuelto.add(match || nombreCorto);
+    });
+    wcSet.clear();
+    wcSetResuelto.forEach(n => wcSet.add(n));
     console.log(`Excel cargado: ${Object.keys(metasMap).length} asesores, ${Object.values(carteraMap).flat().length} clientes, ${Object.keys(aceiteBaseMap).length} bases de aceite, ${wcSet.size} concursantes WC, ${Object.keys(aceiteBaseMap).length} concursantes aceite`);
   } catch (err) { console.error('Error leyendo metas.xlsx:', err.message); }
 }
