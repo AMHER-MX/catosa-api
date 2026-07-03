@@ -57,18 +57,9 @@ function cargarExcel() {
     });
     // Carga participantes World Cup desde Hoja1 (sin encabezado, nombres en columna A)
     const hoja1 = XLSX.utils.sheet_to_json(wb.Sheets['Hoja1'], { header: 1, defval: null });
-    const wcRaw = new Set();
     hoja1.forEach(row => {
       const nombre = (row[0] || '').toString().trim().toUpperCase();
-      if (nombre) wcRaw.add(nombre);
-    });
-    // Resolver nombres cortos/parciales de Hoja1 contra nombres completos de metasMap
-    wcRaw.forEach(nombreCorto => {
-      const palabras = nombreCorto.split(' ').filter(p => p.length > 2);
-      const match = Object.keys(metasMap).find(completo =>
-        palabras.every(p => completo.includes(p))
-      );
-      wcSet.add(match || nombreCorto);
+      if (nombre) wcSet.add(nombre);
     });
     console.log(`Excel cargado: ${Object.keys(metasMap).length} asesores, ${Object.values(carteraMap).flat().length} clientes, ${Object.keys(aceiteBaseMap).length} bases de aceite, ${wcSet.size} concursantes WC, ${Object.keys(aceiteBaseMap).length} concursantes aceite`);
   } catch (err) { console.error('Error leyendo metas.xlsx:', err.message); }
@@ -121,8 +112,6 @@ function normSuc(s) { const k = (s||'').toUpperCase().trim(); return SUCURSAL_NO
 const SUCURSALES    = `'ANA','GOMEZ PALACIO','MONCLOVA','PIEDRAS NEGRAS','TORREON'`;
 const TIPOS_EXCL    = `'PRESUPUESTO','PRESUPUESTO 8%','Traspaso salida almacen'`;
 const TIPO_EXCL_SQL = `(s.DES_TIPO_VENTA NOT IN (${TIPOS_EXCL}) AND s.DES_TIPO_VENTA IS NOT NULL AND LTRIM(RTRIM(s.DES_TIPO_VENTA)) <> '')`;
-const TIPOS_EXCL_ACEITE = `${TIPOS_EXCL},'Venta O.R. Filiales','Venta O.R. Internas','Ventas internas refacciones'`;
-const TIPO_EXCL_ACEITE_SQL = `(s.DES_TIPO_VENTA NOT IN (${TIPOS_EXCL_ACEITE}) AND s.DES_TIPO_VENTA IS NOT NULL AND LTRIM(RTRIM(s.DES_TIPO_VENTA)) <> '')`;
 const TIPOS_EXCL_ACEITE = `${TIPOS_EXCL},'Venta O.R. Filiales','Venta O.R. Internas','Ventas internas refacciones'`;
 const TIPO_EXCL_ACEITE_SQL = `(s.DES_TIPO_VENTA NOT IN (${TIPOS_EXCL_ACEITE}) AND s.DES_TIPO_VENTA IS NOT NULL AND LTRIM(RTRIM(s.DES_TIPO_VENTA)) <> '')`;
 
