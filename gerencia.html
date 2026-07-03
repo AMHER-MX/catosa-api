@@ -1786,10 +1786,17 @@ function renderPremios(lista) {
         if (terminado) {
             estadoHTML = `<span class="wc-fase-badge ${pct>=120?'wc-clasificado':'wc-fuera'}">${pct>=120?'🏆 FIN':'❌ FIN'}</span>`;
         } else if (enFinal) {
-            const pos = ranking.findIndex(r => r.nombre === v.Nombre) + 1;
-            const premios = ['','📺 Smart TV','🎽 Jersey','❄️ Hielera','⚽ Balón'];
-            estadoHTML = `<span class="wc-fase-badge wc-clasificado">🏆 FINAL #${pos}</span>`;
-            premioHTML = pos <= 4 ? premios[pos] + ' + 🍿' : '—';
+            if (clasificado) {
+                const rankingClasif = [...lista]
+                    .filter(v2 => { const t = (window.wcTorneoMap||{})[v2.Nombre]; return t && t.Clasificado; })
+                    .sort((a,b) => (parseFloat(b.Ventas)||0) - (parseFloat(a.Ventas)||0));
+                const pos = rankingClasif.findIndex(r => r.Nombre === v.Nombre) + 1;
+                const premios = ['','📺 Smart TV','🎽 Jersey','❄️ Hielera','⚽ Balón'];
+                estadoHTML = `<span class="wc-fase-badge wc-clasificado">🏆 FINAL #${pos}</span>`;
+                premioHTML = pos <= 4 ? premios[pos] + ' + 🍿' : '—';
+            } else {
+                estadoHTML = `<span class="wc-fase-badge wc-fuera">❌ NO CLASIFICÓ</span>`;
+            }
         } else if (enGrupos) {
             if (pct >= 120) {
                 estadoHTML = `<span class="wc-fase-badge wc-clasificado">✅ CLASIFICADO</span>`;
