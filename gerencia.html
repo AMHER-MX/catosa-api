@@ -1595,6 +1595,8 @@ window.onload = async () => {
         try {
             const torneoData = await apiFetch('/api/torneo');
             wcNombres = new Set(torneoData.map(v => v.Nombre));
+            window.wcTorneoMap = {};
+            torneoData.forEach(v => window.wcTorneoMap[v.Nombre] = v);
         } catch(e) { console.warn('No se pudo cargar torneo para filtro WC:', e); }
         document.getElementById('login-status').textContent = `✅ ${dbV.length} asesores cargados`;
         document.getElementById('btn-login').disabled = false;
@@ -1653,7 +1655,7 @@ function getFiltered() {
 }
 
 function getFilteredMetas() {
-    // Solo vendedores concursantes de Hoja1 (World Cup) — para premios, ranking y gráfica
+    // Solo vendedores concursantes de Hoja1 (World Cup)
     const fs = document.getElementById('f-suc').value;
     const fv = document.getElementById('f-vend').value;
     return dbV.filter(v =>
@@ -1778,10 +1780,8 @@ function renderPremios(lista) {
 
         // Estado torneo
         let estadoHTML = '', premioHTML = '—';
-        const keyMayo  = `wc_oro_mayo_${anio}_${v.Nombre}`;
-        const keyJunio = `wc_oro_junio_${anio}_${v.Nombre}`;
-        // En gerencia no tenemos localStorage del vendedor, usamos el % actual como referencia
-        const clasificado = pct >= 120 && (enGrupos || enFinal);
+        const torneoV = (window.wcTorneoMap || {})[v.Nombre];
+        const clasificado = torneoV ? torneoV.Clasificado : false;
 
         if (terminado) {
             estadoHTML = `<span class="wc-fase-badge ${pct>=120?'wc-clasificado':'wc-fuera'}">${pct>=120?'🏆 FIN':'❌ FIN'}</span>`;
