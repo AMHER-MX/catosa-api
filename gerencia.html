@@ -1789,7 +1789,11 @@ function renderPremios(lista) {
             if (clasificado) {
                 const rankingClasif = [...lista]
                     .filter(v2 => { const t = (window.wcTorneoMap||{})[v2.Nombre]; return t && t.Clasificado; })
-                    .sort((a,b) => (parseFloat(b.Ventas)||0) - (parseFloat(a.Ventas)||0));
+                    .sort((a,b) => {
+                        const pctA = (parseFloat(a.Ventas)||0) / (parseFloat(a.Meta)||1);
+                        const pctB = (parseFloat(b.Ventas)||0) / (parseFloat(b.Meta)||1);
+                        return pctB - pctA;
+                    });
                 const pos = rankingClasif.findIndex(r => r.Nombre === v.Nombre) + 1;
                 const premios = ['','📺 Smart TV','🎽 Jersey','❄️ Hielera','❄️ Hielera','⚽ Balón','⚽ Balón'];
                 estadoHTML = `<span class="wc-fase-badge wc-clasificado">🏆 FINAL #${pos}</span>`;
