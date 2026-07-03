@@ -1576,7 +1576,7 @@ const USUARIOS = {
 };
 
 // ── ESTADO ────────────────────────────────────────────────────────────────────
-let dbV = [], dbC = [], dbTop = [], dbBBD = [], myChart = null, userRole = '';
+let dbV = [], dbC = [], dbTop = [], dbBBD = [], myChart = null, userRole = '', wcNombres = new Set();
 
 // ── UTILS ─────────────────────────────────────────────────────────────────────
 const fM = n => new Intl.NumberFormat('es-MX', { style:'currency', currency:'MXN', minimumFractionDigits:0 }).format(n||0);
@@ -1592,6 +1592,10 @@ window.onload = async () => {
     try {
         document.getElementById('login-status').textContent = 'Conectando con servidor...';
         dbV = await apiFetch('/api/ventas');
+        try {
+            const torneoData = await apiFetch('/api/torneo');
+            wcNombres = new Set(torneoData.map(v => v.Nombre));
+        } catch(e) { console.warn('No se pudo cargar torneo para filtro WC:', e); }
         document.getElementById('login-status').textContent = `✅ ${dbV.length} asesores cargados`;
         document.getElementById('btn-login').disabled = false;
         document.getElementById('btn-login').textContent = 'ENTRAR';
@@ -1649,12 +1653,13 @@ function getFiltered() {
 }
 
 function getFilteredMetas() {
-    // Solo vendedores con meta en el Excel — para canchas, torneo y premios
+    // Solo vendedores concursantes de Hoja1 (World Cup) — para premios, ranking y gráfica
     const fs = document.getElementById('f-suc').value;
     const fv = document.getElementById('f-vend').value;
     return dbV.filter(v =>
         v.Nombre &&
         parseFloat(v.Meta) > 0 &&
+        (wcNombres.size === 0 || wcNombres.has(v.Nombre)) &&
         (fs === 'TODAS' || v.Sucursal === fs) &&
         (fv === 'TODOS' || v.Nombre === fv)
     );
