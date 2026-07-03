@@ -2149,6 +2149,7 @@ async function loadAceiteG() {
 // ── TORNEO WORLD CUP ──────────────────────────────────────────────────────────
 async function loadTorneo() {
     const pista = document.getElementById('torneo-pista');
+    if (!pista) return; // Sección eliminada
     const leyenda = document.getElementById('torneo-leyenda');
     const faseBadge = document.getElementById('torneo-fase-badge');
     try {
