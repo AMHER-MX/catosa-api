@@ -136,8 +136,8 @@ app.get('/api/ventas-totales', async (req, res) => {
     const fin = hoy.toISOString().split('T')[0];
 
     const result = await db.request()
-      .input('ini', sql.Date, ini)
-      .input('fin', sql.Date, fin)
+      .input('ini', sql.VarChar, ini)
+      .input('fin', sql.VarChar, fin)
       .query(`
         SELECT
           s.NOM_ALMACEN_LIN            AS Sucursal,
@@ -167,8 +167,8 @@ app.get('/api/ventas', async (req, res) => {
     const fin = hoy.toISOString().split('T')[0];
 
     const result = await db.request()
-      .input('ini', sql.Date, ini)
-      .input('fin', sql.Date, fin)
+      .input('ini', sql.VarChar, ini)
+      .input('fin', sql.VarChar, fin)
       .query(`
         SELECT
           s.NOM_VENDEDOR             AS Nombre,
@@ -210,8 +210,8 @@ app.get('/api/clientes', async (req, res) => {
     const vendedor = decodeURIComponent(req.query.vendedor || '');
 
     const result = await db.request()
-      .input('ini',  sql.Date, ini)
-      .input('hoy',  sql.Date, hoyStr)
+      .input('ini',  sql.VarChar, ini)
+      .input('hoy',  sql.VarChar, hoyStr)
       .input('vend', sql.VarChar, `%${vendedor}%`)
       .query(`
         SELECT
@@ -300,7 +300,7 @@ app.get('/api/top-productos', async (req, res) => {
     const vendedor = decodeURIComponent(req.query.vendedor || '');
 
     const result = await db.request()
-      .input('ini',  sql.Date, ini)
+      .input('ini',  sql.VarChar, ini)
       .input('vend', sql.VarChar, `%${vendedor}%`)
       .query(`
         SELECT TOP 10
@@ -376,8 +376,8 @@ app.get('/api/aceite', async (req, res) => {
     const npsLista = Object.keys(ACEITE_NPS).map(n => `'${n}'`).join(',');
 
     const result = await db.request()
-      .input('ini',  sql.Date, ini)
-      .input('fin',  sql.Date, fin)
+      .input('ini',  sql.VarChar, ini)
+      .input('fin',  sql.VarChar, fin)
       .input('vend', sql.VarChar, vendedor)
       .query(`
         SELECT s.ARTICULO, SUM(s.CANTIDAD) AS Cantidad
@@ -438,8 +438,8 @@ app.get('/api/aceite-todos', async (req, res) => {
     const npsLista = Object.keys(ACEITE_NPS).map(n => `'${n}'`).join(',');
 
     const result = await db.request()
-      .input('ini', sql.Date, ini)
-      .input('fin', sql.Date, fin)
+      .input('ini', sql.VarChar, ini)
+      .input('fin', sql.VarChar, fin)
       .query(`
         SELECT s.NOM_VENDEDOR, s.ARTICULO, SUM(s.CANTIDAD) AS Cantidad
         FROM FTSABI_PR s
@@ -570,8 +570,8 @@ app.get('/api/cores', async (req, res) => {
     const fin      = hoy.toISOString().split('T')[0];
 
     const result = await db.request()
-      .input('ini',  sql.Date, ini)
-      .input('fin',  sql.Date, fin)
+      .input('ini',  sql.VarChar, ini)
+      .input('fin',  sql.VarChar, fin)
       .input('vend', sql.VarChar, `%${vendedor}%`)
       .query(`
         SELECT
@@ -774,8 +774,8 @@ app.get('/api/resumen-mes', async (req, res) => {
 
     // ── 1. Ventas del mes anterior (individual) ────────────────────────────
     const rVentas = await db.request()
-      .input('ini',  sql.Date, iniStr)
-      .input('fin',  sql.Date, finStr)
+      .input('ini',  sql.VarChar, iniStr)
+      .input('fin',  sql.VarChar, finStr)
       .input('vend', sql.VarChar, vendedor)
       .query(`
         SELECT SUM(s.IMP_TOTAL_LINEA) AS Ventas
@@ -795,8 +795,8 @@ app.get('/api/resumen-mes', async (req, res) => {
 
     // ── 3. Top 5 productos mes anterior ───────────────────────────────────
     const rProd = await db.request()
-      .input('ini',  sql.Date, iniStr)
-      .input('fin',  sql.Date, finStr)
+      .input('ini',  sql.VarChar, iniStr)
+      .input('fin',  sql.VarChar, finStr)
       .input('vend', sql.VarChar, `%${vendedor}%`)
       .query(`
         SELECT TOP 5
@@ -813,8 +813,8 @@ app.get('/api/resumen-mes', async (req, res) => {
 
     // ── 4. Top 5 clientes mes anterior ────────────────────────────────────
     const rCli = await db.request()
-      .input('ini',  sql.Date, iniStr)
-      .input('fin',  sql.Date, finStr)
+      .input('ini',  sql.VarChar, iniStr)
+      .input('fin',  sql.VarChar, finStr)
       .input('vend', sql.VarChar, `%${vendedor}%`)
       .query(`
         SELECT TOP 5
@@ -833,8 +833,8 @@ app.get('/api/resumen-mes', async (req, res) => {
 
     // ── 5. Días trabajados (días con al menos 1 venta) ────────────────────
     const rDias = await db.request()
-      .input('ini',  sql.Date, iniStr)
-      .input('fin',  sql.Date, finStr)
+      .input('ini',  sql.VarChar, iniStr)
+      .input('fin',  sql.VarChar, finStr)
       .input('vend', sql.VarChar, `%${vendedor}%`)
       .query(`
         SELECT COUNT(DISTINCT CAST(s.FECHA AS DATE)) AS Dias
@@ -849,8 +849,8 @@ app.get('/api/resumen-mes', async (req, res) => {
 
     // ── 6. Ventas mes anterior del equipo (para gerencia) ─────────────────
     const rEquipo = await db.request()
-      .input('ini', sql.Date, iniStr)
-      .input('fin', sql.Date, finStr)
+      .input('ini', sql.VarChar, iniStr)
+      .input('fin', sql.VarChar, finStr)
       .query(`
         SELECT
           s.NOM_VENDEDOR AS Nombre,
@@ -1163,8 +1163,8 @@ app.post('/api/recuperados/registros', async (req, res) => {
       .input('vendedorCodigo', sql.NVarChar(50),   vendedorCodigo || '')
       .input('vendedorNombre', sql.NVarChar(200),  vendedorNombre || '')
       .input('sede',           sql.NVarChar(100),  sede           || '')
-      .input('ultimaCompra',   sql.Date,           ultimaCompra   || null)
-      .input('fechaRec',       sql.Date,           fechaRec)
+      .input('ultimaCompra',   sql.VarChar,           ultimaCompra   || null)
+      .input('fechaRec',       sql.VarChar,           fechaRec)
       .input('monto',          sql.Decimal(18,2),  monto          || 0)
       .input('notas',          sql.NVarChar(500),  notas          || '')
       .query(`
@@ -1225,7 +1225,7 @@ app.get('/api/recuperados/candidatos', async (req, res) => {
   try {
     const pool = await sql.connect(dbConfig);
     const r = await pool.request()
-      .input('fechaCorte', sql.Date, new Date(new Date().setMonth(new Date().getMonth() - meses)))
+      .input('fechaCorte', sql.VarChar, new Date(new Date().setMonth(new Date().getMonth() - meses)))
       .query(`
         SELECT TOP 300
           c.CUENTA,
