@@ -114,6 +114,8 @@ const TIPOS_EXCL    = `'PRESUPUESTO','PRESUPUESTO 8%','Traspaso salida almacen'`
 const TIPO_EXCL_SQL = `(s.DES_TIPO_VENTA NOT IN (${TIPOS_EXCL}) AND s.DES_TIPO_VENTA IS NOT NULL AND LTRIM(RTRIM(s.DES_TIPO_VENTA)) <> '')`;
 const TIPOS_EXCL_ACEITE = `${TIPOS_EXCL},'Venta O.R. Filiales','Venta O.R. Internas','Ventas internas refacciones'`;
 const TIPO_EXCL_ACEITE_SQL = `(s.DES_TIPO_VENTA NOT IN (${TIPOS_EXCL_ACEITE}) AND s.DES_TIPO_VENTA IS NOT NULL AND LTRIM(RTRIM(s.DES_TIPO_VENTA)) <> '')`;
+const TIPOS_EXCL_GRUPO = `${TIPOS_EXCL},'VENTA REMISIONES CORES','VENTA REMISIONES CORES 8%','Ventas internas refacciones','Cancelacion ventas internas refacciones','Venta O.R. Filiales'`;
+const TIPO_EXCL_GRUPO_SQL = `(s.DES_TIPO_VENTA NOT IN (${TIPOS_EXCL_GRUPO}) AND s.DES_TIPO_VENTA IS NOT NULL AND LTRIM(RTRIM(s.DES_TIPO_VENTA)) <> '')`;
 
 // ── HEALTH CHECK ──────────────────────────────────────────────────────────────
 app.get('/', (req, res) => res.json({ status: 'ok', servidor: 'Catosa API' }));
@@ -144,7 +146,7 @@ app.get('/api/ventas-totales', async (req, res) => {
           SUM(s.IMP_TOTAL_LINEA)       AS Ventas
         FROM FTSABI_PR s
         WHERE s.FECHA >= @ini AND s.FECHA <= @fin
-          AND ${TIPO_EXCL_SQL}
+          AND ${TIPO_EXCL_GRUPO_SQL}
           AND s.NOM_ALMACEN_LIN IN (${SUCURSALES})
         GROUP BY s.NOM_ALMACEN_LIN
         ORDER BY Ventas DESC
