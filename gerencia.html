@@ -293,7 +293,7 @@
                     <div class="tv-wc-name">${nombre}</div>
                     <div class="tv-wc-track ${esClasif?'':'noclaif'}">
                         <div class="tv-wc-meta" style="left:92%"></div>
-                        <span class="tv-wc-ball ${ballCls}" style="left:calc(${trackPct}% - 10px)">⚽</span>
+                        <span class="tv-wc-ball ${ballCls}" style="left:calc(${trackPct}% - 24px)"></span>
                     </div>
                     <div class="tv-wc-pct" style="color:${esClasif?'#00ff88':pct>=80?'var(--gold)':'#666'}">${Math.round(pct)}%</div>
                     <div class="tv-wc-badge ${esClasif?'ok':'no'}">${falta}</div>
@@ -686,7 +686,7 @@
                     <div class="tv-wc-name">${nombre}</div>
                     <div class="tv-wc-track ${esClasif?'':'noclaif'}">
                         <div class="tv-wc-meta" style="left:92%"></div>
-                        <span class="tv-wc-ball ${ballCls}" style="left:calc(${trackPct}% - 10px)">⚽</span>
+                        <span class="tv-wc-ball ${ballCls}" style="left:calc(${trackPct}% - 24px)"></span>
                     </div>
                     <div class="tv-wc-pct" style="color:${esClasif?'#00ff88':pct>=80?'var(--gold)':'#666'}">${Math.round(pct)}%</div>
                     <div class="tv-wc-badge ${esClasif?'ok':'no'}">${falta}</div>
@@ -1131,7 +1131,7 @@
         .torneo-lane { height:38px; position:relative; display:flex; align-items:center;
             background:linear-gradient(90deg,#1a1a2e 50%,#16213e 50%); background-size:40px 100%;
             border-bottom:1px solid rgba(255,255,255,0.04); }
-        .torneo-lane.clasificado { background:linear-gradient(90deg,#1a2e1a 50%,#162e1a 50%); background-size:40px 100%; }
+        .torneo-lane.clasificado { background:linear-gradient(180deg,#2a2a2a 0%,#1a1a1a 40%,#222 60%,#2a2a2a 100%); }
         .torneo-lane.no-clasif { opacity:0.45; filter:grayscale(0.6); }
         .torneo-vname { width:130px; font-size:0.52rem; color:rgba(255,255,255,0.85); padding-left:10px;
             white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:600; z-index:6;
@@ -1218,7 +1218,7 @@
 
         
         /* ── PANTALLA TV ─────────────────────────────────── */
-        #tv-overlay { display:none; position:fixed; inset:0; z-index:99999; background:#060608 url('https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/PAPEL%20TAPIZ%20COPA%20DEL%20MUNDO.png') center/cover no-repeat; overflow:hidden; flex-direction:column; }
+        #tv-overlay { display:none; position:fixed; inset:0; z-index:99999; background:#060608 url('https://amher-mx.github.io/catosa-api/SERIE_LT_navigation.jpg') center/cover no-repeat; overflow:hidden; flex-direction:column; }
         #tv-overlay::before { content:''; position:absolute; inset:0; background:rgba(6,6,8,0.82); z-index:0; pointer-events:none; }
         #tv-overlay > * { position:relative; z-index:1; }
         #tv-overlay.open { display:flex; }
@@ -1243,11 +1243,11 @@
         /* Race track World Cup */
         .tv-wc-row { display:flex; align-items:center; gap:8px; margin-bottom:5px; }
         .tv-wc-name { width:110px; font-size:0.68rem; font-weight:700; flex-shrink:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-        .tv-wc-track { flex:1; background:linear-gradient(90deg,#0d1f0d 50%,#0a1a0a 50%); background-size:30px 100%; border-radius:20px; height:24px; position:relative; overflow:hidden; border:1px solid #1a2e1a; }
-        .tv-wc-track.noclaif { background:linear-gradient(90deg,#1a1010 50%,#150d0d 50%); background-size:30px 100%; border:1px solid #2a1a1a; }
+        .tv-wc-track { flex:1; background:linear-gradient(180deg,#2a2a2a 0%,#1a1a1a 40%,#222 60%,#2a2a2a 100%); border-radius:4px; height:28px; position:relative; overflow:hidden; border:1px solid #444; box-shadow:inset 0 2px 4px rgba(0,0,0,0.5); }
+        .tv-wc-track.noclaif { background:linear-gradient(180deg,#1a1a1a 0%,#111 50%,#1a1a1a 100%); border:1px solid #333; }
         .tv-wc-meta { position:absolute; top:0; bottom:0; width:2px; background:rgba(255,215,0,0.5); z-index:2; }
-        .tv-wc-ball { position:absolute; top:50%; transform:translateY(-50%); font-size:16px; transition:left 1.2s cubic-bezier(.4,0,.2,1); z-index:3; filter:drop-shadow(0 0 4px rgba(0,255,136,0.6)); }
-        .tv-wc-ball.noclasif { filter:none; opacity:0.5; }
+        .tv-wc-ball { position:absolute; top:50%; transform:translateY(-50%); width:48px; height:22px; background:url('https://amher-mx.github.io/catosa-api/camioncaja-int.png') left center/contain no-repeat; transition:left 1.2s cubic-bezier(.4,0,.2,1); z-index:3; filter:drop-shadow(0 2px 4px rgba(0,0,0,0.8)); }
+        .tv-wc-ball.noclasif { filter:grayscale(1); opacity:0.4; }
         .tv-wc-pct { width:42px; text-align:right; font-size:0.68rem; font-weight:700; flex-shrink:0; }
         .tv-wc-badge { width:80px; text-align:center; font-size:0.55rem; flex-shrink:0; border-radius:20px; padding:2px 4px; }
         .tv-wc-badge.ok { color:#00ff88; background:rgba(0,255,136,0.1); }
@@ -1344,73 +1344,17 @@
         </div>
     </div>
 
-    <!-- PREMIOS WORLD CUP -->
-    <div class="premios-section">
-        <div class="premios-bg"></div>
-        <div class="premios-content">
-            <div class="premios-title">
-                <img src="https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/LOGO%20CONCURSO%20WC%202026.png"
-                     style="width:80px; height:80px; object-fit:contain; vertical-align:middle;"
-                     alt="WC Logo">
-            </div>
-            <div class="premios-sub">Entrega de premios: 18 de Julio · Un día antes de la Final 🌍</div>
-
-            <!-- Fases -->
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px;">
-                <div style="background:rgba(0,255,136,0.06); border:1px solid rgba(0,255,136,0.3); border-radius:10px; padding:10px; text-align:center;">
-                    <div style="font-size:0.5rem; color:var(--grass); text-transform:uppercase; font-weight:bold; letter-spacing:2px; margin-bottom:4px;">⚽ Fase de Grupos</div>
-                    <div style="font-size:0.65rem; color:#fff; font-weight:bold;">18 Mayo — 30 Junio</div>
-                    <div style="font-size:0.55rem; color:#aaa; margin-top:3px;">ORO (120%) en Mayo o Junio = clasificado</div>
-                </div>
-                <div style="background:rgba(255,215,0,0.06); border:1px solid rgba(255,215,0,0.3); border-radius:10px; padding:10px; text-align:center;">
-                    <div style="font-size:0.5rem; color:var(--gold); text-transform:uppercase; font-weight:bold; letter-spacing:2px; margin-bottom:4px;">🏆 Fase Final</div>
-                    <div style="font-size:0.65rem; color:#fff; font-weight:bold;">1 — 17 Julio</div>
-                    <div style="font-size:0.55rem; color:#aaa; margin-top:3px;">Mayor % de meta en Julio gana</div>
-                </div>
-            </div>
-
-            <!-- Premios -->
-            <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:16px;">
-                <div style="border-radius:12px; overflow:hidden; position:relative; background:rgba(255,215,0,0.08); border:1px solid var(--gold); text-align:center;">
-                    <div style="position:absolute; top:5px; left:5px; background:var(--gold); color:#000; font-size:0.5rem; font-weight:900; padding:2px 6px; border-radius:20px;">🥇 1°</div>
-                    <img src="https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/PREMIO%20SMART%20TV.png" style="width:100%; aspect-ratio:1/1; object-fit:contain; background:#111; display:block;">
-                    <div style="font-size:0.55rem; padding:4px; font-weight:bold; color:var(--gold);">Smart TV 📺 + 🍿</div>
-                </div>
-                <div style="border-radius:12px; overflow:hidden; position:relative; background:rgba(192,192,192,0.08); border:1px solid var(--silver); text-align:center;">
-                    <div style="position:absolute; top:5px; left:5px; background:var(--silver); color:#000; font-size:0.5rem; font-weight:900; padding:2px 6px; border-radius:20px;">🥈 2°</div>
-                    <img src="https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/PREMIO%20JERSEY.png" style="width:100%; aspect-ratio:1/1; object-fit:contain; background:#111; display:block;">
-                    <div style="font-size:0.55rem; padding:4px; font-weight:bold; color:var(--silver);">Jersey 🎽 + 🍿</div>
-                </div>
-                <div style="border-radius:12px; overflow:hidden; position:relative; background:rgba(205,127,50,0.08); border:1px solid var(--bronze); text-align:center;">
-                    <div style="position:absolute; top:5px; left:5px; background:var(--bronze); color:#000; font-size:0.5rem; font-weight:900; padding:2px 6px; border-radius:20px;">🥉 3°</div>
-                    <img src="https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/PREMIO%20HIELERA.png" style="width:100%; aspect-ratio:1/1; object-fit:contain; background:#111; display:block;">
-                    <div style="font-size:0.55rem; padding:4px; font-weight:bold; color:var(--bronze);">Hielera ❄️ + 🍿</div>
-                </div>
-                <div style="border-radius:12px; overflow:hidden; position:relative; background:rgba(255,255,255,0.04); border:1px solid #444; text-align:center;">
-                    <div style="position:absolute; top:5px; left:5px; background:#555; color:#fff; font-size:0.5rem; font-weight:900; padding:2px 6px; border-radius:20px;">4°</div>
-                    <img src="https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/PREMIO%20BALON.png" style="width:100%; aspect-ratio:1/1; object-fit:contain; background:#111; display:block;">
-                    <div style="font-size:0.55rem; padding:4px; font-weight:bold; color:#aaa;">Balón ⚽ + 🍿</div>
-                </div>
-            </div>
-
-            <!-- Tabla estado por asesor -->
-            <div class="premios-table-wrap">
-                <table class="premios-table">
-                    <thead>
-                        <tr>
-                            <th>Asesor</th>
-                            <th class="cores-hide-mobile">Sede</th>
-                            <th>Avance</th>
-                            <th>Nivel</th>
-                            <th>Estado Torneo</th>
-                            <th>Premio Proyectado</th>
-                        </tr>
-                    </thead>
-                    <tbody id="premios-tbody"></tbody>
-                </table>
-            </div>
-            <div style="text-align:center; margin-top:8px; font-size:0.52rem; color:#555;">Empates comparten el mismo premio · Clasificación por localStorage del vendedor</div>
+    <!-- GANADORES WORLD CUP CATOSA 2026 -->
+    <div class="card" style="margin-bottom:14px;">
+        <div class="card-title" style="color:var(--gold);">
+            🏆 GANADORES WORLD CUP CATOSA 2026
         </div>
+        <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:10px; padding:4px 0 8px;">
+            <div id="ganadores-wc-grid">
+                <div class="loading">Cargando ganadores...</div>
+            </div>
+        </div>
+        <div style="text-align:center; margin-top:4px; font-size:0.52rem; color:#555;">Clasificación final · Mayor % de meta en Julio</div>
     </div>
 
     <!-- CANCHA CHALLENGE ACEITE MOTOR -->
@@ -1675,7 +1619,7 @@ async function renderAll() {
     renderTime(lista);
     renderKPIs(lista);
     renderPista(listaMetas);
-    renderPremios(listaMetas);
+    renderGanadoresWC(listaMetas);
     renderRanking(listaMetas);
     renderChart(listaMetas);
 
@@ -1750,6 +1694,52 @@ function renderPista(lista) {
                 <span class="v-pct">${pct.toFixed(0)}%</span>
             </div>`;
     });
+}
+
+function renderGanadoresWC(lista) {
+    const grid = document.getElementById('ganadores-wc-grid');
+    if (!grid) return;
+    const premiosNames = ['','📺 Smart TV','🎽 Jersey','❄️ Hielera','❄️ Hielera','⚽ Balón','⚽ Balón'];
+    const premioImgs  = ['',
+        'https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/PREMIO%20SMART%20TV.png',
+        'https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/PREMIO%20JERSEY.png',
+        'https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/PREMIO%20HIELERA.png',
+        'https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/PREMIO%20HIELERA.png',
+        'https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/PREMIO%20BALON.png',
+        'https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/PREMIO%20BALON.png'
+    ];
+    const medalColors = ['','#FFD700','#C0C0C0','#CD7F32','#CD7F32','#888','#888'];
+    const medalLabel  = ['','🥇 1°','🥈 2°','🥉 3°','🥉 4°','5°','6°'];
+
+    const clasificados = lista
+        .filter(v => { const t = (window.wcTorneoMap||{})[v.Nombre]; return t && t.Clasificado; })
+        .sort((a,b) => (parseFloat(b.Ventas)||0)/(parseFloat(b.Meta)||1) - (parseFloat(a.Ventas)||0)/(parseFloat(a.Meta)||1))
+        .slice(0,6);
+
+    if (!clasificados.length) {
+        grid.innerHTML = '<div style="color:#555;font-size:0.7rem;padding:10px;">Sin clasificados aún</div>';
+        return;
+    }
+
+    grid.style.display = 'grid';
+    grid.style.gridTemplateColumns = 'repeat(auto-fill,minmax(160px,1fr))';
+    grid.style.gap = '10px';
+    grid.style.width = '100%';
+
+    grid.innerHTML = clasificados.map((v, i) => {
+        const pos  = i + 1;
+        const pct  = ((parseFloat(v.Ventas)||0) / (parseFloat(v.Meta)||1) * 100).toFixed(1);
+        const nombre = v.Nombre.split(' ')[0] + ' ' + (v.Nombre.split(' ')[1]||'');
+        return `<div style="border-radius:12px;overflow:hidden;background:rgba(255,255,255,0.04);border:1px solid ${medalColors[pos]};text-align:center;position:relative;">
+            <div style="position:absolute;top:6px;left:6px;background:${medalColors[pos]};color:#000;font-size:0.48rem;font-weight:900;padding:2px 7px;border-radius:20px;">${medalLabel[pos]}</div>
+            <img src="${premioImgs[pos]}" style="width:100%;aspect-ratio:1/1;object-fit:contain;background:#111;display:block;">
+            <div style="padding:6px 4px;">
+                <div style="font-size:0.62rem;font-weight:800;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${nombre}</div>
+                <div style="font-size:0.55rem;color:${medalColors[pos]};font-weight:700;">${premiosNames[pos]}</div>
+                <div style="font-size:0.52rem;color:#aaa;margin-top:2px;">${pct}% de meta</div>
+            </div>
+        </div>`;
+    }).join('');
 }
 
 function renderPremios(lista) {
@@ -2635,7 +2625,7 @@ function renderVisitas() {
                     <div class="tv-wc-name">${nombre}</div>
                     <div class="tv-wc-track ${esClasif?'':'noclaif'}">
                         <div class="tv-wc-meta" style="left:92%"></div>
-                        <span class="tv-wc-ball ${ballCls}" style="left:calc(${trackPct}% - 10px)">⚽</span>
+                        <span class="tv-wc-ball ${ballCls}" style="left:calc(${trackPct}% - 24px)"></span>
                     </div>
                     <div class="tv-wc-pct" style="color:${esClasif?'#00ff88':pct>=80?'var(--gold)':'#666'}">${Math.round(pct)}%</div>
                     <div class="tv-wc-badge ${esClasif?'ok':'no'}">${falta}</div>
@@ -2859,7 +2849,7 @@ function renderVisitas() {
             <!-- Panel izquierdo: World Cup -->
             <div class="tv-panel">
                 <div class="tv-panel-title">
-                    🏆 WORLD CUP CATOSA &nbsp;·&nbsp; <span id="tv-wc-fase">—</span>
+                    🚛 DESEMPEÑO VENTAS &nbsp;·&nbsp; <span id="tv-wc-fase">—</span>
                     &nbsp;&nbsp; 🟢 <span id="tv-wc-clasif" style="color:#00ff88;">—</span> clasificados
                     &nbsp; ⚪ <span id="tv-wc-pend" style="color:#555;">—</span> pendientes
                 </div>
