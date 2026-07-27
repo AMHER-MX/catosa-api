@@ -525,6 +525,43 @@ app.get('/api/ventas-diarias', async (req, res) => {
   }
 });
 
+// ── VENTAS DIARIAS GRUPO/SUCURSAL ────────────────────────────────────────────
+app.get('/api/ventas-diarias-grupo', async (req, res) => {
+  try {
+    const db      = await getPool();
+    const hoy     = new Date();
+    const ini     = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-01`;
+    const fin     = hoy.toISOString().split('T')[0];
+    const sucursal = decodeURIComponent(req.query.sucursal || '');
+
+    const sucFiltro = sucursal && sucursal !== 'TODAS'
+      ? `AND s.NOM_ALMACEN_LIN = '${sucursal.replace(/'/g,"''")}'`
+      : `AND s.NOM_ALMACEN_LIN IN (${SUCURSALES})`;
+
+    const result = await db.request()
+      .input('ini', sql.VarChar, ini)
+      .input('fin', sql.VarChar, fin)
+      .query(`
+        SELECT
+          CAST(RIGHT(LEFT(s.FECHA, 10), 2) AS INT) AS Dia,
+          SUM(s.IMP_TOTAL_LINEA)                   AS Venta
+        FROM FTSABI_PR s
+        WHERE s.FECHA >= @ini AND s.FECHA <= @fin
+          AND ${TIPO_EXCL_GRUPO_SQL}
+          ${sucFiltro}
+        GROUP BY RIGHT(LEFT(s.FECHA, 10), 2)
+        ORDER BY Dia ASC
+      `);
+
+    const dias = {};
+    result.recordset.forEach(r => { dias[r.Dia] = parseFloat(r.Venta) || 0; });
+    res.json(dias);
+  } catch (err) {
+    console.error('Error /api/ventas-diarias-grupo:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ── CORES PENDIENTES DE PAGO (FTPDCBI_PR sin FEC_CANCELACION) ─────────────────
 app.get('/api/cores-pendientes', async (req, res) => {
   try {
