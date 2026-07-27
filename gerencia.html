@@ -1247,6 +1247,9 @@
         .tv-controls select { background:#111; border:1px solid #2a2a2a; color:#888; border-radius:8px; padding:4px 8px; font-size:10px; cursor:pointer; }
         .tv-controls button { background:none; border:1px solid #2a2a2a; color:#666; padding:4px 12px; border-radius:8px; cursor:pointer; font-size:10px; }
         .tv-controls button:hover { border-color:var(--gold); color:var(--gold); }
+                .vd-btn { background:#1a1a1a; border:1px solid #333; color:#888; border-radius:20px; padding:3px 10px; font-size:0.55rem; cursor:pointer; font-family:inherit; transition:all 0.2s; }
+        .vd-btn:hover { border-color:#4a9eff; color:#4a9eff; }
+        .vd-btn.active { background:#4a9eff22; border-color:#4a9eff; color:#4a9eff; font-weight:700; }
         .tv-countdown-mes { display:flex; flex-direction:column; align-items:flex-end; line-height:1; }
         .tv-countdown-mes .label { font-size:0.6rem; color:#ff4444; letter-spacing:2px; text-transform:uppercase; font-weight:700; }
         .tv-countdown-mes .timer { font-family:'Syne',sans-serif; font-size:1.7rem; font-weight:900; color:#ff4444; letter-spacing:1px; white-space:nowrap; text-shadow: 0 0 20px rgba(255,68,68,0.6), 0 0 40px rgba(255,68,68,0.3); }
@@ -1374,15 +1377,22 @@
         <div style="text-align:center; margin-top:4px; font-size:0.52rem; color:#555;">Clasificación final · Mayor % de meta en Julio</div>
     </div>
 
-    <!-- PROYECCIÓN DE CIERRE POR SUCURSAL -->
+    <!-- GRÁFICA VENTAS DIARIAS -->
     <div class="card" style="margin-bottom:14px;">
-        <div class="card-title" style="color:#4a9eff;">
-            📈 PROYECCIÓN DE CIERRE — MES ACTUAL
-            <span id="proy-dias" style="font-size:0.52rem;color:#555;font-weight:400;margin-left:8px;"></span>
+        <div class="card-title" style="color:#4a9eff;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+            <span>📊 VENTAS DIARIAS — MES ACTUAL</span>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;" id="vd-filtros">
+                <button onclick="cargarVentasDiarias('TODAS')" class="vd-btn active" data-suc="TODAS">Grupo</button>
+                <button onclick="cargarVentasDiarias('TORREON')" class="vd-btn" data-suc="TORREON">Torreón</button>
+                <button onclick="cargarVentasDiarias('GOMEZ PALACIO')" class="vd-btn" data-suc="GOMEZ PALACIO">GP</button>
+                <button onclick="cargarVentasDiarias('MONCLOVA')" class="vd-btn" data-suc="MONCLOVA">Monclova</button>
+                <button onclick="cargarVentasDiarias('PIEDRAS NEGRAS')" class="vd-btn" data-suc="PIEDRAS NEGRAS">PN</button>
+            </div>
         </div>
-        <div id="proy-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;padding:4px 0 8px;">
-            <div class="loading">Calculando...</div>
+        <div id="vd-chart" style="width:100%;height:180px;position:relative;margin-top:8px;">
+            <div class="loading">Cargando...</div>
         </div>
+        <div id="vd-totales" style="display:flex;gap:16px;margin-top:8px;font-size:0.58rem;color:#888;flex-wrap:wrap;"></div>
     </div>
 
     <!-- CANCHA CHALLENGE ACEITE MOTOR -->
@@ -1652,7 +1662,7 @@ async function renderAll() {
     renderKPIs(lista);
     renderPista(listaMetas);
     renderGanadoresWC(listaMetas);
-    renderProyeccion();
+    cargarVentasDiarias('TODAS');
     renderRanking(listaMetas);
     renderChart(listaMetas);
 
@@ -1729,59 +1739,56 @@ function renderPista(lista) {
     });
 }
 
-function renderProyeccion() {
-    const grid = document.getElementById('proy-grid');
-    const diasLabel = document.getElementById('proy-dias');
-    if (!grid) return;
-
-    const hoy = new Date();
-    const anio = hoy.getFullYear();
-    const mes  = hoy.getMonth(); // 0-indexed
-    const diaHoy = hoy.getDate();
-
-    // Días hábiles transcurridos (lun-sab) desde día 1 hasta hoy
-    let diasTrans = 0, diasRest = 0;
-    const ultimoDia = new Date(anio, mes + 1, 0).getDate();
-    for (let d = 1; d <= ultimoDia; d++) {
-        const dow = new Date(anio, mes, d).getDay(); // 0=dom
-        if (dow === 0) continue; // excluir domingos
-        if (d <= diaHoy) diasTrans++;
-        else diasRest++;
-    }
-
-    diasLabel.textContent = `${diasTrans} días háb. transcurridos · ${diasRest} restantes`;
-
-    // Calcular por sucursal
-    const SUCURSALES_ORDER = ['TORREON','GOMEZ PALACIO','MONCLOVA','PIEDRAS NEGRAS'];
-    const sucData = {};
-    SUCURSALES_ORDER.forEach(s => { sucData[s] = { ventas: 0, meta: 0 }; });
-
-    dbV.forEach(v => {
-        const suc = v.Sucursal;
-        if (!sucData[suc]) return;
-        sucData[suc].ventas += parseFloat(v.Ventas) || 0;
-        sucData[suc].meta   += parseFloat(v.Meta)   || 0;
+function cargarVentasDiarias(suc) {
+    // Update active button
+    document.querySelectorAll('.vd-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.suc === suc);
     });
+    const chart = document.getElementById('vd-chart');
+    const totDiv = document.getElementById('vd-totales');
+    chart.innerHTML = '<div class="loading">Cargando...</div>';
 
-    grid.innerHTML = SUCURSALES_ORDER.map(suc => {
-        const { ventas, meta } = sucData[suc];
-        if (!meta) return '';
-        const promDiario  = diasTrans > 0 ? ventas / diasTrans : 0;
-        const proyeccion  = ventas + (promDiario * diasRest);
-        const pctActual   = (ventas / meta) * 100;
-        const pctProy     = (proyeccion / meta) * 100;
-        const color       = pctProy >= 120 ? 'var(--gold)' : pctProy >= 100 ? 'var(--grass)' : pctProy >= 75 ? 'var(--bronze)' : '#f44';
-        const fmtM = n => '$' + (n/1000000).toFixed(2) + 'M';
-        return `<div style="background:rgba(255,255,255,0.04);border:1px solid #222;border-radius:12px;padding:12px;">
-            <div style="font-size:0.55rem;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">${suc}</div>
-            <div style="font-size:1.1rem;font-weight:900;color:${color};">${Math.round(pctProy)}%</div>
-            <div style="font-size:0.55rem;color:#aaa;margin-top:2px;">Proyección: <span style="color:#fff;font-weight:700;">${fmtM(proyeccion)}</span></div>
-            <div style="font-size:0.52rem;color:#666;">Meta: ${fmtM(meta)} · Actual: ${fmtM(ventas)} (${Math.round(pctActual)}%)</div>
-            <div style="margin-top:6px;background:#111;border-radius:4px;height:6px;overflow:hidden;">
-                <div style="height:100%;background:${color};width:${Math.min(pctProy,100)}%;transition:width 1s;border-radius:4px;"></div>
-            </div>
-        </div>`;
-    }).join('');
+    apiFetch(`/api/ventas-diarias-grupo?sucursal=${encodeURIComponent(suc)}`)
+        .then(dias => {
+            const hoy = new Date();
+            const ultimoDia = new Date(hoy.getFullYear(), hoy.getMonth()+1, 0).getDate();
+            const diaHoy = hoy.getDate();
+            // Últimos 15 días hábiles (hasta hoy)
+            const diasHabiles = [];
+            for (let d = 1; d <= diaHoy; d++) {
+                const dow = new Date(hoy.getFullYear(), hoy.getMonth(), d).getDay();
+                if (dow !== 0) diasHabiles.push(d);
+            }
+            const ultimos15 = diasHabiles.slice(-15);
+
+            const valores = ultimos15.map(d => dias[d] || 0);
+            const maxVal  = Math.max(...valores, 1);
+            const total   = valores.reduce((a,b) => a+b, 0);
+            const promedio = total / (valores.filter(v=>v>0).length || 1);
+
+            const fmtK = n => n >= 1000000 ? '$'+(n/1000000).toFixed(1)+'M' : '$'+(n/1000).toFixed(0)+'K';
+
+            chart.innerHTML = `<div style="display:flex;align-items:flex-end;gap:3px;height:100%;padding-bottom:20px;position:relative;">
+                ${ultimos15.map((d, i) => {
+                    const v = valores[i];
+                    const h = Math.max((v / maxVal) * 100, v > 0 ? 3 : 0);
+                    const esHoy = d === diaHoy;
+                    const color = esHoy ? '#4a9eff' : v >= promedio ? 'var(--grass)' : 'var(--bronze)';
+                    return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;">
+                        <div style="font-size:0.42rem;color:#666;margin-bottom:2px;">${v>0?fmtK(v):''}</div>
+                        <div style="width:100%;background:${color};height:${h}%;border-radius:3px 3px 0 0;min-height:${v>0?'3px':'1px'};opacity:${esHoy?1:0.8};" title="Día ${d}: ${fmtK(v)}"></div>
+                        <div style="font-size:0.42rem;color:${esHoy?'#4a9eff':'#555'};margin-top:3px;font-weight:${esHoy?'bold':'normal'};">${d}</div>
+                    </div>`;
+                }).join('')}
+                <div style="position:absolute;left:0;right:0;border-top:1px dashed #333;bottom:20px;pointer-events:none;"></div>
+            </div>`;
+
+            totDiv.innerHTML = `
+                <span>Total acumulado: <strong style="color:#fff;">${fmtK(total)}</strong></span>
+                <span>Promedio diario: <strong style="color:var(--gold);">${fmtK(promedio)}</strong></span>
+                <span>Días con venta: <strong style="color:#aaa;">${valores.filter(v=>v>0).length}</strong></span>`;
+        })
+        .catch(e => { chart.innerHTML = `<div class="error-msg">❌ ${e.message}</div>`; });
 }
 
 function renderGanadoresWC(lista) {
