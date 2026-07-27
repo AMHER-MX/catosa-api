@@ -269,7 +269,7 @@
         .line-meta { position: absolute; top: 0; bottom: 0; width: 1px; opacity: 0.5; z-index: 1; }
         .l-75 { left: 62.5%; border-left: 1px dashed var(--bronze); }
         .l-110 { left: 91.6%; border-left: 1px dashed var(--silver); }
-        .truck { position: absolute; bottom: 4px; width: 32px; height: 32px; background-image: url('https://cdn-icons-png.flaticon.com/512/53/53283.png'); background-size: contain; background-repeat: no-repeat; filter: invert(1); transition: 3s cubic-bezier(0.2,0,0.2,1); z-index: 10; }
+        .truck { position: absolute; bottom: 2px; width: 52px; height: 24px; background: url('https://amher-mx.github.io/catosa-api/camioncaja-int.png') left center/contain no-repeat; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8)); transition: 3s cubic-bezier(0.2,0,0.2,1); z-index: 10; }
         .truck.oro { filter: drop-shadow(0 0 12px var(--gold)); }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
@@ -1168,7 +1168,7 @@
         } else if (pct >= 75) {
             nivel = 'BRONCE'; color = 'var(--bronze)'; emoji = '🥉'; fInd = canal === 'MOSTRADOR' ? 1.31 : 1.50;
         } else {
-            nivel = 'FUERA'; color = 'var(--red)'; emoji = '⚽'; fInd = 1.10;
+            nivel = 'FUERA'; color = 'var(--red)'; emoji = '🚛'; fInd = 1.10;
         }
 
         // Bono sucursal
