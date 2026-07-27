@@ -1374,6 +1374,17 @@
         <div style="text-align:center; margin-top:4px; font-size:0.52rem; color:#555;">Clasificación final · Mayor % de meta en Julio</div>
     </div>
 
+    <!-- PROYECCIÓN DE CIERRE POR SUCURSAL -->
+    <div class="card" style="margin-bottom:14px;">
+        <div class="card-title" style="color:#4a9eff;">
+            📈 PROYECCIÓN DE CIERRE — MES ACTUAL
+            <span id="proy-dias" style="font-size:0.52rem;color:#555;font-weight:400;margin-left:8px;"></span>
+        </div>
+        <div id="proy-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;padding:4px 0 8px;">
+            <div class="loading">Calculando...</div>
+        </div>
+    </div>
+
     <!-- CANCHA CHALLENGE ACEITE MOTOR -->
     <div class="card" style="margin-bottom:14px; min-height:auto;">
         <div class="card-title" style="color:var(--purple); display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
@@ -1641,6 +1652,7 @@ async function renderAll() {
     renderKPIs(lista);
     renderPista(listaMetas);
     renderGanadoresWC(listaMetas);
+    renderProyeccion();
     renderRanking(listaMetas);
     renderChart(listaMetas);
 
@@ -1715,6 +1727,61 @@ function renderPista(lista) {
                 <span class="v-pct">${pct.toFixed(0)}%</span>
             </div>`;
     });
+}
+
+function renderProyeccion() {
+    const grid = document.getElementById('proy-grid');
+    const diasLabel = document.getElementById('proy-dias');
+    if (!grid) return;
+
+    const hoy = new Date();
+    const anio = hoy.getFullYear();
+    const mes  = hoy.getMonth(); // 0-indexed
+    const diaHoy = hoy.getDate();
+
+    // Días hábiles transcurridos (lun-sab) desde día 1 hasta hoy
+    let diasTrans = 0, diasRest = 0;
+    const ultimoDia = new Date(anio, mes + 1, 0).getDate();
+    for (let d = 1; d <= ultimoDia; d++) {
+        const dow = new Date(anio, mes, d).getDay(); // 0=dom
+        if (dow === 0) continue; // excluir domingos
+        if (d <= diaHoy) diasTrans++;
+        else diasRest++;
+    }
+
+    diasLabel.textContent = `${diasTrans} días háb. transcurridos · ${diasRest} restantes`;
+
+    // Calcular por sucursal
+    const SUCURSALES_ORDER = ['TORREON','GOMEZ PALACIO','MONCLOVA','PIEDRAS NEGRAS'];
+    const sucData = {};
+    SUCURSALES_ORDER.forEach(s => { sucData[s] = { ventas: 0, meta: 0 }; });
+
+    dbV.forEach(v => {
+        const suc = v.Sucursal;
+        if (!sucData[suc]) return;
+        sucData[suc].ventas += parseFloat(v.Ventas) || 0;
+        sucData[suc].meta   += parseFloat(v.Meta)   || 0;
+    });
+
+    grid.innerHTML = SUCURSALES_ORDER.map(suc => {
+        const { ventas, meta } = sucData[suc];
+        if (!meta) return '';
+        const promDiario  = diasTrans > 0 ? ventas / diasTrans : 0;
+        const proyeccion  = ventas + (promDiario * diasRest);
+        const pctActual   = (ventas / meta) * 100;
+        const pctProy     = (proyeccion / meta) * 100;
+        const color       = pctProy >= 120 ? 'var(--gold)' : pctProy >= 100 ? 'var(--grass)' : pctProy >= 75 ? 'var(--bronze)' : '#f44';
+        const fmtM = n => '$' + (n/1000000).toFixed(2) + 'M';
+        return `<div style="background:rgba(255,255,255,0.04);border:1px solid #222;border-radius:12px;padding:12px;">
+            <div style="font-size:0.55rem;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">${suc}</div>
+            <div style="font-size:1.1rem;font-weight:900;color:${color};">${Math.round(pctProy)}%</div>
+            <div style="font-size:0.55rem;color:#aaa;margin-top:2px;">Proyección: <span style="color:#fff;font-weight:700;">${fmtM(proyeccion)}</span></div>
+            <div style="font-size:0.52rem;color:#666;">Meta: ${fmtM(meta)} · Actual: ${fmtM(ventas)} (${Math.round(pctActual)}%)</div>
+            <div style="margin-top:6px;background:#111;border-radius:4px;height:6px;overflow:hidden;">
+                <div style="height:100%;background:${color};width:${Math.min(pctProy,100)}%;transition:width 1s;border-radius:4px;"></div>
+            </div>
+        </div>`;
+    }).join('');
 }
 
 function renderGanadoresWC(lista) {
