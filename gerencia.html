@@ -283,20 +283,25 @@
                 enFinal ? '🏆 FASE FINAL' : mes === 6 ? '⚽ FASE GRUPOS — JUNIO' : '⚽ FASE GRUPOS — MAYO';
 
             container.innerHTML = sorted.map(v => {
-                const pct      = Math.min(getMetrica(v), 150);
-                const trackPct = Math.min(98, (pct / 120) * 92); // 92% = posición de la meta
+                const pct      = Math.min(v.PctJulio, 150);
+                const trackPct = Math.min(98, (pct / 120) * 92);
                 const esClasif = v.Clasificado;
                 const nombre   = v.Nombre.split(' ').slice(0,2).join(' ');
-                const falta    = esClasif ? '✅ CLASIFICADO' : `${Math.round(pct)}% · faltan ${Math.round(120-pct)}%`;
                 const ballCls  = esClasif ? '' : 'noclasif';
+                // Medallero de comisiones
+                let nivel, nColor;
+                if      (pct >= 120) { nivel = '🥇 ORO';    nColor = 'var(--gold)'; }
+                else if (pct >= 110) { nivel = '🥈 PLATA';  nColor = 'var(--silver)'; }
+                else if (pct >= 75)  { nivel = '🥉 BRONCE'; nColor = 'var(--bronze)'; }
+                else                 { nivel = `${Math.round(pct)}% · faltan ${Math.round(120-pct)}%`; nColor = '#555'; }
                 return `<div class="tv-wc-row">
                     <div class="tv-wc-name">${nombre}</div>
                     <div class="tv-wc-track ${esClasif?'':'noclaif'}">
                         <div class="tv-wc-meta" style="left:92%"></div>
                         <span class="tv-wc-ball ${ballCls}" style="left:calc(${trackPct}% - 24px)"></span>
                     </div>
-                    <div class="tv-wc-pct" style="color:${esClasif?'#00ff88':pct>=80?'var(--gold)':'#666'}">${Math.round(pct)}%</div>
-                    <div class="tv-wc-badge ${esClasif?'ok':'no'}">${falta}</div>
+                    <div class="tv-wc-pct" style="color:${pct>=120?'var(--gold)':pct>=110?'var(--silver)':pct>=75?'var(--bronze)':'#666'}">${Math.round(pct)}%</div>
+                    <div class="tv-wc-badge" style="color:${nColor};border-color:${nColor};background:${nColor}22;">${nivel}</div>
                 </div>`;
             }).join('');
         } catch(e) {
@@ -676,20 +681,25 @@
                 enFinal ? '🏆 FASE FINAL' : mes === 6 ? '⚽ FASE GRUPOS — JUNIO' : '⚽ FASE GRUPOS — MAYO';
 
             container.innerHTML = sorted.map(v => {
-                const pct      = Math.min(getMetrica(v), 150);
-                const trackPct = Math.min(98, (pct / 120) * 92); // 92% = posición de la meta
+                const pct      = Math.min(v.PctJulio, 150);
+                const trackPct = Math.min(98, (pct / 120) * 92);
                 const esClasif = v.Clasificado;
                 const nombre   = v.Nombre.split(' ').slice(0,2).join(' ');
-                const falta    = esClasif ? '✅ CLASIFICADO' : `${Math.round(pct)}% · faltan ${Math.round(120-pct)}%`;
                 const ballCls  = esClasif ? '' : 'noclasif';
+                // Medallero de comisiones
+                let nivel, nColor;
+                if      (pct >= 120) { nivel = '🥇 ORO';    nColor = 'var(--gold)'; }
+                else if (pct >= 110) { nivel = '🥈 PLATA';  nColor = 'var(--silver)'; }
+                else if (pct >= 75)  { nivel = '🥉 BRONCE'; nColor = 'var(--bronze)'; }
+                else                 { nivel = `${Math.round(pct)}% · faltan ${Math.round(120-pct)}%`; nColor = '#555'; }
                 return `<div class="tv-wc-row">
                     <div class="tv-wc-name">${nombre}</div>
                     <div class="tv-wc-track ${esClasif?'':'noclaif'}">
                         <div class="tv-wc-meta" style="left:92%"></div>
                         <span class="tv-wc-ball ${ballCls}" style="left:calc(${trackPct}% - 24px)"></span>
                     </div>
-                    <div class="tv-wc-pct" style="color:${esClasif?'#00ff88':pct>=80?'var(--gold)':'#666'}">${Math.round(pct)}%</div>
-                    <div class="tv-wc-badge ${esClasif?'ok':'no'}">${falta}</div>
+                    <div class="tv-wc-pct" style="color:${pct>=120?'var(--gold)':pct>=110?'var(--silver)':pct>=75?'var(--bronze)':'#666'}">${Math.round(pct)}%</div>
+                    <div class="tv-wc-badge" style="color:${nColor};border-color:${nColor};background:${nColor}22;">${nivel}</div>
                 </div>`;
             }).join('');
         } catch(e) {
@@ -2618,20 +2628,25 @@ function renderVisitas() {
                 enFinal ? '🏆 FASE FINAL' : mes === 6 ? '⚽ FASE GRUPOS — JUNIO' : '⚽ FASE GRUPOS — MAYO';
 
             container.innerHTML = sorted.map(v => {
-                const pct      = Math.min(getMetrica(v), 150);
-                const trackPct = Math.min(98, (pct / 120) * 92); // 92% = posición de la meta
+                const pct      = Math.min(v.PctJulio, 150);
+                const trackPct = Math.min(98, (pct / 120) * 92);
                 const esClasif = v.Clasificado;
                 const nombre   = v.Nombre.split(' ').slice(0,2).join(' ');
-                const falta    = esClasif ? '✅ CLASIFICADO' : `${Math.round(pct)}% · faltan ${Math.round(120-pct)}%`;
                 const ballCls  = esClasif ? '' : 'noclasif';
+                // Medallero de comisiones
+                let nivel, nColor;
+                if      (pct >= 120) { nivel = '🥇 ORO';    nColor = 'var(--gold)'; }
+                else if (pct >= 110) { nivel = '🥈 PLATA';  nColor = 'var(--silver)'; }
+                else if (pct >= 75)  { nivel = '🥉 BRONCE'; nColor = 'var(--bronze)'; }
+                else                 { nivel = `${Math.round(pct)}% · faltan ${Math.round(120-pct)}%`; nColor = '#555'; }
                 return `<div class="tv-wc-row">
                     <div class="tv-wc-name">${nombre}</div>
                     <div class="tv-wc-track ${esClasif?'':'noclaif'}">
                         <div class="tv-wc-meta" style="left:92%"></div>
                         <span class="tv-wc-ball ${ballCls}" style="left:calc(${trackPct}% - 24px)"></span>
                     </div>
-                    <div class="tv-wc-pct" style="color:${esClasif?'#00ff88':pct>=80?'var(--gold)':'#666'}">${Math.round(pct)}%</div>
-                    <div class="tv-wc-badge ${esClasif?'ok':'no'}">${falta}</div>
+                    <div class="tv-wc-pct" style="color:${pct>=120?'var(--gold)':pct>=110?'var(--silver)':pct>=75?'var(--bronze)':'#666'}">${Math.round(pct)}%</div>
+                    <div class="tv-wc-badge" style="color:${nColor};border-color:${nColor};background:${nColor}22;">${nivel}</div>
                 </div>`;
             }).join('');
         } catch(e) {
