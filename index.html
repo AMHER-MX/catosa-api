@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Catosa GP - World Cup Edition v2026</title>
+    <title>Catosa GP - Performance 2026</title>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js">
     // ── RESUMEN MES ANTERIOR ──────────────────────────────────────────────
     const fM2 = n => new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN',minimumFractionDigits:0}).format(n||0);
@@ -231,7 +231,7 @@
         /* LOGIN */
         #login-screen { 
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: #000 url('https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/PAPEL%20TAPIZ%20COPA%20DEL%20MUNDO.png') center/cover no-repeat;
+            background: #000 url('https://amher-mx.github.io/catosa-api/SERIE_LT_navigation.jpg') center/cover no-repeat;
             z-index: 1000; display: flex; align-items: center; justify-content: center; 
         }
         #login-screen::before {
@@ -263,14 +263,14 @@
 
         /* CANCHAS */
         .race-label { font-size: 0.65rem; color: var(--gold); font-weight: bold; text-transform: uppercase; margin: 12px 0 4px 5px; display: block; }
-        .race-track { background: linear-gradient(90deg, var(--pitch) 50%, var(--pitch-light) 50%); background-size: 40px 100%; border: 2px solid #fff; border-radius: 8px; height: 42px; position: relative; overflow: hidden; margin-bottom: 8px; }
+        .race-track { background: linear-gradient(180deg,#2a2a2a 0%,#1a1a1a 40%,#222 60%,#2a2a2a 100%); border: 1px solid #444; border-radius: 8px; height: 42px; position: relative; overflow: hidden; margin-bottom: 8px; }
         .race-track::before { content: ""; position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: rgba(255,255,255,0.3); }
         .porteria { position: absolute; right: 0; top: 0; bottom: 0; width: 30px; background: rgba(255,255,255,0.1); border-left: 2px dashed #fff; display: flex; align-items: center; justify-content: center; font-size: 1rem; }
         .line-meta { position: absolute; top: 0; bottom: 0; width: 1px; opacity: 0.5; z-index: 1; }
         .l-75 { left: 62.5%; border-left: 1px dashed var(--bronze); }
         .l-110 { left: 91.6%; border-left: 1px dashed var(--silver); }
         .truck { position: absolute; bottom: 4px; width: 32px; height: 32px; background-image: url('https://cdn-icons-png.flaticon.com/512/53/53283.png'); background-size: contain; background-repeat: no-repeat; filter: invert(1); transition: 3s cubic-bezier(0.2,0,0.2,1); z-index: 10; }
-        .truck.oro { filter: drop-shadow(0 0 12px var(--gold)) sepia(1) saturate(10); animation: spin 2s infinite linear; }
+        .truck.oro { filter: drop-shadow(0 0 12px var(--gold)); }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
         /* SEMÁFORO */
@@ -453,7 +453,7 @@
 
     <span class="race-label">🏆 MI DESEMPEÑO INDIVIDUAL (120%)</span>
     <div class="race-track">
-        <div class="porteria">🥅</div>
+        <div class="porteria">🏁</div>
         <div class="line-meta l-75"></div><div class="line-meta l-110"></div>
         <div id="truck-ind" class="truck"></div>
     </div>
@@ -464,7 +464,7 @@
 
     <span class="race-label" id="suc-label">🏟️ DESEMPEÑO SUCURSAL</span>
     <div class="race-track">
-        <div class="porteria">🥅</div>
+        <div class="porteria">🏁</div>
         <div class="line-meta l-75"></div><div class="line-meta l-110"></div>
         <div id="truck-grp" class="truck" style="filter:invert(1) hue-rotate(150deg);"></div>
     </div>
@@ -474,7 +474,7 @@
     </div>
 
     <span class="race-label" id="prov-label" style="color:var(--purple)">🌟 CHALLENGE ACEITE MOTOR</span>
-    <div class="race-track" style="background:linear-gradient(90deg,#2e1065 50%,#4c1d95 50%); background-size:40px 100%; border-color:var(--purple);">
+    <div class="race-track" style="background:linear-gradient(180deg,#2a2a2a 0%,#1a1a1a 40%,#222 60%,#2a2a2a 100%); border-color:#555;">
         <div class="porteria" style="border-left-color:var(--purple);">🏆</div>
         <div class="line-meta" style="left:50%; border-left:1px dashed var(--purple);"></div>
         <div id="truck-prov" class="truck" style="filter:invert(1) hue-rotate(280deg);"></div>
@@ -482,61 +482,6 @@
     <div style="display:flex; justify-content:space-between; padding:0 4px; margin-bottom:4px;">
         <span style="font-size:0.6rem; color:#555;">Promedio 2025: <b id="label-base-aceite" style="color:var(--purple);">—</b></span>
         <span style="font-size:0.6rem; color:#555;">Este mes: <b id="label-litros-mes" style="color:var(--purple);">—</b></span>
-    </div>
-
-    <!-- ══ SECCIÓN PREMIOS WORLD CUP ══════════════════════════════════════ -->
-    <div id="premios-section" style="position:relative; border-radius:20px; overflow:hidden; margin-bottom:15px; border:2px solid var(--gold); box-shadow:0 0 40px rgba(255,215,0,0.15);">
-        <div style="position:absolute; inset:0; background:url('https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/PAPEL%20TAPIZ%20COPA%20DEL%20MUNDO.png') center/cover no-repeat; filter:brightness(0.25);"></div>
-        <div style="position:relative; padding:20px;">
-            <div style="text-align:center; margin-bottom:16px;">
-                <div style="font-size:0.55rem; color:var(--gold); letter-spacing:4px; text-transform:uppercase; margin-bottom:4px;">TORNEO</div>
-                <div style="font-size:1.8rem; font-weight:900; color:var(--gold); text-shadow:0 0 20px rgba(255,215,0,0.8); letter-spacing:4px;">🏆 WORLD CUP CATOSA 🏆</div>
-                <div style="font-size:0.6rem; color:#aaa; margin-top:4px;">Entrega de premios: <b style="color:var(--gold);">18 de Julio 2026</b> · Un día antes de la Final 🌍</div>
-            </div>
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px;">
-                <div style="background:rgba(0,255,136,0.06); border:1px solid rgba(0,255,136,0.3); border-radius:12px; padding:12px; text-align:center;">
-                    <div style="font-size:0.5rem; color:var(--grass); text-transform:uppercase; font-weight:bold; letter-spacing:2px; margin-bottom:6px;">⚽ FASE DE GRUPOS</div>
-                    <div style="font-size:0.7rem; color:#fff; font-weight:bold;">18 Mayo — 30 Junio</div>
-                    <div style="font-size:0.6rem; color:#aaa; margin-top:4px;">Llega al <b style="color:var(--gold);">ORO (120%)</b> en Mayo o Junio para clasificar</div>
-                </div>
-                <div style="background:rgba(255,215,0,0.06); border:1px solid rgba(255,215,0,0.3); border-radius:12px; padding:12px; text-align:center;">
-                    <div style="font-size:0.5rem; color:var(--gold); text-transform:uppercase; font-weight:bold; letter-spacing:2px; margin-bottom:6px;">🏆 FASE FINAL</div>
-                    <div style="font-size:0.7rem; color:#fff; font-weight:bold;">1 — 17 Julio</div>
-                    <div style="font-size:0.6rem; color:#aaa; margin-top:4px;">Solo clasificados. El <b style="color:var(--gold);">mayor % de meta en Julio</b> gana</div>
-                </div>
-            </div>
-            <div id="wc-estado" style="text-align:center; margin-bottom:16px; padding:12px; background:rgba(0,0,0,0.3); border-radius:12px;">
-                <div style="font-size:0.55rem; color:#888; text-transform:uppercase; margin-bottom:6px;">TU ESTADO</div>
-                <span id="wc-badge" class="wc-fase-badge wc-pendiente">⏳ CARGANDO...</span>
-                <div id="wc-estado-txt" style="font-size:0.65rem; color:#aaa; margin-top:8px;"></div>
-            </div>
-            <div style="border-top:1px solid rgba(255,255,255,0.1); padding-top:14px;">
-                <div style="font-size:0.55rem; color:var(--blue); text-transform:uppercase; font-weight:bold; letter-spacing:2px; margin-bottom:10px; text-align:center;">🎁 PREMIOS FINALES + COMBO BOTANAS 🍿</div>
-                <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:8px;">
-                    <div style="border-radius:14px; overflow:hidden; position:relative; background:rgba(255,215,0,0.08); border:1px solid var(--gold);">
-                        <div style="position:absolute; top:6px; left:6px; background:var(--gold); color:#000; font-size:0.55rem; font-weight:900; padding:2px 8px; border-radius:20px; z-index:1;">🥇 1°</div>
-                        <img src="https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/PREMIO%20SMART%20TV.png" style="width:100%; aspect-ratio:1/1; object-fit:contain; background:#111; display:block;" alt="Smart TV">
-                        <div style="font-size:0.6rem; text-align:center; padding:5px 4px; font-weight:bold; color:var(--gold);">Smart TV 📺</div>
-                    </div>
-                    <div style="border-radius:14px; overflow:hidden; position:relative; background:rgba(192,192,192,0.08); border:1px solid var(--silver);">
-                        <div style="position:absolute; top:6px; left:6px; background:var(--silver); color:#000; font-size:0.55rem; font-weight:900; padding:2px 8px; border-radius:20px; z-index:1;">🥈 2°</div>
-                        <img src="https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/PREMIO%20JERSEY.png" style="width:100%; aspect-ratio:1/1; object-fit:contain; background:#111; display:block;" alt="Jersey">
-                        <div style="font-size:0.6rem; text-align:center; padding:5px 4px; font-weight:bold; color:var(--silver);">Jersey 🎽</div>
-                    </div>
-                    <div style="border-radius:14px; overflow:hidden; position:relative; background:rgba(205,127,50,0.08); border:1px solid var(--bronze);">
-                        <div style="position:absolute; top:6px; left:6px; background:var(--bronze); color:#000; font-size:0.55rem; font-weight:900; padding:2px 8px; border-radius:20px; z-index:1;">🥉 3°</div>
-                        <img src="https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/PREMIO%20HIELERA.png" style="width:100%; aspect-ratio:1/1; object-fit:contain; background:#111; display:block;" alt="Hielera">
-                        <div style="font-size:0.6rem; text-align:center; padding:5px 4px; font-weight:bold; color:var(--bronze);">Hielera ❄️</div>
-                    </div>
-                    <div style="border-radius:14px; overflow:hidden; position:relative; background:rgba(255,255,255,0.04); border:1px solid #444;">
-                        <div style="position:absolute; top:6px; left:6px; background:#555; color:#fff; font-size:0.55rem; font-weight:900; padding:2px 8px; border-radius:20px; z-index:1;">4°</div>
-                        <img src="https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/PREMIO%20BALON.png" style="width:100%; aspect-ratio:1/1; object-fit:contain; background:#111; display:block;" alt="Balón">
-                        <div style="font-size:0.6rem; text-align:center; padding:5px 4px; font-weight:bold; color:#aaa;">Balón ⚽</div>
-                    </div>
-                </div>
-                <div style="text-align:center; margin-top:8px; font-size:0.55rem; color:#666;">Empates comparten el mismo premio</div>
-            </div>
-        </div>
     </div>
 
     <button onclick="abrirResumen()" style="width:100%;padding:14px;background:linear-gradient(135deg,#1a1600,#3a2e00);border:1px solid var(--gold);border-radius:14px;color:var(--gold);font-size:0.85rem;font-weight:700;cursor:pointer;margin-bottom:12px;">
@@ -1223,7 +1168,7 @@
         } else if (pct >= 75) {
             nivel = 'BRONCE'; color = 'var(--bronze)'; emoji = '🥉'; fInd = canal === 'MOSTRADOR' ? 1.31 : 1.50;
         } else {
-            nivel = 'FUERA'; color = 'var(--red)'; emoji = ''; fInd = 1.10;
+            nivel = 'FUERA'; color = 'var(--red)'; emoji = '⚽'; fInd = 1.10;
         }
 
         // Bono sucursal
