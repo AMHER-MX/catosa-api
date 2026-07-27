@@ -1598,16 +1598,20 @@ function getFiltered() {
 }
 
 function getFilteredMetas() {
-    // Solo vendedores concursantes de Hoja1 (World Cup)
+    // Solo vendedores concursantes de Hoja1 (World Cup), sin duplicados
     const fs = document.getElementById('f-suc').value;
     const fv = document.getElementById('f-vend').value;
-    return dbV.filter(v =>
-        v.Nombre &&
-        parseFloat(v.Meta) > 0 &&
-        (wcNombres.size === 0 || wcNombres.has(v.Nombre)) &&
-        (fs === 'TODAS' || v.Sucursal === fs) &&
-        (fv === 'TODOS' || v.Nombre === fv)
-    );
+    const seen = new Set();
+    return dbV.filter(v => {
+        if (!v.Nombre) return false;
+        if (parseFloat(v.Meta) <= 0) return false;
+        if (wcNombres.size > 0 && !wcNombres.has(v.Nombre)) return false;
+        if (fs !== 'TODAS' && v.Sucursal !== fs) return false;
+        if (fv !== 'TODOS' && v.Nombre !== fv) return false;
+        if (seen.has(v.Nombre)) return false;
+        seen.add(v.Nombre);
+        return true;
+    });
 }
 
 // ── RENDER PRINCIPAL ──────────────────────────────────────────────────────────
