@@ -268,27 +268,31 @@
     async function renderTVTorneo() {
         const container = document.getElementById('tv-wc-rows');
         try {
-            const data = await apiFetch('/api/torneo');
-            const hoy = new Date(), mes = hoy.getMonth()+1;
-            const enFinal = mes === 7;
-            const getMetrica = v => enFinal ? v.PctJulio : mes === 6 ? v.PctJunio : v.PctMayo;
-            const sorted = [...data].sort((a,b) => {
-                if (b.Clasificado !== a.Clasificado) return b.Clasificado - a.Clasificado;
-                return getMetrica(b) - getMetrica(a);
-            });
-            const clasif = sorted.filter(v => v.Clasificado).length;
-            document.getElementById('tv-wc-clasif').textContent = clasif;
-            document.getElementById('tv-wc-pend').textContent   = sorted.length - clasif;
-            document.getElementById('tv-wc-fase').textContent   =
-                enFinal ? '🏆 FASE FINAL' : mes === 6 ? '⚽ FASE GRUPOS — JUNIO' : '⚽ FASE GRUPOS — MAYO';
+            // Usar dbV (misma fuente que la pista de carreras) para % del mes actual
+            const seen = new Set();
+            const data = dbV.filter(v => {
+                if (!v.Nombre || parseFloat(v.Meta) <= 0) return false;
+                if (wcNombres.size > 0 && !wcNombres.has(v.Nombre)) return false;
+                if (seen.has(v.Nombre)) return false;
+                seen.add(v.Nombre);
+                return true;
+            }).map(v => {
+                const pct = (parseFloat(v.Ventas)||0) / (parseFloat(v.Meta)||1) * 100;
+                const torneoV = (window.wcTorneoMap||{})[v.Nombre];
+                return { Nombre: v.Nombre, Pct: pct, Clasificado: torneoV ? torneoV.Clasificado : false };
+            }).sort((a,b) => b.Pct - a.Pct);
 
-            container.innerHTML = sorted.map(v => {
-                const pct      = Math.min(v.PctJulio, 150);
+            const clasif = data.filter(v => v.Clasificado).length;
+            document.getElementById('tv-wc-clasif').textContent = clasif;
+            document.getElementById('tv-wc-pend').textContent   = data.length - clasif;
+            document.getElementById('tv-wc-fase').textContent   = '🏆 FASE FINAL — JULIO';
+
+            container.innerHTML = data.map(v => {
+                const pct      = Math.min(v.Pct, 150);
                 const trackPct = Math.min(98, (pct / 120) * 92);
                 const esClasif = v.Clasificado;
                 const nombre   = v.Nombre.split(' ').slice(0,2).join(' ');
                 const ballCls  = esClasif ? '' : 'noclasif';
-                // Medallero de comisiones
                 let nivel, nColor;
                 if      (pct >= 120) { nivel = '🥇 ORO';    nColor = 'var(--gold)'; }
                 else if (pct >= 110) { nivel = '🥈 PLATA';  nColor = 'var(--silver)'; }
@@ -666,27 +670,31 @@
     async function renderTVTorneo() {
         const container = document.getElementById('tv-wc-rows');
         try {
-            const data = await apiFetch('/api/torneo');
-            const hoy = new Date(), mes = hoy.getMonth()+1;
-            const enFinal = mes === 7;
-            const getMetrica = v => enFinal ? v.PctJulio : mes === 6 ? v.PctJunio : v.PctMayo;
-            const sorted = [...data].sort((a,b) => {
-                if (b.Clasificado !== a.Clasificado) return b.Clasificado - a.Clasificado;
-                return getMetrica(b) - getMetrica(a);
-            });
-            const clasif = sorted.filter(v => v.Clasificado).length;
-            document.getElementById('tv-wc-clasif').textContent = clasif;
-            document.getElementById('tv-wc-pend').textContent   = sorted.length - clasif;
-            document.getElementById('tv-wc-fase').textContent   =
-                enFinal ? '🏆 FASE FINAL' : mes === 6 ? '⚽ FASE GRUPOS — JUNIO' : '⚽ FASE GRUPOS — MAYO';
+            // Usar dbV (misma fuente que la pista de carreras) para % del mes actual
+            const seen = new Set();
+            const data = dbV.filter(v => {
+                if (!v.Nombre || parseFloat(v.Meta) <= 0) return false;
+                if (wcNombres.size > 0 && !wcNombres.has(v.Nombre)) return false;
+                if (seen.has(v.Nombre)) return false;
+                seen.add(v.Nombre);
+                return true;
+            }).map(v => {
+                const pct = (parseFloat(v.Ventas)||0) / (parseFloat(v.Meta)||1) * 100;
+                const torneoV = (window.wcTorneoMap||{})[v.Nombre];
+                return { Nombre: v.Nombre, Pct: pct, Clasificado: torneoV ? torneoV.Clasificado : false };
+            }).sort((a,b) => b.Pct - a.Pct);
 
-            container.innerHTML = sorted.map(v => {
-                const pct      = Math.min(v.PctJulio, 150);
+            const clasif = data.filter(v => v.Clasificado).length;
+            document.getElementById('tv-wc-clasif').textContent = clasif;
+            document.getElementById('tv-wc-pend').textContent   = data.length - clasif;
+            document.getElementById('tv-wc-fase').textContent   = '🏆 FASE FINAL — JULIO';
+
+            container.innerHTML = data.map(v => {
+                const pct      = Math.min(v.Pct, 150);
                 const trackPct = Math.min(98, (pct / 120) * 92);
                 const esClasif = v.Clasificado;
                 const nombre   = v.Nombre.split(' ').slice(0,2).join(' ');
                 const ballCls  = esClasif ? '' : 'noclasif';
-                // Medallero de comisiones
                 let nivel, nColor;
                 if      (pct >= 120) { nivel = '🥇 ORO';    nColor = 'var(--gold)'; }
                 else if (pct >= 110) { nivel = '🥈 PLATA';  nColor = 'var(--silver)'; }
@@ -2613,27 +2621,31 @@ function renderVisitas() {
     async function renderTVTorneo() {
         const container = document.getElementById('tv-wc-rows');
         try {
-            const data = await apiFetch('/api/torneo');
-            const hoy = new Date(), mes = hoy.getMonth()+1;
-            const enFinal = mes === 7;
-            const getMetrica = v => enFinal ? v.PctJulio : mes === 6 ? v.PctJunio : v.PctMayo;
-            const sorted = [...data].sort((a,b) => {
-                if (b.Clasificado !== a.Clasificado) return b.Clasificado - a.Clasificado;
-                return getMetrica(b) - getMetrica(a);
-            });
-            const clasif = sorted.filter(v => v.Clasificado).length;
-            document.getElementById('tv-wc-clasif').textContent = clasif;
-            document.getElementById('tv-wc-pend').textContent   = sorted.length - clasif;
-            document.getElementById('tv-wc-fase').textContent   =
-                enFinal ? '🏆 FASE FINAL' : mes === 6 ? '⚽ FASE GRUPOS — JUNIO' : '⚽ FASE GRUPOS — MAYO';
+            // Usar dbV (misma fuente que la pista de carreras) para % del mes actual
+            const seen = new Set();
+            const data = dbV.filter(v => {
+                if (!v.Nombre || parseFloat(v.Meta) <= 0) return false;
+                if (wcNombres.size > 0 && !wcNombres.has(v.Nombre)) return false;
+                if (seen.has(v.Nombre)) return false;
+                seen.add(v.Nombre);
+                return true;
+            }).map(v => {
+                const pct = (parseFloat(v.Ventas)||0) / (parseFloat(v.Meta)||1) * 100;
+                const torneoV = (window.wcTorneoMap||{})[v.Nombre];
+                return { Nombre: v.Nombre, Pct: pct, Clasificado: torneoV ? torneoV.Clasificado : false };
+            }).sort((a,b) => b.Pct - a.Pct);
 
-            container.innerHTML = sorted.map(v => {
-                const pct      = Math.min(v.PctJulio, 150);
+            const clasif = data.filter(v => v.Clasificado).length;
+            document.getElementById('tv-wc-clasif').textContent = clasif;
+            document.getElementById('tv-wc-pend').textContent   = data.length - clasif;
+            document.getElementById('tv-wc-fase').textContent   = '🏆 FASE FINAL — JULIO';
+
+            container.innerHTML = data.map(v => {
+                const pct      = Math.min(v.Pct, 150);
                 const trackPct = Math.min(98, (pct / 120) * 92);
                 const esClasif = v.Clasificado;
                 const nombre   = v.Nombre.split(' ').slice(0,2).join(' ');
                 const ballCls  = esClasif ? '' : 'noclasif';
-                // Medallero de comisiones
                 let nivel, nColor;
                 if      (pct >= 120) { nivel = '🥇 ORO';    nColor = 'var(--gold)'; }
                 else if (pct >= 110) { nivel = '🥈 PLATA';  nColor = 'var(--silver)'; }
