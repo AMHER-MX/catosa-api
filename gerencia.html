@@ -1377,22 +1377,12 @@
         <div style="text-align:center; margin-top:4px; font-size:0.52rem; color:#555;">Clasificación final · Mayor % de meta en Julio</div>
     </div>
 
-    <!-- GRÁFICA VENTAS DIARIAS -->
+
+
+    <!-- DISTRIBUCIÓN POR NIVEL -->
     <div class="card" style="margin-bottom:14px;">
-        <div class="card-title" style="color:#4a9eff;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
-            <span>📊 VENTAS DIARIAS — MES ACTUAL</span>
-            <div style="display:flex;gap:6px;flex-wrap:wrap;" id="vd-filtros">
-                <button onclick="cargarVentasDiarias('TODAS')" class="vd-btn active" data-suc="TODAS">Grupo</button>
-                <button onclick="cargarVentasDiarias('TORREON')" class="vd-btn" data-suc="TORREON">Torreón</button>
-                <button onclick="cargarVentasDiarias('GOMEZ PALACIO')" class="vd-btn" data-suc="GOMEZ PALACIO">GP</button>
-                <button onclick="cargarVentasDiarias('MONCLOVA')" class="vd-btn" data-suc="MONCLOVA">Monclova</button>
-                <button onclick="cargarVentasDiarias('PIEDRAS NEGRAS')" class="vd-btn" data-suc="PIEDRAS NEGRAS">PN</button>
-            </div>
-        </div>
-        <div id="vd-chart" style="width:100%;height:180px;position:relative;margin-top:8px;">
-            <div class="loading">Cargando...</div>
-        </div>
-        <div id="vd-totales" style="display:flex;gap:16px;margin-top:8px;font-size:0.58rem;color:#888;flex-wrap:wrap;"></div>
+        <div class="card-title" style="color:#fff;">🎯 DISTRIBUCIÓN POR NIVEL — MES ACTUAL</div>
+        <div id="dist-niveles" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;padding:4px 0 8px;"></div>
     </div>
 
     <!-- CANCHA CHALLENGE ACEITE MOTOR -->
@@ -1662,7 +1652,7 @@ async function renderAll() {
     renderKPIs(lista);
     renderPista(listaMetas);
     renderGanadoresWC(listaMetas);
-    cargarVentasDiarias('TODAS');
+    renderDistNiveles();
     renderRanking(listaMetas);
     renderChart(listaMetas);
 
@@ -1789,6 +1779,48 @@ function cargarVentasDiarias(suc) {
                 <span>Días con venta: <strong style="color:#aaa;">${valores.filter(v=>v>0).length}</strong></span>`;
         })
         .catch(e => { chart.innerHTML = `<div class="error-msg">❌ ${e.message}</div>`; });
+}
+
+function renderDistNiveles() {
+    const grid = document.getElementById('dist-niveles');
+    if (!grid) return;
+
+    const seen = new Set();
+    const vendedores = dbV.filter(v => {
+        if (!v.Nombre || parseFloat(v.Meta) <= 0) return false;
+        if (seen.has(v.Nombre)) return false;
+        seen.add(v.Nombre);
+        return true;
+    });
+
+    const niveles = [
+        { key:'rojo',   label:'🔴 Rojo',   min:0,   max:75,  color:'#f44336', bg:'rgba(244,67,54,0.1)',  border:'#f44336' },
+        { key:'bronce', label:'🥉 Bronce', min:75,  max:110, color:'var(--bronze)', bg:'rgba(205,127,50,0.1)', border:'var(--bronze)' },
+        { key:'plata',  label:'🥈 Plata',  min:110, max:120, color:'var(--silver)', bg:'rgba(192,192,192,0.1)', border:'var(--silver)' },
+        { key:'oro',    label:'🥇 Oro',    min:120, max:9999,color:'var(--gold)',   bg:'rgba(255,215,0,0.1)',   border:'var(--gold)' },
+    ];
+
+    const counts = { rojo:[], bronce:[], plata:[], oro:[] };
+    vendedores.forEach(v => {
+        const pct = (parseFloat(v.Ventas)||0) / (parseFloat(v.Meta)||1) * 100;
+        const nv = pct >= 120 ? 'oro' : pct >= 110 ? 'plata' : pct >= 75 ? 'bronce' : 'rojo';
+        counts[nv].push({ nombre: v.Nombre.split(' ')[0] + ' ' + (v.Nombre.split(' ')[1]||''), pct });
+    });
+
+    grid.innerHTML = niveles.map(n => {
+        const lista = counts[n.key].sort((a,b) => b.pct - a.pct);
+        return `<div style="background:${n.bg};border:1px solid ${n.border};border-radius:12px;padding:10px;">
+            <div style="font-size:0.65rem;font-weight:800;color:${n.color};margin-bottom:6px;">${n.label}</div>
+            <div style="font-size:1.8rem;font-weight:900;color:${n.color};line-height:1;">${lista.length}</div>
+            <div style="font-size:0.45rem;color:#888;margin-top:2px;">vendedor${lista.length!==1?'es':''}</div>
+            <div style="margin-top:8px;display:flex;flex-direction:column;gap:3px;">
+                ${lista.map(v => `<div style="font-size:0.48rem;color:#ccc;display:flex;justify-content:space-between;">
+                    <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:75%;">${v.nombre}</span>
+                    <span style="color:${n.color};font-weight:700;">${Math.round(v.pct)}%</span>
+                </div>`).join('')}
+            </div>
+        </div>`;
+    }).join('');
 }
 
 function renderGanadoresWC(lista) {
