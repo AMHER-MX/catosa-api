@@ -647,12 +647,9 @@ app.get('/api/cores', async (req, res) => {
     const db       = await getPool();
     const vendedor = decodeURIComponent(req.query.vendedor || '');
     const hoy      = new Date();
-    const ini      = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-01`;
-    const fin      = hoy.toISOString().split('T')[0];
+    const mesActual = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}`;
 
     const result = await db.request()
-      .input('ini',  sql.Date, ini)
-      .input('fin',  sql.Date, fin)
       .input('vend', sql.VarChar, `%${vendedor}%`)
       .query(`
         SELECT
@@ -662,16 +659,16 @@ app.get('/api/cores', async (req, res) => {
           s.NOM_VENDEDOR                        AS Vendedor,
           s.DES_ARTICULO                        AS Articulo,
           s.DES_TIPO_VENTA                      AS TipoVenta,
-          CONVERT(varchar(10), s.FECHA, 23)     AS FechaFactura,
+          LEFT(s.FECHA, 10)                     AS FechaFactura,
           s.IMP_TOTAL_LINEA                     AS Monto,
           s.CANTIDAD                            AS Cantidad,
-          DATEDIFF(day, s.FECHA, GETDATE())     AS DiasTranscurridos
+          DATEDIFF(day, CAST(LEFT(s.FECHA,10) AS DATE), GETDATE()) AS DiasTranscurridos
         FROM FTSABI_PR s
         WHERE s.DES_TIPO_VENTA IN (
             'CANCELACION VENTA REMISIONES CORES',
             'CANCELACION VENTA REMISIONES CORES 8%'
           )
-          AND s.FECHA >= @ini AND s.FECHA <= @fin
+          AND LEFT(s.FECHA, 7) = '${mesActual}'
           AND s.NOM_ALMACEN_LIN IN (${SUCURSALES})
           AND s.NOM_VENDEDOR LIKE @vend
         ORDER BY s.FECHA DESC
