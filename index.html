@@ -550,6 +550,14 @@
         <div style="display:flex; gap:6px; margin-bottom:14px;">
             <button onclick="setCoresFiltro('devueltos')" id="cores-f-dev" class="btn-filtro activo" style="border-color:var(--red); color:var(--red);">📤 Devueltos</button>
             <button onclick="setCoresFiltro('pendientes')" id="cores-f-pen" class="btn-filtro" style="border-color:var(--gold); color:var(--gold);">⏳ Sin Pagar</button>
+            <select id="cores-mes-sel" onchange="onCoresMesChange()" style="background:#111;border:1px solid #444;color:#aaa;border-radius:6px;padding:2px 6px;font-size:0.55rem;margin-left:6px;">
+                <option value="2026-07" selected>Jul 2026</option>
+                <option value="2026-06">Jun 2026</option>
+                <option value="2026-05">May 2026</option>
+                <option value="2026-04">Abr 2026</option>
+                <option value="2026-03">Mar 2026</option>
+                <option value="2026-02">Feb 2026</option>
+            </select>
         </div>
         <div class="cores-kpis">
             <div class="cores-kpi"><span id="cores-kpi-lbl1">Total Devoluciones</span><b id="cores-total">—</b></div>
@@ -1204,7 +1212,13 @@
     // ─── CORES ───────────────────────────────────────────────────────────────
     let coresFiltro = 'devueltos';
 
-    function setCoresFiltro(tipo) {
+    function onCoresMesChange() {
+    const tipo = document.getElementById('cores-f-pen')?.classList.contains('activo') ? 'pendientes' : 'devueltos';
+    if (tipo === 'pendientes') loadCoresPendientes();
+    else loadCores();
+}
+
+function setCoresFiltro(tipo) {
         coresFiltro = tipo;
         document.getElementById('cores-f-dev').classList.toggle('activo', tipo === 'devueltos');
         document.getElementById('cores-f-pen').classList.toggle('activo', tipo === 'pendientes');
@@ -1227,7 +1241,7 @@
             <th>Monto</th><th>Días Sin Pagar</th>`;
         try {
             const nombre = encodeURIComponent(user.Nombre);
-            const cores  = await apiFetch(`/api/cores-pendientes-ventas?vendedor=${nombre}`);
+            const cores  = await apiFetch(`/api/cores-pendientes-ventas?vendedor=${nombre}&mes=${document.getElementById('cores-mes-sel')?.value||''}`);
             cores.forEach(c => { if (c.Dias !== undefined) c.DiasSinPagar = c.Dias; });
             if (cores.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="8" class="loading">✅ Sin CORES pendientes de pago</td></tr>';
