@@ -1242,7 +1242,7 @@
             tbody.innerHTML = '';
             cores.forEach(c => {
                 const dias  = parseInt(c.DiasSinPagar) || 0;
-                const clase = dias <= 7 ? 'dias-verde' : dias <= 21 ? 'dias-ambar' : 'dias-rojo';
+                const clase = dias < 7 ? 'dias-verde' : dias <= 20 ? 'dias-ambar' : 'dias-rojo';
                 const tipo  = (c.TipoVenta || '').includes('8%') ? 'CORES 8%' : 'CORES';
                 tbody.innerHTML += `
                     <tr>
