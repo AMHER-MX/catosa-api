@@ -2128,7 +2128,7 @@ async function loadCoresPendientesG() {
         tbody.innerHTML = '';
         cores.forEach(c => {
             const dias  = parseInt(c.DiasSinPagar) || 0;
-            const clase = dias <= 7 ? 'dias-verde' : dias <= 21 ? 'dias-ambar' : 'dias-rojo';
+            const clase = dias < 7 ? 'dias-verde' : dias <= 20 ? 'dias-ambar' : 'dias-rojo';
             tbody.innerHTML += `
                 <tr>
                     <td style="color:var(--blue);font-weight:bold;white-space:nowrap;">${c.Referencia||'—'}</td>
