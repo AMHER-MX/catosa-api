@@ -598,6 +598,43 @@ app.get('/api/cores-pendientes', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+app.get('/api/cores-pendientes-ventas', async (req, res) => {
+  try {
+    const db       = await getPool();
+    const vendedor = decodeURIComponent(req.query.vendedor || '');
+    const sucursal = decodeURIComponent(req.query.sucursal || '');
+
+    let filtroVend = vendedor ? `AND s.NOM_VENDEDOR = '${vendedor.replace(/'/g,"''")}'` : '';
+    let filtroSuc  = sucursal && sucursal !== 'TODAS'
+      ? `AND s.NOM_ALMACEN_LIN = '${sucursal.replace(/'/g,"''")}'`
+      : `AND s.NOM_ALMACEN_LIN IN (${SUCURSALES})`;
+
+    const result = await db.request().query(`
+      SELECT
+        s.REFERENCIA                                    AS Referencia,
+        s.CLIENTE                                       AS Codigo,
+        s.DES_ARTICULO                                  AS Articulo,
+        s.DES_TIPO_VENTA                                AS TipoVenta,
+        s.NOM_ALMACEN_LIN                               AS Sucursal,
+        s.NOM_VENDEDOR                                  AS Vendedor,
+        LEFT(s.FECHA, 10)                               AS FechaFactura,
+        s.IMP_TOTAL_LINEA                               AS Monto,
+        s.CANTIDAD                                      AS Cantidad,
+        DATEDIFF(day, CAST(LEFT(s.FECHA,10) AS DATE), GETDATE()) AS Dias
+      FROM FTSABI_PR s
+      WHERE s.DES_TIPO_VENTA IN ('VENTA REMISIONES CORES', 'VENTA REMISIONES CORES 8%')
+        ${filtroVend}
+        ${filtroSuc}
+      ORDER BY Dias DESC
+    `);
+
+    res.json(result.recordset);
+  } catch (err) {
+    console.error('Error /api/cores-pendientes-ventas:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.get('/api/cores', async (req, res) => {
   try {
     const db       = await getPool();
