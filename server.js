@@ -622,7 +622,10 @@ app.get('/api/cores-pendientes-ventas', async (req, res) => {
         s.CANTIDAD                                      AS Cantidad,
         DATEDIFF(day, CAST(LEFT(s.FECHA,10) AS DATE), GETDATE()) AS Dias
       FROM FTSABI_PR s
-      WHERE s.DES_TIPO_VENTA IN ('VENTA REMISIONES CORES', 'VENTA REMISIONES CORES 8%')
+      WHERE (
+          s.DES_TIPO_VENTA = 'VENTA REMISIONES CORES'
+          OR (s.DES_TIPO_VENTA = 'VENTA REMISIONES CORES 8%' AND s.NOM_ALMACEN_LIN = 'PIEDRAS NEGRAS')
+        )
         AND LEFT(s.FECHA, 7) = FORMAT(GETDATE(), 'yyyy-MM')
         ${filtroVend}
         ${filtroSuc}
