@@ -609,6 +609,9 @@ app.get('/api/cores-pendientes-ventas', async (req, res) => {
       ? `AND s.NOM_ALMACEN_LIN = '${sucursal.replace(/'/g,"''")}'`
       : `AND s.NOM_ALMACEN_LIN IN (${SUCURSALES})`;
 
+    const hoy = new Date();
+    const mesParam = req.query.mes || `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}`;
+
     const result = await db.request().query(`
       SELECT
         s.REFERENCIA                                    AS Referencia,
@@ -626,7 +629,7 @@ app.get('/api/cores-pendientes-ventas', async (req, res) => {
           s.DES_TIPO_VENTA = 'VENTA REMISIONES CORES'
           OR (s.DES_TIPO_VENTA = 'VENTA REMISIONES CORES 8%' AND s.NOM_ALMACEN_LIN = 'PIEDRAS NEGRAS')
         )
-        AND LEFT(s.FECHA, 7) = FORMAT(GETDATE(), 'yyyy-MM')
+        AND LEFT(s.FECHA, 7) = '${mesParam}'
         ${filtroVend}
         ${filtroSuc}
       ORDER BY Dias DESC
