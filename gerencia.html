@@ -1424,14 +1424,6 @@
         <div style="display:flex; gap:6px; margin-bottom:12px;">
             <button onclick="setCoresFiltroG('devueltos')" id="g-cores-f-dev" class="btn-filtro activo" style="border-color:var(--red);color:var(--red);font-size:0.6rem;">📤 Devueltos</button>
             <button onclick="setCoresFiltroG('pendientes')" id="g-cores-f-pen" class="btn-filtro" style="border-color:var(--gold);color:var(--gold);font-size:0.6rem;">⏳ Sin Pagar</button>
-            <select id="cores-mes-sel" onchange="onCoresMesChange()" style="background:#111;border:1px solid #444;color:#aaa;border-radius:6px;padding:2px 6px;font-size:0.55rem;margin-left:6px;">
-                <option value="2026-07" selected>Jul 2026</option>
-                <option value="2026-06">Jun 2026</option>
-                <option value="2026-05">May 2026</option>
-                <option value="2026-04">Abr 2026</option>
-                <option value="2026-03">Mar 2026</option>
-                <option value="2026-02">Feb 2026</option>
-            </select>
         </div>
         <div style="overflow-x:auto; max-height:360px; overflow-y:auto;">
             <table class="cores-table">
@@ -2129,7 +2121,7 @@ async function loadCoresPendientesG() {
         const fv     = document.getElementById('f-vend').value;
         const nombre = fv !== 'TODOS' ? encodeURIComponent(fv) : '';
         const filtroSuc = document.getElementById('f-suc')?.value || 'TODAS';
-        const cores  = await apiFetch(`/api/cores-pendientes-ventas?vendedor=${nombre}&mes=${document.getElementById('cores-mes-sel')?.value||''}&sucursal=${encodeURIComponent(filtroSuc)}`);
+        const cores  = await apiFetch(`/api/cores-pendientes-ventas?vendedor=${nombre}&mes=2026-07&sucursal=${encodeURIComponent(filtroSuc)}`);
         // Mapear campo Dias
         cores.forEach(c => { if (c.Dias !== undefined) c.DiasSinPagar = c.Dias; });
 
