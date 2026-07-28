@@ -423,7 +423,7 @@
 <div id="login-screen">
     <div class="login-box">
         <img src="https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/logo-international.png" class="logo-login" alt="International" onerror="this.style.display='none'">
-        <h3 style="color:var(--gold); margin-top:0;">WORLD CUP CATOSA</h3>
+        <h3 style="color:var(--gold); margin-top:0;">CATOSA PERFORMANCE 2026</h3>
         <div id="login-status" style="font-size:0.7rem; color:#555; margin-bottom:10px;">Cargando datos...</div>
         <input type="text" id="u-name" placeholder="NOMBRE ASESOR">
         <input type="password" id="u-pass" placeholder="CONTRASEÑA">
@@ -667,7 +667,7 @@
             try { dbT = await apiFetch('/api/torneo'); } catch(e) { dbT = []; }
             document.getElementById('login-status').textContent = `✅ ${dbV.length} asesores cargados`;
             document.getElementById('btn-login').disabled = false;
-            document.getElementById('btn-login').textContent = 'PATEAR INICIO';
+            document.getElementById('btn-login').textContent = 'INICIAR';
         } catch (err) {
             document.getElementById('login-status').innerHTML = `<span style="color:var(--red)">❌ Sin conexión al servidor<br><small>${err.message}</small></span>`;
             document.getElementById('btn-login').textContent = 'REINTENTAR';
