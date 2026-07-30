@@ -288,8 +288,8 @@
             document.getElementById('tv-wc-fase').textContent   = '🏆 FASE FINAL — JULIO';
 
             container.innerHTML = data.map(v => {
-                const pct      = Math.min(v.Pct, 150);
-                const trackPct = Math.min(98, (pct / 120) * 92);
+                const pct      = v.Pct;
+                const trackPct = Math.min(98, (pct / 150) * 98);
                 const esClasif = v.Clasificado;
                 const nombre   = v.Nombre.split(' ').slice(0,2).join(' ');
                 const ballCls  = esClasif ? '' : 'noclasif';
@@ -690,8 +690,8 @@
             document.getElementById('tv-wc-fase').textContent   = '🏆 FASE FINAL — JULIO';
 
             container.innerHTML = data.map(v => {
-                const pct      = Math.min(v.Pct, 150);
-                const trackPct = Math.min(98, (pct / 120) * 92);
+                const pct      = v.Pct;
+                const trackPct = Math.min(98, (pct / 150) * 98);
                 const esClasif = v.Clasificado;
                 const nombre   = v.Nombre.split(' ').slice(0,2).join(' ');
                 const ballCls  = esClasif ? '' : 'noclasif';
@@ -1264,10 +1264,10 @@
         .tv-wc-row { display:flex; align-items:center; gap:8px; margin-bottom:5px; }
         .tv-wc-name { width:110px; font-size:0.68rem; font-weight:700; flex-shrink:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
         .tv-wc-track { flex:1; background:linear-gradient(180deg,#2a2a2a 0%,#1a1a1a 40%,#222 60%,#2a2a2a 100%); border-radius:4px; height:28px; position:relative; overflow:hidden; border:1px solid #444; box-shadow:inset 0 2px 4px rgba(0,0,0,0.5); }
-        .tv-wc-track.noclaif { background:linear-gradient(180deg,#1a1a1a 0%,#111 50%,#1a1a1a 100%); border:1px solid #333; }
+        .tv-wc-track.noclaif { background:linear-gradient(180deg,#2a2a2a 0%,#1a1a1a 40%,#222 60%,#2a2a2a 100%); border:1px solid #444; }
         .tv-wc-meta { position:absolute; top:0; bottom:0; width:2px; background:rgba(255,215,0,0.5); z-index:2; }
         .tv-wc-ball { position:absolute; top:50%; transform:translateY(-50%); width:48px; height:22px; background:url('https://amher-mx.github.io/catosa-api/camioncaja-int.png') left center/contain no-repeat; transition:left 1.2s cubic-bezier(.4,0,.2,1); z-index:3; filter:drop-shadow(0 2px 4px rgba(0,0,0,0.8)); }
-        .tv-wc-ball.noclasif { filter:grayscale(1); opacity:0.4; }
+        .tv-wc-ball.noclasif { filter:drop-shadow(0 2px 4px rgba(0,0,0,0.8)); opacity:0.9; }
         .tv-wc-pct { width:42px; text-align:right; font-size:0.68rem; font-weight:700; flex-shrink:0; }
         .tv-wc-badge { width:80px; text-align:center; font-size:0.55rem; flex-shrink:0; border-radius:20px; padding:2px 4px; }
         .tv-wc-badge.ok { color:#00ff88; background:rgba(0,255,136,0.1); }
@@ -2177,7 +2177,7 @@ async function loadCores() {
         tbody.innerHTML = '';
         cores.forEach(c => {
             const dias  = parseInt(c.DiasTranscurridos) || 0;
-            const clase = dias <= 7 ? 'dias-rojo' : dias <= 30 ? 'dias-ambar' : 'dias-verde';
+            const clase = dias < 7 ? 'dias-verde' : dias <= 20 ? 'dias-ambar' : 'dias-rojo';
             tbody.innerHTML += `
                 <tr>
                     <td style="color:var(--blue);font-weight:bold;white-space:nowrap;">${c.NumFactura||c.Referencia||'—'}</td>
@@ -2743,8 +2743,8 @@ function renderVisitas() {
             document.getElementById('tv-wc-fase').textContent   = '🏆 FASE FINAL — JULIO';
 
             container.innerHTML = data.map(v => {
-                const pct      = Math.min(v.Pct, 150);
-                const trackPct = Math.min(98, (pct / 120) * 92);
+                const pct      = v.Pct;
+                const trackPct = Math.min(98, (pct / 150) * 98);
                 const esClasif = v.Clasificado;
                 const nombre   = v.Nombre.split(' ').slice(0,2).join(' ');
                 const ballCls  = esClasif ? '' : 'noclasif';
