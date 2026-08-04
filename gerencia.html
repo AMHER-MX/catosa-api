@@ -1415,6 +1415,35 @@
         </div>
     </div>
 
+    <!-- PROMO UREA -->
+    <div class="card" style="margin-bottom:14px;">
+        <div class="card-title" style="color:#ffd700;">
+            🟡 PROMO UREA — <span id="urea-mes-label">Cargando...</span>
+            <span style="font-size:0.5rem;color:#555;font-weight:400;margin-left:8px;">vs mismo mes año anterior</span>
+        </div>
+        <div id="urea-kpis" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;margin-bottom:12px;"></div>
+        <div style="font-size:0.55rem;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Por Sucursal</div>
+        <div id="urea-sucursales" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;margin-bottom:12px;"></div>
+        <div style="font-size:0.55rem;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Por Vendedor</div>
+        <div style="overflow-x:auto;">
+            <table style="width:100%;border-collapse:collapse;font-size:0.6rem;">
+                <thead>
+                    <tr style="color:#888;border-bottom:1px solid #222;">
+                        <th style="text-align:left;padding:4px 8px;">Asesor</th>
+                        <th style="text-align:left;padding:4px 8px;">Sede</th>
+                        <th style="text-align:right;padding:4px 8px;">Litros</th>
+                        <th style="text-align:right;padding:4px 8px;">Piezas</th>
+                        <th style="text-align:right;padding:4px 8px;">Monto</th>
+                        <th style="text-align:right;padding:4px 8px;">Crec. L</th>
+                        <th style="text-align:right;padding:4px 8px;">Crec. $</th>
+                        <th style="text-align:right;padding:4px 8px;">Tendencia</th>
+                    </tr>
+                </thead>
+                <tbody id="urea-tbody"></tbody>
+            </table>
+        </div>
+    </div>
+
     <!-- CORES DEVOLUCIONES -->
     <div class="card" style="margin-bottom:14px;">
         <div class="card-title">
@@ -1641,6 +1670,7 @@ async function renderAll() {
     renderKPIs(lista);
     renderPista(listaMetas);
     renderDistNiveles();
+    loadPromoUrea();
     renderRanking(listaMetas);
     renderChart(listaMetas);
 
@@ -1767,6 +1797,78 @@ function cargarVentasDiarias(suc) {
                 <span>Días con venta: <strong style="color:#aaa;">${valores.filter(v=>v>0).length}</strong></span>`;
         })
         .catch(e => { chart.innerHTML = `<div class="error-msg">❌ ${e.message}</div>`; });
+}
+
+function loadPromoUrea() {
+    const meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    apiFetch('/api/promo-urea').then(data => {
+        const hoy = new Date();
+        document.getElementById('urea-mes-label').textContent =
+            `${meses[hoy.getMonth()]} ${hoy.getFullYear()}`;
+
+        const fmtL = n => `${Math.round(n).toLocaleString()} L`;
+        const fmtM = n => '$' + (n/1000).toFixed(1) + 'K';
+        const fmtC = n => n === null ? '—' : (n >= 0 ? `<span style="color:var(--grass)">+${n.toFixed(1)}%</span>` : `<span style="color:var(--red)">${n.toFixed(1)}%</span>`);
+
+        // Totales grupo
+        const totL = data.vendedores.reduce((s,v)=>s+v.Litros,0);
+        const totP = data.vendedores.reduce((s,v)=>s+v.Piezas,0);
+        const totM = data.vendedores.reduce((s,v)=>s+v.Monto,0);
+        const totLa = data.vendedores.reduce((s,v)=>s+v.LitrosAnt,0);
+        const totMa = data.vendedores.reduce((s,v)=>s+v.MontoAnt,0);
+        const crecL = totLa > 0 ? (totL-totLa)/totLa*100 : null;
+        const crecM = totMa > 0 ? (totM-totMa)/totMa*100 : null;
+
+        document.getElementById('urea-kpis').innerHTML = `
+            <div style="background:rgba(255,215,0,0.08);border:1px solid #ffd70044;border-radius:10px;padding:10px;">
+                <div style="font-size:0.5rem;color:#888;">LITROS TOTALES</div>
+                <div style="font-size:1.3rem;font-weight:900;color:#ffd700;">${fmtL(totL)}</div>
+                <div style="font-size:0.52rem;margin-top:2px;">${fmtC(crecL)} vs ${meses[hoy.getMonth()]} ${hoy.getFullYear()-1}</div>
+            </div>
+            <div style="background:rgba(255,215,0,0.08);border:1px solid #ffd70044;border-radius:10px;padding:10px;">
+                <div style="font-size:0.5rem;color:#888;">PIEZAS TOTALES</div>
+                <div style="font-size:1.3rem;font-weight:900;color:#ffd700;">${totP.toLocaleString()}</div>
+            </div>
+            <div style="background:rgba(255,215,0,0.08);border:1px solid #ffd70044;border-radius:10px;padding:10px;">
+                <div style="font-size:0.5rem;color:#888;">MONTO TOTAL</div>
+                <div style="font-size:1.3rem;font-weight:900;color:#ffd700;">${fmtM(totM)}</div>
+                <div style="font-size:0.52rem;margin-top:2px;">${fmtC(crecM)} vs ${meses[hoy.getMonth()]} ${hoy.getFullYear()-1}</div>
+            </div>`;
+
+        // Por sucursal
+        document.getElementById('urea-sucursales').innerHTML = data.sucursales.map(s => `
+            <div style="background:#111;border:1px solid #222;border-radius:10px;padding:10px;">
+                <div style="font-size:0.52rem;color:#888;font-weight:700;">${s.Sucursal}</div>
+                <div style="font-size:0.9rem;font-weight:800;color:#ffd700;">${fmtL(s.Litros)}</div>
+                <div style="font-size:0.52rem;color:#aaa;">${fmtM(s.Monto)} · ${s.Piezas} pzas</div>
+                <div style="font-size:0.5rem;margin-top:3px;">${fmtC(s.CrecLitros)} L · ${fmtC(s.CrecMonto)} $</div>
+            </div>`).join('');
+
+        // Por vendedor
+        document.getElementById('urea-tbody').innerHTML = data.vendedores.map(v => {
+            // Mini sparkline con hist6m
+            const maxL = Math.max(...v.Hist6m.map(h=>h.litros), 1);
+            const spark = v.Hist6m.map(h => {
+                const h2 = Math.max((h.litros/maxL)*20, h.litros>0?2:0);
+                return `<rect x="${v.Hist6m.indexOf(h)*8}" y="${20-h2}" width="6" height="${h2}" fill="${h.mes===data.mes?'#ffd700':'#444'}" rx="1"/>`;
+            }).join('');
+
+            return `<tr style="border-bottom:1px solid #111;">
+                <td style="padding:5px 8px;color:#fff;">${v.Vendedor.split(' ').slice(0,2).join(' ')}</td>
+                <td style="padding:5px 8px;color:#666;">${v.Sucursal}</td>
+                <td style="padding:5px 8px;text-align:right;color:#ffd700;font-weight:700;">${fmtL(v.Litros)}</td>
+                <td style="padding:5px 8px;text-align:right;color:#aaa;">${v.Piezas}</td>
+                <td style="padding:5px 8px;text-align:right;color:#aaa;">${fmtM(v.Monto)}</td>
+                <td style="padding:5px 8px;text-align:right;">${fmtC(v.CrecLitros)}</td>
+                <td style="padding:5px 8px;text-align:right;">${fmtC(v.CrecMonto)}</td>
+                <td style="padding:5px 8px;text-align:right;">
+                    <svg width="${v.Hist6m.length*8}" height="20">${spark}</svg>
+                </td>
+            </tr>`;
+        }).join('');
+    }).catch(e => {
+        document.getElementById('urea-kpis').innerHTML = `<div style="color:#f44;">❌ ${e.message}</div>`;
+    });
 }
 
 function renderDistNiveles() {
