@@ -1219,8 +1219,7 @@
 
 function loadUreaCard() {
     apiFetch(`/api/promo-urea`).then(data => {
-        const nombre = (window.currentUser || '').toUpperCase();
-        const v = data.vendedores.find(v => v.Vendedor.toUpperCase().includes(nombre.split(' ')[0]));
+        const v = data.vendedores.find(v => v.Vendedor === user.Nombre);
         if (!v) return;
         const meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
         const hoy = new Date();
