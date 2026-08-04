@@ -491,6 +491,12 @@
         📝 REGISTRAR CLIENTE BASE DE DATOS
     </button>
 
+    <!-- PROMO UREA -->
+    <div id="urea-card" style="background:#0d0d0d;border:1px solid #ffd70044;border-radius:14px;padding:14px;margin-bottom:14px;display:none;">
+        <div style="font-size:0.65rem;font-weight:800;color:#ffd700;margin-bottom:10px;">🟡 PROMO UREA — <span id="urea-card-mes"></span></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;" id="urea-card-kpis"></div>
+    </div>
+
     <!-- ══ REGISTRO DE VISITA ══════════════════════════════════════════════ -->
     <div class="visita-form">
         <h2 style="font-size:0.8rem; border-bottom:1px solid var(--blue); padding-bottom:10px; margin-bottom:14px; color:var(--blue); text-transform:uppercase;">📋 REGISTRAR VISITA</h2>
@@ -700,6 +706,7 @@
         loadTopProductos();
         loadVentasDiarias();
         loadCores();
+        loadUreaCard();
     }
 
     // ─── RENDER PRINCIPAL ────────────────────────────────────────────────────
@@ -1210,6 +1217,34 @@
     else loadCores();
 }
 
+function loadUreaCard() {
+    apiFetch(`/api/promo-urea`).then(data => {
+        const nombre = (window.currentUser || '').toUpperCase();
+        const v = data.vendedores.find(v => v.Vendedor.toUpperCase().includes(nombre.split(' ')[0]));
+        if (!v) return;
+        const meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+        const hoy = new Date();
+        document.getElementById('urea-card-mes').textContent = `${meses[hoy.getMonth()]} ${hoy.getFullYear()}`;
+        document.getElementById('urea-card').style.display = 'block';
+        const fmtC = n => n === null ? '—' : (n >= 0 ? `<span style="color:var(--grass)">+${n.toFixed(1)}%</span>` : `<span style="color:var(--red)">${n.toFixed(1)}%</span>`);
+        document.getElementById('urea-card-kpis').innerHTML = `
+            <div style="background:#111;border-radius:8px;padding:8px;text-align:center;">
+                <div style="font-size:0.45rem;color:#888;">LITROS</div>
+                <div style="font-size:1rem;font-weight:900;color:#ffd700;">${Math.round(v.Litros).toLocaleString()} L</div>
+                <div style="font-size:0.48rem;">${fmtC(v.CrecLitros)} vs año ant.</div>
+            </div>
+            <div style="background:#111;border-radius:8px;padding:8px;text-align:center;">
+                <div style="font-size:0.45rem;color:#888;">MONTO</div>
+                <div style="font-size:1rem;font-weight:900;color:#ffd700;">$${(v.Monto/1000).toFixed(1)}K</div>
+                <div style="font-size:0.48rem;">${fmtC(v.CrecMonto)} vs año ant.</div>
+            </div>
+            <div style="background:#111;border-radius:8px;padding:8px;text-align:center;">
+                <div style="font-size:0.45rem;color:#888;">PIEZAS</div>
+                <div style="font-size:1rem;font-weight:900;color:#ffd700;">${v.Piezas}</div>
+            </div>`;
+    }).catch(() => {});
+}
+
 function setCoresFiltro(tipo) {
         coresFiltro = tipo;
         document.getElementById('cores-f-dev').classList.toggle('activo', tipo === 'devueltos');
@@ -1299,7 +1334,7 @@ function setCoresFiltro(tipo) {
             tbody.innerHTML = '';
             cores.forEach(c => {
                 const dias  = parseInt(c.DiasTranscurridos) || 0;
-                const clase = dias <= 7 ? 'dias-rojo' : dias <= 30 ? 'dias-ambar' : 'dias-verde';
+                const clase = dias < 7 ? 'dias-verde' : dias <= 20 ? 'dias-ambar' : 'dias-rojo';
                 const tipo  = (c.TipoVenta || '').includes('8%') ? 'CORES 8%' : 'CORES';
                 tbody.innerHTML += `
                     <tr>
