@@ -55,10 +55,10 @@ function cargarExcel() {
       const prom   = parseFloat(row['PROMEDIO_LITROS_2025']) || 0;
       if (nombre) aceiteBaseMap[nombre] = prom;
     });
-    // Carga participantes World Cup desde Hoja1 (sin encabezado, nombres en columna A)
-    const hoja1 = XLSX.utils.sheet_to_json(wb.Sheets['Hoja1'], { header: 1, defval: null });
+    // Carga participantes World Cup desde Hoja1
+    const hoja1 = XLSX.utils.sheet_to_json(wb.Sheets['Hoja1'], { defval: null });
     hoja1.forEach(row => {
-      const nombre = (row[0] || '').toString().trim().toUpperCase();
+      const nombre = (row['NOMBRE ASESOR'] || '').toString().trim().toUpperCase();
       if (nombre) wcSet.add(nombre);
     });
     console.log(`Excel cargado: ${Object.keys(metasMap).length} asesores, ${Object.values(carteraMap).flat().length} clientes, ${Object.keys(aceiteBaseMap).length} bases de aceite, ${wcSet.size} concursantes WC, ${Object.keys(aceiteBaseMap).length} concursantes aceite`);
@@ -112,8 +112,8 @@ function normSuc(s) { const k = (s||'').toUpperCase().trim(); return SUCURSAL_NO
 const SUCURSALES    = `'ANA','GOMEZ PALACIO','MONCLOVA','PIEDRAS NEGRAS','TORREON'`;
 const TIPOS_EXCL    = `'PRESUPUESTO','PRESUPUESTO 8%','Traspaso salida almacen'`;
 const TIPO_EXCL_SQL = `(s.DES_TIPO_VENTA NOT IN (${TIPOS_EXCL}) AND s.DES_TIPO_VENTA IS NOT NULL AND LTRIM(RTRIM(s.DES_TIPO_VENTA)) <> '')`;
-const TIPOS_EXCL_ACEITE = `${TIPOS_EXCL},'Venta O.R. Filiales','Venta O.R. Internas','Ventas internas refacciones'`;
-const TIPO_EXCL_ACEITE_SQL = `(s.DES_TIPO_VENTA NOT IN (${TIPOS_EXCL_ACEITE}) AND s.DES_TIPO_VENTA IS NOT NULL AND LTRIM(RTRIM(s.DES_TIPO_VENTA)) <> '')`;
+const TIPOS_INCL_ACEITE = `'VENTAS REFACCIONES CREDITO','VENTA REFACCIONES','VENTA REFACCIONES 8%','VENTA REFACCIONES FLEET','VENTAS REFACCIONES MOSTRADOR CREDITO 8%','VENTA REMISIONES','VENTA REMISIONES 8%','VENTA REFACCIONES PARTES RELACIONADAS'`;
+const TIPO_EXCL_ACEITE_SQL = `(s.DES_TIPO_VENTA IN (${TIPOS_INCL_ACEITE}))`;
 
 // ── HEALTH CHECK ──────────────────────────────────────────────────────────────
 app.get('/', (req, res) => res.json({ status: 'ok', servidor: 'Catosa API' }));
@@ -525,156 +525,6 @@ app.get('/api/ventas-diarias', async (req, res) => {
   }
 });
 
-// ── VENTAS DIARIAS GRUPO/SUCURSAL ────────────────────────────────────────────
-app.get('/api/ventas-diarias-grupo', async (req, res) => {
-  try {
-    const db      = await getPool();
-    const hoy     = new Date();
-    const ini     = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-01`;
-    const fin     = hoy.toISOString().split('T')[0];
-    const sucursal = decodeURIComponent(req.query.sucursal || '');
-
-    const sucFiltro = sucursal && sucursal !== 'TODAS'
-      ? `AND s.NOM_ALMACEN_LIN = '${sucursal.replace(/'/g,"''")}'`
-      : `AND s.NOM_ALMACEN_LIN IN (${SUCURSALES})`;
-
-    const result = await db.request()
-      .input('ini', sql.VarChar, ini)
-      .input('fin', sql.VarChar, fin)
-      .query(`
-        SELECT
-          CAST(RIGHT(LEFT(s.FECHA, 10), 2) AS INT) AS Dia,
-          SUM(s.IMP_TOTAL_LINEA)                   AS Venta
-        FROM FTSABI_PR s
-        WHERE s.FECHA >= @ini AND s.FECHA <= @fin
-          AND ${TIPO_EXCL_GRUPO_SQL}
-          ${sucFiltro}
-        GROUP BY RIGHT(LEFT(s.FECHA, 10), 2)
-        ORDER BY Dia ASC
-      `);
-
-    const dias = {};
-    result.recordset.forEach(r => { dias[r.Dia] = parseFloat(r.Venta) || 0; });
-    res.json(dias);
-  } catch (err) {
-    console.error('Error /api/ventas-diarias-grupo:', err.message);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// ── PROMO UREA AGO 2026 ──────────────────────────────────────────────────────
-const UREA_ARTS = "'0/UREA2','0/UREA3','1/ZFLRTUREAG'";
-
-app.get('/api/promo-urea', async (req, res) => {
-  try {
-    const db  = await getPool();
-    const hoy = new Date();
-    const mesActual = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}`;
-    const mesAnterior = `${hoy.getFullYear()-1}-${String(hoy.getMonth()+1).padStart(2,'0')}`;
-
-    // Ventas actuales por vendedor
-    const rAct = await db.request().query(`
-      SELECT
-        s.NOM_VENDEDOR                          AS Vendedor,
-        s.NOM_ALMACEN_LIN                       AS Sucursal,
-        SUM(s.CANTIDAD)                         AS Litros,
-        COUNT(*)                                AS Piezas,
-        SUM(s.IMP_TOTAL_LINEA)                  AS Monto
-      FROM FTSABI_PR s
-      WHERE s.ARTICULO IN (${UREA_ARTS})
-        AND LEFT(s.FECHA,7) = '${mesActual}'
-        AND ${TIPO_EXCL_SQL}
-        AND s.NOM_ALMACEN_LIN IN (${SUCURSALES})
-      GROUP BY s.NOM_VENDEDOR, s.NOM_ALMACEN_LIN
-    `);
-
-    // Ventas mismo mes año anterior por vendedor
-    const rAnt = await db.request().query(`
-      SELECT
-        s.NOM_VENDEDOR                          AS Vendedor,
-        s.NOM_ALMACEN_LIN                       AS Sucursal,
-        SUM(s.CANTIDAD)                         AS Litros,
-        COUNT(*)                                AS Piezas,
-        SUM(s.IMP_TOTAL_LINEA)                  AS Monto
-      FROM FTSABI_PR s
-      WHERE s.ARTICULO IN (${UREA_ARTS})
-        AND LEFT(s.FECHA,7) = '${mesAnterior}'
-        AND ${TIPO_EXCL_SQL}
-        AND s.NOM_ALMACEN_LIN IN (${SUCURSALES})
-      GROUP BY s.NOM_VENDEDOR, s.NOM_ALMACEN_LIN
-    `);
-
-    // Ventas últimos 6 meses por vendedor (para tendencia)
-    const r6m = await db.request().query(`
-      SELECT
-        s.NOM_VENDEDOR                          AS Vendedor,
-        LEFT(s.FECHA,7)                         AS Mes,
-        SUM(s.CANTIDAD)                         AS Litros,
-        SUM(s.IMP_TOTAL_LINEA)                  AS Monto
-      FROM FTSABI_PR s
-      WHERE s.ARTICULO IN (${UREA_ARTS})
-        AND s.FECHA >= DATEADD(month,-5,DATEFROMPARTS(${hoy.getFullYear()},${hoy.getMonth()+1},1))
-        AND ${TIPO_EXCL_SQL}
-        AND s.NOM_ALMACEN_LIN IN (${SUCURSALES})
-      GROUP BY s.NOM_VENDEDOR, LEFT(s.FECHA,7)
-      ORDER BY s.NOM_VENDEDOR, LEFT(s.FECHA,7)
-    `);
-
-    // Mapear anterior
-    const antMap = {};
-    rAnt.recordset.forEach(r => { antMap[r.Vendedor] = r; });
-
-    // Mapear 6 meses
-    const hist6m = {};
-    r6m.recordset.forEach(r => {
-      if (!hist6m[r.Vendedor]) hist6m[r.Vendedor] = [];
-      hist6m[r.Vendedor].push({ mes: r.Mes, litros: parseFloat(r.Litros)||0, monto: parseFloat(r.Monto)||0 });
-    });
-
-    // Armar respuesta por vendedor
-    const vendedores = rAct.recordset.map(r => {
-      const ant = antMap[r.Vendedor] || { Litros: 0, Piezas: 0, Monto: 0 };
-      const litrosAct = parseFloat(r.Litros)||0;
-      const litrosAnt = parseFloat(ant.Litros)||0;
-      const montoAct  = parseFloat(r.Monto)||0;
-      const montoAnt  = parseFloat(ant.Monto)||0;
-      return {
-        Vendedor:    r.Vendedor,
-        Sucursal:    r.Sucursal,
-        Litros:      litrosAct,
-        Piezas:      parseInt(r.Piezas)||0,
-        Monto:       montoAct,
-        LitrosAnt:   litrosAnt,
-        MontoAnt:    montoAnt,
-        CrecLitros:  litrosAnt > 0 ? ((litrosAct - litrosAnt) / litrosAnt * 100) : null,
-        CrecMonto:   montoAnt  > 0 ? ((montoAct  - montoAnt)  / montoAnt  * 100) : null,
-        Hist6m:      hist6m[r.Vendedor] || []
-      };
-    }).sort((a,b) => b.Litros - a.Litros);
-
-    // Resumen por sucursal
-    const sucMap = {};
-    vendedores.forEach(v => {
-      if (!sucMap[v.Sucursal]) sucMap[v.Sucursal] = { Sucursal:v.Sucursal, Litros:0, Piezas:0, Monto:0, LitrosAnt:0, MontoAnt:0 };
-      sucMap[v.Sucursal].Litros    += v.Litros;
-      sucMap[v.Sucursal].Piezas    += v.Piezas;
-      sucMap[v.Sucursal].Monto     += v.Monto;
-      sucMap[v.Sucursal].LitrosAnt += v.LitrosAnt;
-      sucMap[v.Sucursal].MontoAnt  += v.MontoAnt;
-    });
-    const sucursales = Object.values(sucMap).map(s => ({
-      ...s,
-      CrecLitros: s.LitrosAnt > 0 ? ((s.Litros - s.LitrosAnt) / s.LitrosAnt * 100) : null,
-      CrecMonto:  s.MontoAnt  > 0 ? ((s.Monto  - s.MontoAnt)  / s.MontoAnt  * 100) : null,
-    })).sort((a,b) => b.Litros - a.Litros);
-
-    res.json({ vendedores, sucursales, mes: mesActual, mesAnt: mesAnterior });
-  } catch (err) {
-    console.error('Error /api/promo-urea:', err.message);
-    res.status(500).json({ error: err.message });
-  }
-});
-
 // ── CORES PENDIENTES DE PAGO (FTPDCBI_PR sin FEC_CANCELACION) ─────────────────
 app.get('/api/cores-pendientes', async (req, res) => {
   try {
@@ -711,58 +561,17 @@ app.get('/api/cores-pendientes', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-app.get('/api/cores-pendientes-ventas', async (req, res) => {
-  try {
-    const db       = await getPool();
-    const vendedor = decodeURIComponent(req.query.vendedor || '');
-    const sucursal = decodeURIComponent(req.query.sucursal || '');
-
-    let filtroVend = vendedor ? `AND s.NOM_VENDEDOR = '${vendedor.replace(/'/g,"''")}'` : '';
-    let filtroSuc  = sucursal && sucursal !== 'TODAS'
-      ? `AND s.NOM_ALMACEN_LIN = '${sucursal.replace(/'/g,"''")}'`
-      : `AND s.NOM_ALMACEN_LIN IN (${SUCURSALES})`;
-
-    const hoy = new Date();
-    const mesParam = req.query.mes || `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}`;
-
-    const result = await db.request().query(`
-      SELECT
-        s.REFERENCIA                                    AS Referencia,
-        s.CLIENTE                                       AS Codigo,
-        s.DES_ARTICULO                                  AS Articulo,
-        s.DES_TIPO_VENTA                                AS TipoVenta,
-        s.NOM_ALMACEN_LIN                               AS Sucursal,
-        s.NOM_VENDEDOR                                  AS Vendedor,
-        LEFT(s.FECHA, 10)                               AS FechaFactura,
-        s.IMP_TOTAL_LINEA                               AS Monto,
-        s.CANTIDAD                                      AS Cantidad,
-        DATEDIFF(day, CAST(LEFT(s.FECHA,10) AS DATE), GETDATE()) AS Dias
-      FROM FTSABI_PR s
-      WHERE (
-          s.DES_TIPO_VENTA = 'VENTA REMISIONES CORES'
-          OR (s.DES_TIPO_VENTA = 'VENTA REMISIONES CORES 8%' AND s.NOM_ALMACEN_LIN = 'PIEDRAS NEGRAS')
-        )
-        AND LEFT(s.FECHA, 7) = '${mesParam}'
-        ${filtroVend}
-        ${filtroSuc}
-      ORDER BY Dias DESC
-    `);
-
-    res.json(result.recordset);
-  } catch (err) {
-    console.error('Error /api/cores-pendientes-ventas:', err.message);
-    res.status(500).json({ error: err.message });
-  }
-});
-
 app.get('/api/cores', async (req, res) => {
   try {
     const db       = await getPool();
     const vendedor = decodeURIComponent(req.query.vendedor || '');
     const hoy      = new Date();
-    const mesActual = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}`;
+    const ini      = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-01`;
+    const fin      = hoy.toISOString().split('T')[0];
 
     const result = await db.request()
+      .input('ini',  sql.Date, ini)
+      .input('fin',  sql.Date, fin)
       .input('vend', sql.VarChar, `%${vendedor}%`)
       .query(`
         SELECT
@@ -772,16 +581,16 @@ app.get('/api/cores', async (req, res) => {
           s.NOM_VENDEDOR                        AS Vendedor,
           s.DES_ARTICULO                        AS Articulo,
           s.DES_TIPO_VENTA                      AS TipoVenta,
-          LEFT(s.FECHA, 10)                     AS FechaFactura,
+          CONVERT(varchar(10), s.FECHA, 23)     AS FechaFactura,
           s.IMP_TOTAL_LINEA                     AS Monto,
           s.CANTIDAD                            AS Cantidad,
-          DATEDIFF(day, CAST(LEFT(s.FECHA,10) AS DATE), GETDATE()) AS DiasTranscurridos
+          DATEDIFF(day, s.FECHA, GETDATE())     AS DiasTranscurridos
         FROM FTSABI_PR s
         WHERE s.DES_TIPO_VENTA IN (
             'CANCELACION VENTA REMISIONES CORES',
             'CANCELACION VENTA REMISIONES CORES 8%'
           )
-          AND LEFT(s.FECHA, 7) = '${mesActual}'
+          AND s.FECHA >= @ini AND s.FECHA <= @fin
           AND s.NOM_ALMACEN_LIN IN (${SUCURSALES})
           AND s.NOM_VENDEDOR LIKE @vend
         ORDER BY s.FECHA DESC
@@ -824,12 +633,11 @@ app.get('/api/torneo', async (req, res) => {
     const ventaJunio = {};
     rJunio.recordset.forEach(r => { ventaJunio[nombreKey(r.NOM_VENDEDOR)] = parseFloat(r.VentaJunio)||0; });
 
-    // Ventas mes actual completo
-    const mesActual = String(new Date().getMonth() + 1).padStart(2, '0');
+    // Ventas Julio 1–17 (fase final)
     const rJulio = await db.request().query(`
       SELECT NOM_VENDEDOR, SUM(IMP_TOTAL_LINEA) AS VentaJulio
       FROM FTSABI_PR
-      WHERE LEFT(FECHA, 7) = '${anio}-${mesActual}'
+      WHERE FECHA >= '${anio}-07-01' AND FECHA <= '${anio}-07-17'
         AND DES_TIPO_VENTA NOT IN (${TIPOS_EXCL}) AND DES_TIPO_VENTA IS NOT NULL AND LTRIM(RTRIM(DES_TIPO_VENTA)) <> ''
         AND NOM_ALMACEN_LIN IN (${SUCURSALES})
       GROUP BY NOM_VENDEDOR
