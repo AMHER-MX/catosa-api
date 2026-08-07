@@ -201,14 +201,14 @@ app.get('/api/ventas', async (req, res) => {
 });
 // ── PROMO UREA AGO 2026 ──────────────────────────────────────────────────────
 const UREA_ARTS = "'0/UREA2','0/UREA3','1/ZFLRTUREAG'";
-
+ 
 app.get('/api/promo-urea', async (req, res) => {
   try {
     const db  = await getPool();
     const hoy = new Date();
-    const mesActual = ${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')};
-    const mesAnterior = ${hoy.getFullYear()-1}-${String(hoy.getMonth()+1).padStart(2,'0')};
-
+    const mesActual = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}`;
+    const mesAnterior = `${hoy.getFullYear()-1}-${String(hoy.getMonth()+1).padStart(2,'0')}`;
+ 
     // Ventas actuales por vendedor
     const rAct = await db.request().query(`
       SELECT
@@ -224,7 +224,7 @@ app.get('/api/promo-urea', async (req, res) => {
         AND s.NOM_ALMACEN_LIN IN (${SUCURSALES})
       GROUP BY s.NOM_VENDEDOR, s.NOM_ALMACEN_LIN
     `);
-
+ 
     // Ventas mismo mes año anterior por vendedor
     const rAnt = await db.request().query(`
       SELECT
@@ -240,7 +240,7 @@ app.get('/api/promo-urea', async (req, res) => {
         AND s.NOM_ALMACEN_LIN IN (${SUCURSALES})
       GROUP BY s.NOM_VENDEDOR, s.NOM_ALMACEN_LIN
     `);
-
+ 
     // Ventas últimos 6 meses por vendedor (para tendencia)
     const r6m = await db.request().query(`
       SELECT
@@ -256,18 +256,18 @@ app.get('/api/promo-urea', async (req, res) => {
       GROUP BY s.NOM_VENDEDOR, LEFT(s.FECHA,7)
       ORDER BY s.NOM_VENDEDOR, LEFT(s.FECHA,7)
     `);
-
+ 
     // Mapear anterior
     const antMap = {};
     rAnt.recordset.forEach(r => { antMap[r.Vendedor] = r; });
-
+ 
     // Mapear 6 meses
     const hist6m = {};
     r6m.recordset.forEach(r => {
       if (!hist6m[r.Vendedor]) hist6m[r.Vendedor] = [];
       hist6m[r.Vendedor].push({ mes: r.Mes, litros: parseFloat(r.Litros)||0, monto: parseFloat(r.Monto)||0 });
     });
-
+ 
     // Armar respuesta por vendedor
     const vendedores = rAct.recordset.map(r => {
       const ant = antMap[r.Vendedor] || { Litros: 0, Piezas: 0, Monto: 0 };
@@ -288,7 +288,7 @@ app.get('/api/promo-urea', async (req, res) => {
         Hist6m:      hist6m[r.Vendedor] || []
       };
     }).sort((a,b) => b.Litros - a.Litros);
-
+ 
     // Resumen por sucursal
     const sucMap = {};
     vendedores.forEach(v => {
@@ -304,7 +304,7 @@ app.get('/api/promo-urea', async (req, res) => {
       CrecLitros: s.LitrosAnt > 0 ? ((s.Litros - s.LitrosAnt) / s.LitrosAnt * 100) : null,
       CrecMonto:  s.MontoAnt  > 0 ? ((s.Monto  - s.MontoAnt)  / s.MontoAnt  * 100) : null,
     })).sort((a,b) => b.Litros - a.Litros);
-
+ 
     res.json({ vendedores, sucursales, mes: mesActual, mesAnt: mesAnterior });
   } catch (err) {
     console.error('Error /api/promo-urea:', err.message);
