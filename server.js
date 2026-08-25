@@ -388,16 +388,136 @@ app.get('/api/productos', async (req, res) => {
           i.COSTO_MEDIO   AS Precio,
           i.UBICACION     AS Ubicacion
         FROM FTIGBI_PR i
-        WHERE i.ALMACEN = 101
+        WHERE i.ALMACEN = '101'
           AND ${exacto
           ? 'i.ARTICULO = @b'
-          : 'i.ARTICULO LIKE @b OR i.DES_ARTICULO LIKE @b'}
+          : '(i.ARTICULO LIKE @b OR i.DES_ARTICULO LIKE @b)'}
         ORDER BY Existencia DESC
       `);
 
     res.json(result.recordset);
   } catch (err) {
     console.error('Error /api/productos:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── EXISTENCIAS POR ALMACEN ───────────────────────────────────────────────────
+// Devuelve la existencia DESGLOSADA por almacen, no la suma.
+// La usa el sistema de Solicitudes de Compras para decidir si hay que comprar
+// (mi sucursal esta en cero) o basta un traspaso (otra sucursal si tiene).
+//
+// GET /api/existencias?sku=XXXX&almacen=101&limite=20
+//   sku      numero de parte exacto o texto de la descripcion (min. 2 caracteres)
+//   almacen  clave del almacen que consulta; por defecto 101
+//   limite   maximo de articulos distintos (default 20, tope 100)
+
+// Almacenes que son puntos de venta. Se excluyen a proposito:
+//   102LA CONSIGNA LALA, 104CU CORES USADOS PN, 201RE RESCATES DURANGO
+const ALMACENES_VENTA = ['101', '102', '103', '104', '201', '202', '203'];
+
+app.get('/api/existencias', async (req, res) => {
+  try {
+    const termino = (req.query.sku || req.query.q || '').toString().trim();
+    if (termino.length < 2) {
+      return res.status(400).json({ error: 'Indica al menos 2 caracteres en `sku`' });
+    }
+
+    const almacen = (req.query.almacen || '101').toString().trim();
+    const limite  = Math.min(parseInt(req.query.limite) || 20, 100);
+
+    const db  = await getPool();
+    const rq  = db.request();
+
+    // Lista IN parametrizada: nunca se concatenan valores en el SQL.
+    ALMACENES_VENTA.forEach((clave, i) => rq.input(`alm${i}`, sql.VarChar(20), clave));
+    const lista = ALMACENES_VENTA.map((_, i) => `@alm${i}`).join(', ');
+
+    rq.input('almacen',  sql.VarChar(20),  almacen);
+    rq.input('exacto',   sql.VarChar(120), termino);
+    rq.input('busqueda', sql.VarChar(120), `%${termino}%`);
+    rq.input('limite',   sql.Int,          limite);
+
+    // OJO con dos detalles de esta consulta:
+    //   1. ALMACEN es VARCHAR y contiene valores como '102LA'. Compararlo contra
+    //      un numero (ALMACEN = 101) hace que SQL Server intente convertir cada
+    //      renglon a int y truene. Siempre entre comillas o por parametro.
+    //   2. Las condiciones del OR van entre PARENTESIS. Sin ellos, el AND toma
+    //      precedencia y la busqueda por descripcion se sale del filtro de almacen.
+    const result = await rq.query(`
+      WITH coincidencias AS (
+        SELECT TOP (@limite) i.ARTICULO
+        FROM   FTIGBI_PR i
+        WHERE  i.ALMACEN IN (${lista})
+          AND (i.ARTICULO = @exacto OR i.ARTICULO LIKE @busqueda OR i.DES_ARTICULO LIKE @busqueda)
+        GROUP BY i.ARTICULO
+        ORDER BY
+          MAX(CASE WHEN i.ARTICULO = @exacto THEN 1 ELSE 0 END) DESC,
+          SUM(CASE WHEN i.ALMACEN = @almacen THEN i.EXIS_REALES ELSE 0 END) DESC,
+          i.ARTICULO ASC
+      )
+      SELECT i.ARTICULO, i.DES_ARTICULO, i.ALMACEN, i.NOM_ALMACEN,
+             i.EXIS_REALES, i.COSTO_MEDIO, i.UBICACION
+      FROM   FTIGBI_PR i
+      JOIN   coincidencias c ON c.ARTICULO = i.ARTICULO
+      WHERE  i.ALMACEN IN (${lista})
+      ORDER BY i.ARTICULO ASC, i.ALMACEN ASC
+    `);
+
+    // Un renglon por articulo+almacen -> un objeto por articulo.
+    const porArticulo = new Map();
+    for (const r of result.recordset) {
+      const sku = (r.ARTICULO || '').toString().trim();
+      if (!sku) continue;
+
+      if (!porArticulo.has(sku)) {
+        porArticulo.set(sku, {
+          sku,
+          descripcion:  (r.DES_ARTICULO || '').toString().trim(),
+          precio_lista: Number(r.COSTO_MEDIO || 0),
+          ubicacion:    null,
+          almacen,
+          existencia:   0,
+          // Mapa clave -> total. Quiter puede traer VARIOS renglones del mismo
+          // articulo en el mismo almacen; hay que sumarlos, no listarlos aparte.
+          _otras: new Map(),
+        });
+      }
+
+      const art   = porArticulo.get(sku);
+      const clave = (r.ALMACEN || '').toString().trim();
+      const cant  = Number(r.EXIS_REALES || 0);
+
+      if (clave === almacen) {
+        art.existencia += cant;
+        if (r.UBICACION) art.ubicacion = r.UBICACION.toString().trim();
+      } else {
+        const previo = art._otras.get(clave) || {
+          almacen: clave,
+          nombre: (r.NOM_ALMACEN || '').toString().trim(),
+          existencia: 0,
+        };
+        previo.existencia += cant;
+        art._otras.set(clave, previo);
+      }
+    }
+
+    const articulos = [...porArticulo.values()].map(({ _otras, ...art }) => ({
+      ...art,
+      existencia_otras_sucursales: [..._otras.values()]
+        .filter(o => o.existencia > 0)
+        .sort((a, b) => b.existencia - a.existencia),
+    }));
+    res.json({
+      termino,
+      almacen,
+      almacenes_consultados: ALMACENES_VENTA,
+      consultado_en: new Date().toISOString(),
+      hay_existencia: articulos.some(a => a.existencia > 0),
+      articulos,
+    });
+  } catch (err) {
+    console.error('Error /api/existencias:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
