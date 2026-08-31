@@ -737,7 +737,7 @@
         <div class="top-card"><span>Avance Sede</span><b id="k-po">0%</b></div>
     </div>
 
-    <span class="race-label">🏆 MI DESEMPEÑO INDIVIDUAL (120%)</span>
+    <span class="race-label">Mi desempeño individual (120%)</span>
     <div class="race-track">
         <div class="porteria">🏁</div>
         <div class="line-meta l-75"></div><div class="line-meta l-110"></div>
@@ -748,7 +748,7 @@
         <span style="font-size:0.6rem; color:var(--text-subtle);">Falta para ORO: <b id="label-falta-ind" style="color:var(--red);">—</b></span>
     </div>
 
-    <span class="race-label" id="suc-label">🏟️ DESEMPEÑO SUCURSAL</span>
+    <span class="race-label" id="suc-label">Desempeño sucursal</span>
     <div class="race-track">
         <div class="porteria">🏁</div>
         <div class="line-meta l-75"></div><div class="line-meta l-110"></div>
@@ -759,30 +759,30 @@
         <span style="font-size:0.6rem; color:var(--text-subtle);">Avance: <b id="label-pct-grp" style="color:var(--accent);">—</b></span>
     </div>
 
-    <span class="race-label" id="prov-label" style="color:var(--purple)">🌟 CHALLENGE ACEITE MOTOR</span>
-    <div class="race-track" style="background:linear-gradient(90deg,#2e1065 50%,#4c1d95 50%); background-size:40px 100%; border-color:var(--purple);">
-        <div class="porteria" style="border-left-color:var(--purple);">🏆</div>
-        <div class="line-meta" style="left:50%; border-left:1px dashed var(--purple);"></div>
+    <span class="race-label" id="prov-label">Challenge Aceite Motor</span>
+    <div class="race-track" style="background:var(--surface-2); border-color:var(--border);">
+        <div class="porteria" style="border-left-color:var(--accent);">🏆</div>
+        <div class="line-meta" style="left:50%; border-left:1px dashed var(--accent);"></div>
         <div id="truck-prov" class="truck" style="filter:invert(1) hue-rotate(280deg);"></div>
     </div>
     <div style="display:flex; justify-content:space-between; padding:0 4px; margin-bottom:4px;">
-        <span style="font-size:0.6rem; color:var(--text-subtle);">Promedio 2025: <b id="label-base-aceite" style="color:var(--purple);">—</b></span>
-        <span style="font-size:0.6rem; color:var(--text-subtle);">Este mes: <b id="label-litros-mes" style="color:var(--purple);">—</b></span>
+        <span style="font-size:0.6rem; color:var(--text-subtle);">Promedio 2025: <b id="label-base-aceite" style="color:var(--accent);">—</b></span>
+        <span style="font-size:0.6rem; color:var(--text-subtle);">Este mes: <b id="label-litros-mes" style="color:var(--accent);">—</b></span>
     </div>
 
     <button onclick="abrirResumen()" style="width:100%;padding:14px;background:linear-gradient(135deg,#1a1600,#3a2e00);border:1px solid var(--gold);border-radius:14px;color:var(--gold);font-size:0.85rem;font-weight:700;cursor:pointer;margin-bottom:12px;">
             📊 Resumen del mes anterior
         </button>
-        <button class="btn-forms" onclick="window.open('https://docs.google.com/forms/d/e/1FAIpQLSfWF2AutcLCDhfBL6hoABmWVv4OKDvorCNB2CJTgY5QlrPrwA/viewform?usp=dialog','_blank')">
-        📝 REGISTRAR CLIENTE BASE DE DATOS
+        <button class="btn-forms" onclick="window.open('https://docs.google.com/forms/d/e/1FAIpQLSfWF2AutcLCDhfBL6hoABmWVv4OKDvorCNB2CJTgY5QlrPrwA/viewform?usp=dialog','_blank')" style="background:transparent;border:1px solid var(--border);color:var(--text-muted);font-weight:500;">
+        Registrar cliente en base de datos
     </button>
 
     <!-- CHECK-IN -->
     <div id="checkin-card" style="background:#0d0d0d;border:1px solid #4a9eff44;border-radius:14px;padding:14px;margin-bottom:14px;text-align:center;">
-        <div style="font-size:0.65rem;font-weight:800;color:#4a9eff;margin-bottom:8px;">📱 CHECK-IN DIARIO</div>
-        <div style="font-size:0.55rem;color:#666;margin-bottom:10px;">Registra tu entrada para sumar puntos al concurso</div>
+        <div style="font-size:0.75rem;font-weight:600;color:var(--text);margin-bottom:6px;">Check-in diario</div>
+        <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:10px;">Registra tu entrada para sumar puntos al concurso.</div>
         <button id="checkin-btn" onclick="registrarCheckIn()" style="background:linear-gradient(135deg,#1a3a6b,#2a5aa0);border:1px solid #4a9eff;color:#fff;border-radius:10px;padding:10px 24px;font-size:0.7rem;font-weight:800;cursor:pointer;width:100%;">
-            📍 REGISTRAR CHECK-IN
+            Registrar check-in
         </button>
         <div id="checkin-msg" style="margin-top:8px;font-size:0.55rem;"></div>
     </div>
@@ -1047,10 +1047,10 @@
             const premio = a.premioTotal > 0 ? ` | 💰 $${a.premioTotal} ganados` : '';
             const intlPct = parseFloat(a.pctIntl) >= 30 ? ' ✅ +30% Intl' : ` (${a.pctIntl}% Intl)`;
             document.getElementById('prov-label').innerHTML =
-                `🌟 CHALLENGE ACEITE MOTOR &nbsp;|&nbsp; ${a.litrosIncrementales}L incrementales` +
+                `Challenge Aceite Motor &nbsp;|&nbsp; ${a.litrosIncrementales}L incrementales` +
                 `${intlPct} &nbsp;|&nbsp; Bloque ${a.bloques}/∞ × $${a.premioPorBloque}${premio}`;
         } catch(e) {
-            document.getElementById('prov-label').innerText = '🌟 CHALLENGE ACEITE MOTOR';
+            document.getElementById('prov-label').innerText = 'Challenge Aceite Motor';
         }
     }
 
@@ -1391,13 +1391,13 @@
                     hora
                 })
             });
-            btn.textContent = '✅ Check-In registrado';
+            btn.textContent = 'Check-in registrado';
             btn.style.background = 'var(--success-dim)';
             btn.style.borderColor = 'var(--success)';
-            msg.innerHTML = `<span style="color:var(--success)">✅ ${fecha} ${hora} — +10 pts 🏆</span>`;
+            msg.innerHTML = `<span style="color:var(--success);font-size:0.75rem;">${fecha} ${hora} · +10 pts</span>`;
         } catch(err) {
             btn.disabled = false;
-            btn.textContent = '📍 REGISTRAR CHECK-IN';
+            btn.textContent = 'Registrar check-in';
             msg.innerHTML = `<span style="color:var(--red)">❌ ${err.message}</span>`;
         }
     }
