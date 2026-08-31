@@ -31,13 +31,13 @@
             const tp = document.getElementById('r-productos');
             tp.innerHTML = d.topProductos.map((p,i) =>
                 `<tr><td>${i+1}. ${(p.Descripcion||p.Parte).substring(0,28)}</td><td>${fM2(p.Monto)}</td></tr>`
-            ).join('') || '<tr><td colspan="2" style="color:#888;text-align:center;">Sin datos</td></tr>';
+            ).join('') || '<tr><td colspan="2" style="color:var(--text-muted);text-align:center;">Sin datos</td></tr>';
 
             // Top clientes
             const tc = document.getElementById('r-clientes');
             tc.innerHTML = d.topClientes.map((c,i) =>
                 `<tr><td>${i+1}. ${(c.Cliente||c.Codigo).substring(0,28)}</td><td>${fM2(c.Monto)}</td></tr>`
-            ).join('') || '<tr><td colspan="2" style="color:#888;text-align:center;">Sin datos</td></tr>';
+            ).join('') || '<tr><td colspan="2" style="color:var(--text-muted);text-align:center;">Sin datos</td></tr>';
 
             // Oportunidades
             document.getElementById('r-oportunidades').innerHTML =
@@ -64,7 +64,7 @@
             document.head.appendChild(s);
             await new Promise(r => s.onload = r);
         }
-        const canvas = await html2canvas(el, { backgroundColor:'#111', scale:2 });
+        const canvas = await html2canvas(el, { backgroundColor:'var(--surface)', scale:2 });
         const a = document.createElement('a');
         a.href = canvas.toDataURL('image/png');
         const mes = document.getElementById('r-mes').innerText.replace(/ /g,'_');
@@ -120,7 +120,7 @@
                     </div>`;
                 }).join('');
             } else {
-                barsEl.innerHTML = '<div style="color:#555;font-size:0.72rem;">Sin historial</div>';
+                barsEl.innerHTML = '<div style="color:var(--text-subtle);font-size:0.72rem;">Sin historial</div>';
             }
 
             // ── Top productos ─────────────────────────────────────────────
@@ -130,7 +130,7 @@
                     `<tr><td>${i+1}. ${(p.Descripcion||p.Parte||'').substring(0,30)}</td><td>${fM(p.Monto)}</td></tr>`
                 ).join('');
             } else {
-                prodEl.innerHTML = '<tr><td colspan="2" style="color:#555;">Sin datos</td></tr>';
+                prodEl.innerHTML = '<tr><td colspan="2" style="color:var(--text-subtle);">Sin datos</td></tr>';
             }
 
             // ── Última compra ─────────────────────────────────────────────
@@ -173,7 +173,7 @@
 
         document.getElementById('day-fecha').textContent  = '📅 ' + fechaLabel;
         document.getElementById('day-total').textContent  = document.getElementById('in_day_' + dia)?.innerText || '—';
-        document.getElementById('day-rows').innerHTML     = '<tr><td colspan="3" style="color:#555;text-align:center;">Cargando...</td></tr>';
+        document.getElementById('day-rows').innerHTML     = '<tr><td colspan="3" style="color:var(--text-subtle);text-align:center;">Cargando...</td></tr>';
         document.getElementById('day-modal').classList.add('open');
 
         try {
@@ -182,7 +182,7 @@
 
             if (!d.ventas || !d.ventas.length) {
                 document.getElementById('day-rows').innerHTML =
-                    '<tr><td colspan="3" style="color:#555;text-align:center;">Sin ventas registradas</td></tr>';
+                    '<tr><td colspan="3" style="color:var(--text-subtle);text-align:center;">Sin ventas registradas</td></tr>';
                 return;
             }
 
@@ -205,214 +205,500 @@
     }
 
     </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        :root { 
-            --pitch: #1a472a; 
-            --pitch-light: #2d5a3f; 
-            --gold: #ffd700; 
-            --grass: #00ff88; 
-            --card: #161b22; 
-            --text: #ffffff; 
-            --red: #ff4b2b; 
-            --blue: #00d4ff;
-            --silver: #c0c0c0;
-            --bronze: #cd7f32;
-            --purple: #a855f7;
-        }
-        body { 
-            font-family: 'Segoe UI', system-ui, sans-serif; 
-            background: #0d1117;
-            color: var(--text); 
-            margin: 0; 
-            padding: 10px; 
-            overflow-x: hidden; 
+        /* ── DESIGN TOKENS ──────────────────────────────────────── */
+        :root {
+            --bg:          #0f172a;
+            --surface:     #1e293b;
+            --surface-2:   #263348;
+            --border:      #334155;
+            --border-light:#2a3a50;
+            --text:        #f1f5f9;
+            --text-muted:  #94a3b8;
+            --text-subtle: #64748b;
+            --accent:      #3b82f6;
+            --accent-dim:  rgba(59,130,246,0.12);
+            --success:     #22c55e;
+            --success-dim: rgba(34,197,94,0.12);
+            --warning:     #f59e0b;
+            --warning-dim: rgba(245,158,11,0.12);
+            --danger:      #ef4444;
+            --danger-dim:  rgba(239,68,68,0.12);
+            --gold:        #f59e0b;
+            --silver:      #94a3b8;
+            --bronze:      #b45309;
+            --radius:      12px;
+            --radius-sm:   8px;
+            --radius-pill: 999px;
         }
 
-        /* LOGIN */
-        #login-screen { 
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: #000 url('https://amher-mx.github.io/catosa-api/SERIE_LT_navigation.jpg') center/cover no-repeat;
-            z-index: 1000; display: flex; align-items: center; justify-content: center; 
+        /* ── BASE ────────────────────────────────────────────────── */
+        *, *::before, *::after { box-sizing: border-box; }
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 12px;
+            overflow-x: hidden;
+            font-size: 14px;
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ── SCROLLBAR ───────────────────────────────────────────── */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+        /* ── LOGIN ───────────────────────────────────────────────── */
+        #login-screen {
+            position: fixed; inset: 0;
+            background: #060e1f url('https://amher-mx.github.io/catosa-api/SERIE_LT_navigation.jpg') center/cover no-repeat;
+            z-index: 1000; display: flex; align-items: center; justify-content: center;
         }
         #login-screen::before {
-            content: ''; position: absolute; inset: 0; background: rgba(0,0,0,0.78);
+            content: ''; position: absolute; inset: 0;
+            background: linear-gradient(135deg, rgba(6,14,31,0.92) 0%, rgba(15,23,42,0.88) 100%);
         }
-        .login-box { position: relative; z-index: 1; background: var(--card); padding: 35px; border-radius: 20px; border: 2px solid var(--gold); text-align: center; width: 300px; box-shadow: 0 0 30px rgba(255,215,0,0.2); }
-        #main-app { display: none; max-width: 1600px; margin: 0 auto; }
+        .login-box {
+            position: relative; z-index: 1;
+            background: var(--surface);
+            padding: 36px 32px;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            width: 320px;
+            box-shadow: 0 24px 48px rgba(0,0,0,0.5);
+        }
+        .login-box h2 {
+            font-size: 0.7rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            letter-spacing: 0.05em;
+            margin: 0 0 24px;
+            text-align: center;
+            border: none;
+            padding: 0;
+            text-transform: none;
+        }
+        .logo-login { height: 48px; margin-bottom: 20px; display: block; margin-left: auto; margin-right: auto; }
+        .logo-top   { height: 28px; }
 
-        .logo-login { height: 60px; margin-bottom: 25px; filter: drop-shadow(0 0 10px white); }
-        .logo-top { height: 35px; }
+        /* ── LAYOUT ──────────────────────────────────────────────── */
+        #main-app { display: none; max-width: 480px; margin: 0 auto; }
 
-        /* TOP BAR */
-        .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 15px; background: rgba(0,0,0,0.4); border-radius: 15px; margin-bottom: 15px; border: 1px solid #333; }
-        .btn-salir { background: none; border: 1px solid var(--red); color: var(--red); padding: 6px 16px; border-radius: 6px; cursor: pointer; font-size: 0.7rem; font-weight: 900; }
-        .header-info b { font-size: 1.1rem; color: var(--gold); text-transform: uppercase; display: block; }
-        .header-info small { color: var(--blue); font-size: 0.75rem; font-weight: bold; letter-spacing: 1px; }
+        /* ── TOP BAR ─────────────────────────────────────────────── */
+        .top-bar {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 12px 16px;
+            background: var(--surface);
+            border-radius: var(--radius);
+            margin-bottom: 12px;
+            border: 1px solid var(--border);
+        }
+        .header-info b {
+            font-size: 0.95rem; font-weight: 600;
+            color: var(--text); display: block;
+        }
+        .header-info small {
+            font-size: 0.7rem; color: var(--text-muted); font-weight: 400;
+        }
+        .btn-salir {
+            background: none;
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            padding: 6px 14px;
+            border-radius: var(--radius-pill);
+            cursor: pointer;
+            font-size: 0.72rem;
+            font-weight: 500;
+            transition: border-color 0.15s, color 0.15s;
+        }
+        .btn-salir:hover { border-color: var(--danger); color: var(--danger); }
 
-        /* PANEL TIEMPO */
-        .time-panel { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; background: #000; border-radius: 12px; padding: 15px; margin-bottom: 15px; border-bottom: 3px solid var(--grass); }
-        .time-item { text-align: center; }
-        .time-label { font-size: 0.55rem; color: var(--grass); display: block; text-transform: uppercase; font-weight: bold; }
-        .time-value { font-family: 'Courier New', monospace; font-size: 1rem; font-weight: bold; }
+        /* ── TIME PANEL ──────────────────────────────────────────── */
+        .time-panel {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+            margin-bottom: 12px;
+        }
+        .time-item {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 12px;
+            text-align: center;
+        }
+        .time-label {
+            font-size: 0.65rem; color: var(--text-muted);
+            display: block; margin-bottom: 4px; font-weight: 500;
+        }
+        .time-value {
+            font-size: 0.9rem; font-weight: 700;
+            color: var(--text);
+        }
 
-        /* KPIS */
-        .top-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 15px; }
-        .top-card { background: var(--card); padding: 12px; border-radius: 15px; text-align: left; border-left: 4px solid var(--blue); }
-        .top-card span { font-size: 0.5rem; color: #888; display: block; text-transform: uppercase; margin-bottom: 5px; }
-        .top-card b { font-size: 0.85rem; color: #fff; }
+        /* ── KPI CARDS ───────────────────────────────────────────── */
+        .top-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 12px; }
+        .top-card {
+            background: var(--surface);
+            padding: 14px;
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+        }
+        .top-card span {
+            font-size: 0.65rem; color: var(--text-muted);
+            display: block; margin-bottom: 6px; font-weight: 500;
+        }
+        .top-card b { font-size: 1rem; color: var(--text); font-weight: 600; }
 
-        /* CANCHAS */
-        .race-label { font-size: 0.65rem; color: var(--gold); font-weight: bold; text-transform: uppercase; margin: 12px 0 4px 5px; display: block; }
-        .race-track { background: linear-gradient(180deg,#2a2a2a 0%,#1a1a1a 40%,#222 60%,#2a2a2a 100%); border: 2px solid #fff; border-radius: 8px; height: 42px; position: relative; overflow: hidden; margin-bottom: 8px; }
-        .race-track::before { content: ""; position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: rgba(255,255,255,0.3); }
-        .porteria { position: absolute; right: 0; top: 0; bottom: 0; width: 30px; background: rgba(255,255,255,0.1); border-left: 2px dashed #fff; display: flex; align-items: center; justify-content: center; font-size: 1rem; }
-        .line-meta { position: absolute; top: 0; bottom: 0; width: 1px; opacity: 0.5; z-index: 1; }
-        .l-75 { left: 62.5%; border-left: 1px dashed var(--bronze); }
+        /* ── SECTION LABEL ───────────────────────────────────────── */
+        .race-label {
+            font-size: 0.7rem; color: var(--text-muted);
+            font-weight: 600; margin: 16px 0 6px 2px; display: block;
+        }
+
+        /* ── RACE TRACK ──────────────────────────────────────────── */
+        .race-track {
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            height: 40px; position: relative; overflow: hidden; margin-bottom: 8px;
+        }
+        .porteria {
+            position: absolute; right: 0; top: 0; bottom: 0; width: 28px;
+            background: rgba(59,130,246,0.08);
+            border-left: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.9rem;
+        }
+        .line-meta {
+            position: absolute; top: 0; bottom: 0; width: 1px; opacity: 0.4; z-index: 1;
+        }
+        .l-75  { left: 62.5%; border-left: 1px dashed var(--warning); }
         .l-110 { left: 91.6%; border-left: 1px dashed var(--silver); }
-        .truck { position: absolute; bottom: 2px; width: 52px; height: 24px; background: url('https://amher-mx.github.io/catosa-api/camioncaja-int.png') left center/contain no-repeat; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8)); transition: 3s cubic-bezier(0.2,0,0.2,1); z-index: 10; }
-        .truck.oro { filter: drop-shadow(0 0 12px var(--gold)); }
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .truck {
+            position: absolute; bottom: 2px; width: 52px; height: 24px;
+            background: url('https://amher-mx.github.io/catosa-api/camioncaja-int.png') left center/contain no-repeat;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8));
+            transition: 3s cubic-bezier(0.2,0,0.2,1); z-index: 10;
+        }
+        .truck.oro { filter: drop-shadow(0 0 8px rgba(245,158,11,0.6)); }
 
-        /* SEMÁFORO */
-        .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 8px; vertical-align: middle; }
-        .dot.verde { background: #0f0; box-shadow: 0 0 10px #0f0; }
-        .dot.ambar { background: #ff0; box-shadow: 0 0 10px #ff0; }
-        .dot.rojo { background: #f00; box-shadow: 0 0 10px #f00; }
+        /* ── SEMÁFORO DOTS ───────────────────────────────────────── */
+        .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; vertical-align: middle; }
+        .dot.verde { background: var(--success); }
+        .dot.ambar { background: var(--warning); }
+        .dot.rojo  { background: var(--danger); }
 
-        .btn-forms { background: #fff; color: #000; border-radius: 50px; border: none; padding: 14px; font-weight: 900; width: 100%; cursor: pointer; font-size: 0.8rem; margin-bottom: 20px; }
+        /* ── INPUTS ──────────────────────────────────────────────── */
+        input, select {
+            width: 100%;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            padding: 10px 12px;
+            border-radius: var(--radius-sm);
+            color: var(--text);
+            margin-bottom: 10px;
+            box-sizing: border-box;
+            font-family: inherit;
+            font-size: 0.85rem;
+            transition: border-color 0.15s;
+        }
+        input:focus, select:focus {
+            outline: none; border-color: var(--accent);
+        }
+        input::placeholder { color: var(--text-subtle); }
 
-        /* GRID */
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 15px; }
-        .card { background: var(--card); border-radius: 20px; padding: 20px; border: 1px solid #333; min-height: 400px; display: flex; flex-direction: column; }
-        h2 { font-size: 0.8rem; border-bottom: 1px solid var(--grass); padding-bottom: 10px; margin-bottom: 20px; color: var(--grass); text-transform: uppercase; }
+        /* ── BUTTONS ─────────────────────────────────────────────── */
+        .btn {
+            padding: 12px 20px;
+            border-radius: var(--radius-sm);
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            color: #fff;
+            background: var(--accent);
+            width: 100%;
+            font-family: inherit;
+            font-size: 0.85rem;
+            transition: opacity 0.15s;
+        }
+        .btn:active { opacity: 0.85; }
+        .btn-forms {
+            background: var(--accent);
+            color: #fff;
+            border-radius: var(--radius-pill);
+            border: none;
+            padding: 13px;
+            font-weight: 600;
+            width: 100%;
+            cursor: pointer;
+            font-size: 0.82rem;
+            margin-bottom: 10px;
+            font-family: inherit;
+        }
+        .btn-forms:hover { opacity: 0.9; }
+        .btn-registrar {
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            border-radius: var(--radius-pill);
+            padding: 13px;
+            font-weight: 600;
+            width: 100%;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-family: inherit;
+        }
+        .btn-registrar:disabled { background: var(--surface-2); color: var(--text-subtle); cursor: not-allowed; }
+        .btn-salir-login {
+            background: none;
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            border-radius: var(--radius-pill);
+            padding: 10px;
+            width: 100%;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-family: inherit;
+            margin-top: 8px;
+        }
 
-        /* CALCULADORA */
-        .cal-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; overflow-y: auto; flex: 1; }
-        .day-box { background: #000; border: 1px solid #1a1a1a; border-radius: 6px; padding: 5px; text-align: center; transition: all 0.3s; }
-        .day-in  { color: #333; font-size: 0.75rem; text-align: center; font-weight: bold; min-height: 18px; }
+        /* ── BADGES / PILLS ──────────────────────────────────────── */
+        .wc-fase-badge {
+            display: inline-block; padding: 3px 10px;
+            border-radius: var(--radius-pill);
+            font-size: 0.65rem; font-weight: 600;
+        }
+        .wc-clasificado { background: var(--success-dim); color: var(--success); border: 1px solid rgba(34,197,94,0.3); }
+        .wc-pendiente   { background: var(--warning-dim); color: var(--warning); border: 1px solid rgba(245,158,11,0.3); }
+        .wc-fuera       { background: var(--danger-dim);  color: var(--danger);  border: 1px solid rgba(239,68,68,0.3); }
 
-        /* BOTONES */
-        .btn { padding: 15px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; color: #fff; background: linear-gradient(to bottom, #2ecc71, #27ae60); text-transform: uppercase; width: 100%; box-shadow: 0 4px 0 #1e8449; }
-        .btn:active { transform: translateY(2px); box-shadow: none; }
-        .client-item { display: flex; align-items: center; padding: 12px 0; border-bottom: 1px solid #222; justify-content: space-between; font-size: 0.85rem; }
-        input, select { width: 100%; background: #000; border: 1px solid #333; padding: 12px; border-radius: 8px; color: #fff; margin-bottom: 10px; box-sizing: border-box; }
-        ::-webkit-scrollbar { width: 5px; }
-        ::-webkit-scrollbar-thumb { background: var(--grass); border-radius: 10px; }
+        .btn-filtro {
+            flex: 1; padding: 7px 10px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text-muted);
+            font-size: 0.7rem; font-weight: 500;
+            cursor: pointer; font-family: inherit;
+            transition: all 0.15s;
+        }
+        .btn-filtro.activo {
+            background: var(--accent-dim);
+            color: var(--accent);
+            border-color: rgba(59,130,246,0.4);
+        }
 
-        /* WORLD CUP BADGES */
-        .wc-fase-badge { display:inline-block; padding:3px 12px; border-radius:20px; font-size:0.6rem; font-weight:900; letter-spacing:2px; text-transform:uppercase; }
-        .wc-clasificado { background:rgba(0,255,136,0.15); color:var(--grass); border:1px solid var(--grass); }
-        .wc-pendiente   { background:rgba(255,215,0,0.1);  color:var(--gold);  border:1px solid var(--gold); }
-        .wc-fuera       { background:rgba(255,75,43,0.1);  color:var(--red);   border:1px solid var(--red); }
-        .btn-filtro { flex:1; padding:8px; border-radius:8px; border:1px solid #333; background:#000; color:#888; font-size:0.65rem; font-weight:bold; cursor:pointer; }
-        .btn-filtro.activo { background:var(--grass); color:#000; border-color:var(--grass); }
+        /* ── SEMÁFORO POTENCIAL ──────────────────────────────────── */
+        .semaforo-potencial {
+            display: inline-block; padding: 2px 10px;
+            border-radius: var(--radius-pill);
+            font-size: 0.65rem; font-weight: 600; margin-left: 6px;
+        }
+        .sem-verde { background: var(--success-dim); color: var(--success); }
+        .sem-ambar { background: var(--warning-dim); color: var(--warning); }
+        .sem-rojo  { background: var(--danger-dim);  color: var(--danger);  }
 
-        /* TARJETA CLIENTE MAPA */
-        .mapa-item { background:rgba(255,255,255,0.03); border-radius:10px; padding:12px; margin-bottom:8px; border-left:3px solid #333; }
-        .mapa-item.verde { border-left-color: #0f0; }
-        .mapa-item.ambar { border-left-color: #ff0; }
-        .mapa-item.rojo  { border-left-color: #f00; }
-        .mapa-btns { display:flex; gap:6px; margin-top:8px; }
-        .btn-maps  { flex:1; padding:7px; border-radius:6px; border:none; font-size:0.65rem; font-weight:bold; cursor:pointer; }
-        .btn-maps.google { background:#4285f4; color:#fff; }
-        .btn-maps.waze   { background:#33ccff; color:#000; }
-        .btn-maps.wa     { background:#25d366; color:#fff; }
+        /* ── CARTERA MAPA ────────────────────────────────────────── */
+        .mapa-item {
+            background: var(--surface-2);
+            border-radius: var(--radius-sm);
+            padding: 12px; margin-bottom: 8px;
+            border-left: 3px solid var(--border);
+        }
+        .mapa-item.verde { border-left-color: var(--success); }
+        .mapa-item.ambar { border-left-color: var(--warning); }
+        .mapa-item.rojo  { border-left-color: var(--danger); }
+        .mapa-btns { display: flex; gap: 6px; margin-top: 8px; }
+        .btn-maps {
+            flex: 1; padding: 7px;
+            border-radius: var(--radius-sm);
+            border: none; font-size: 0.65rem;
+            font-weight: 600; cursor: pointer;
+        }
+        .btn-maps.google { background: #1a73e8; color: #fff; }
+        .btn-maps.waze   { background: #33ccff; color: #000; }
+        .btn-maps.wa     { background: #25d366; color: #fff; }
 
-        /* REGISTRO DE VISITAS */
-        .visita-form { background:rgba(255,255,255,0.03); border-radius:14px; padding:16px; border:1px solid #222; margin-bottom:15px; }
-        .visita-form select, .visita-form input[type=text], .visita-form input[type=number] { 
-            width:100%; background:#000; border:1px solid #333; padding:10px 12px; 
-            border-radius:8px; color:#fff; margin-bottom:10px; box-sizing:border-box; font-size:0.8rem; }
-        .semaforo-potencial { display:inline-block; padding:3px 10px; border-radius:20px; font-size:0.65rem; font-weight:bold; margin-left:6px; }
-        .sem-verde  { background:rgba(0,255,136,0.15); color:var(--grass); border:1px solid var(--grass); }
-        .sem-ambar  { background:rgba(255,215,0,0.15);  color:var(--gold);  border:1px solid var(--gold); }
-        .sem-rojo   { background:rgba(255,75,43,0.15);  color:var(--red);   border:1px solid var(--red); }
-        .btn-registrar { background:var(--grass); color:#000; border:none; border-radius:50px; padding:14px; font-weight:900; width:100%; cursor:pointer; font-size:0.85rem; }
-        .btn-registrar:disabled { background:#333; color:#666; cursor:not-allowed; }
-        .visita-hist-item { padding:10px; background:rgba(255,255,255,0.03); border-radius:10px; margin-bottom:6px; border-left:3px solid var(--grass); }
+        /* ── VISITAS ─────────────────────────────────────────────── */
+        .visita-form {
+            background: var(--surface);
+            border-radius: var(--radius);
+            padding: 16px;
+            border: 1px solid var(--border);
+            margin-bottom: 12px;
+        }
+        .visita-hist-item {
+            padding: 10px 12px;
+            background: var(--surface-2);
+            border-radius: var(--radius-sm);
+            margin-bottom: 6px;
+            border-left: 3px solid var(--accent);
+        }
 
-        /* CORES */
-        .cores-table { width:100%; border-collapse:collapse; font-size:0.72rem; }
-        .cores-table th { color:var(--grass); font-size:0.55rem; text-transform:uppercase; padding:6px 4px; border-bottom:1px solid #333; text-align:left; white-space:nowrap; }
-        .cores-table td { padding:8px 4px; border-bottom:1px solid #1a1a1a; vertical-align:middle; }
-        .cores-table tr:last-child td { border-bottom:none; }
-        .dias-badge { display:inline-block; padding:2px 8px; border-radius:20px; font-weight:900; font-size:0.7rem; }
-        .dias-verde { background:rgba(0,255,136,0.12); color:#00ff88; }
-        .dias-ambar { background:rgba(255,215,0,0.12);  color:var(--gold); }
-        .dias-rojo  { background:rgba(255,75,43,0.15);  color:var(--red); }
-        .cores-kpis { display:flex; gap:10px; margin-bottom:12px; }
-        .cores-kpi  { flex:1; background:rgba(255,255,255,0.04); border-radius:10px; padding:10px; text-align:center; border:1px solid #222; }
-        .cores-kpi span { font-size:0.5rem; color:#888; text-transform:uppercase; display:block; margin-bottom:3px; }
-        .cores-kpi b { font-size:0.9rem; }
-    
-        /* ── RESUMEN MES MODAL ───────────────────────────── */
-        #resumen-modal { display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.85); overflow-y:auto; padding:16px; }
-        #resumen-modal.open { display:flex; align-items:flex-start; justify-content:center; }
-        .resumen-card { background:#111; border:1px solid var(--gold); border-radius:20px; width:100%; max-width:500px; padding:24px; margin:auto; }
-        .resumen-header { text-align:center; margin-bottom:20px; }
-        .resumen-header h2 { color:var(--gold); font-size:1.1rem; margin:0 0 4px; }
-        .resumen-header p  { color:#888; font-size:0.75rem; margin:0; }
-        .resumen-kpis { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:18px; }
-        .resumen-kpi  { background:#1a1a1a; border-radius:12px; padding:12px; text-align:center; }
-        .resumen-kpi .rk-val { font-size:1.3rem; font-weight:700; color:var(--gold); }
-        .resumen-kpi .rk-lbl { font-size:0.65rem; color:#888; margin-top:3px; }
-        .resumen-kpi.cumple .rk-val { color:#00ff88; }
-        .resumen-kpi.nocumple .rk-val { color:#ff4444; }
-        .resumen-section { margin-bottom:16px; }
-        .resumen-section h3 { font-size:0.7rem; color:#888; text-transform:uppercase; letter-spacing:1px; margin:0 0 8px; }
-        .resumen-table { width:100%; border-collapse:collapse; font-size:0.72rem; }
-        .resumen-table td { padding:6px 4px; border-bottom:1px solid #1e1e1e; }
-        .resumen-table td:last-child { text-align:right; color:var(--gold); }
-        .oportu-item { background:#1a1a1a; border-left:3px solid var(--gold); border-radius:0 8px 8px 0; padding:8px 12px; margin-bottom:8px; font-size:0.75rem; line-height:1.4; }
-        .resumen-btns { display:flex; gap:10px; margin-top:20px; }
-        .resumen-btns button { flex:1; padding:12px; border-radius:12px; font-size:0.8rem; font-weight:600; cursor:pointer; border:none; }
-        .btn-pdf { background:var(--gold); color:#000; }
-        .btn-png { background:#1a1a1a; color:var(--gold); border:1px solid var(--gold) !important; }
-        .btn-close-resumen { background:#222; color:#888; }
-        @media print { body > *:not(#resumen-modal) { display:none !important; } #resumen-modal { display:flex !important; position:static; background:white; padding:0; } .resumen-btns { display:none; } .resumen-card { border:none; } }
+        /* ── CORES ───────────────────────────────────────────────── */
+        .cores-table { width: 100%; border-collapse: collapse; font-size: 0.75rem; }
+        .cores-table th {
+            color: var(--text-muted);
+            font-size: 0.65rem; font-weight: 500;
+            padding: 6px 4px; border-bottom: 1px solid var(--border);
+            text-align: left; white-space: nowrap;
+        }
+        .cores-table td { padding: 8px 4px; border-bottom: 1px solid var(--border-light); vertical-align: middle; }
+        .cores-table tr:last-child td { border-bottom: none; }
+        .dias-badge {
+            display: inline-block; padding: 2px 8px;
+            border-radius: var(--radius-pill);
+            font-weight: 600; font-size: 0.7rem;
+        }
+        .dias-verde { background: var(--success-dim); color: var(--success); }
+        .dias-ambar { background: var(--warning-dim); color: var(--warning); }
+        .dias-rojo  { background: var(--danger-dim);  color: var(--danger);  }
+        .cores-kpis { display: flex; gap: 8px; margin-bottom: 12px; }
+        .cores-kpi {
+            flex: 1; background: var(--surface-2);
+            border-radius: var(--radius-sm);
+            padding: 10px; text-align: center;
+            border: 1px solid var(--border-light);
+        }
+        .cores-kpi span { font-size: 0.6rem; color: var(--text-muted); display: block; margin-bottom: 3px; }
+        .cores-kpi b { font-size: 0.95rem; font-weight: 600; }
+
+        /* ── CARD / GRID ─────────────────────────────────────────── */
+        .grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+        .card {
+            background: var(--surface);
+            border-radius: var(--radius);
+            padding: 18px;
+            border: 1px solid var(--border);
+        }
+        h2 {
+            font-size: 0.8rem; font-weight: 600;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 10px; margin-bottom: 16px;
+            color: var(--text); margin-top: 0;
+        }
+        .client-item {
+            display: flex; align-items: center;
+            padding: 11px 0; border-bottom: 1px solid var(--border-light);
+            justify-content: space-between; font-size: 0.82rem;
+        }
+
+        /* ── CALCULADORA ─────────────────────────────────────────── */
+        .cal-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; overflow-y: auto; flex: 1; }
+        .day-box {
+            background: var(--surface-2);
+            border: 1px solid var(--border-light);
+            border-radius: 6px; padding: 5px; text-align: center;
+            transition: border-color 0.15s;
+        }
+        .day-in { color: var(--text-subtle); font-size: 0.72rem; text-align: center; font-weight: 500; min-height: 18px; }
+
+        /* ── MODALES ─────────────────────────────────────────────── */
+        #resumen-modal {
+            display: none; position: fixed; inset: 0; z-index: 9999;
+            background: rgba(0,0,0,0.7); overflow-y: auto; padding: 16px;
+        }
+        #resumen-modal.open { display: flex; align-items: flex-start; justify-content: center; }
+        .resumen-card {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 16px; width: 100%; max-width: 500px;
+            padding: 24px; margin: auto;
+        }
+        .resumen-header { text-align: center; margin-bottom: 20px; }
+        .resumen-header h2 { color: var(--text); font-size: 1rem; margin: 0 0 4px; border: none; padding: 0; }
+        .resumen-header p  { color: var(--text-muted); font-size: 0.75rem; margin: 0; }
+        .resumen-kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+        .resumen-kpi  { background: var(--surface-2); border-radius: var(--radius-sm); padding: 12px; text-align: center; border: 1px solid var(--border); }
+        .resumen-kpi .rk-val { font-size: 1.2rem; font-weight: 700; color: var(--text); }
+        .resumen-kpi .rk-lbl { font-size: 0.65rem; color: var(--text-muted); margin-top: 3px; }
+        .resumen-kpi.cumple .rk-val   { color: var(--success); }
+        .resumen-kpi.nocumple .rk-val { color: var(--danger); }
+        .resumen-section { margin-bottom: 16px; }
+        .resumen-section h3 { font-size: 0.7rem; color: var(--text-muted); font-weight: 500; letter-spacing: 0.04em; margin: 0 0 8px; }
+        .resumen-table { width: 100%; border-collapse: collapse; font-size: 0.75rem; }
+        .resumen-table td { padding: 6px 4px; border-bottom: 1px solid var(--border-light); }
+        .resumen-table td:last-child { text-align: right; color: var(--accent); }
+        .oportu-item {
+            background: var(--surface-2); border-left: 3px solid var(--accent);
+            border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+            padding: 8px 12px; margin-bottom: 8px; font-size: 0.78rem; line-height: 1.5;
+            color: var(--text-muted);
+        }
+        .resumen-btns { display: flex; gap: 8px; margin-top: 20px; }
+        .resumen-btns button {
+            flex: 1; padding: 11px; border-radius: var(--radius-sm);
+            font-size: 0.8rem; font-weight: 600; cursor: pointer; border: none;
+            font-family: inherit;
+        }
+        .btn-pdf  { background: var(--accent); color: #fff; }
+        .btn-png  { background: var(--surface-2); color: var(--text-muted); border: 1px solid var(--border) !important; }
+        .btn-close-resumen { background: var(--surface-2); color: var(--text-muted); border: 1px solid var(--border) !important; }
+        @media print {
+            body > *:not(#resumen-modal) { display: none !important; }
+            #resumen-modal { display: flex !important; position: static; background: white; padding: 0; }
+            .resumen-btns { display: none; }
+            .resumen-card { border: none; }
+        }
+
+        /* ── DETALLE CLIENTE MODAL ───────────────────────────────── */
+        #cli-modal {
+            display: none; position: fixed; inset: 0; z-index: 9999;
+            background: rgba(0,0,0,0.7); overflow-y: auto; padding: 16px;
+        }
+        #cli-modal.open { display: flex; align-items: flex-start; justify-content: center; }
+        .cli-card {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 16px; width: 100%; max-width: 480px;
+            padding: 22px; margin: auto;
+        }
+        .cli-header { margin-bottom: 16px; padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+        .cli-nombre { font-size: 1rem; font-weight: 700; color: var(--text); }
 
         
         /* ── DETALLE CLIENTE MODAL ───────────────────────── */
         #cli-modal { display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.88); overflow-y:auto; padding:16px; }
         #cli-modal.open { display:flex; align-items:flex-start; justify-content:center; }
-        .cli-card { background:#111; border:1px solid #2a2a2a; border-radius:20px; width:100%; max-width:480px; padding:22px; margin:auto; }
+        .cli-card { background:var(--surface); border:1px solid #2a2a2a; border-radius:20px; width:100%; max-width:480px; padding:22px; margin:auto; }
         .cli-header { margin-bottom:16px; padding-bottom:14px; border-bottom:1px solid #1e1e1e; }
         .cli-nombre { font-size:1rem; font-weight:800; font-family:'Syne',sans-serif; color:var(--gold); }
-        .cli-codigo { font-size:0.7rem; color:#555; margin-top:2px; }
+        .cli-codigo { font-size:0.7rem; color:var(--text-subtle); margin-top:2px; }
         .cli-kpis { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:16px; }
         .cli-kpi { background:#1a1a1a; border-radius:12px; padding:10px; text-align:center; }
         .cli-kpi .ck-val { font-size:1rem; font-weight:700; }
-        .cli-kpi .ck-lbl { font-size:0.6rem; color:#888; margin-top:2px; }
-        .cli-kpi.arriba .ck-val { color:#00ff88; }
+        .cli-kpi .ck-lbl { font-size:0.6rem; color:var(--text-muted); margin-top:2px; }
+        .cli-kpi.arriba .ck-val { color:var(--success); }
         .cli-kpi.abajo  .ck-val { color:#ff4444; }
         .cli-kpi.igual  .ck-val { color:var(--gold); }
         .cli-section { margin-bottom:14px; }
-        .cli-section h3 { font-size:0.65rem; color:#666; text-transform:uppercase; letter-spacing:1px; margin:0 0 8px; }
+        .cli-section h3 { font-size:0.65rem; color:#666; text-transform:none; letter-spacing:1px; margin:0 0 8px; }
         .cli-table { width:100%; border-collapse:collapse; font-size:0.72rem; }
         .cli-table td { padding:5px 3px; border-bottom:1px solid #1a1a1a; }
         .cli-table td:last-child { text-align:right; color:var(--gold); }
         .cli-bars { display:flex; flex-direction:column; gap:5px; }
         .cli-bar-row { display:flex; align-items:center; gap:8px; font-size:0.68rem; }
-        .cli-bar-lbl { width:42px; color:#888; text-align:right; flex-shrink:0; }
+        .cli-bar-lbl { width:42px; color:var(--text-muted); text-align:right; flex-shrink:0; }
         .cli-bar-track { flex:1; background:#1a1a1a; border-radius:4px; height:16px; position:relative; overflow:hidden; }
         .cli-bar-fill { height:100%; border-radius:4px; background:rgba(200,168,75,0.7); transition:width .4s; }
         .cli-bar-val { position:absolute; right:6px; top:50%; transform:translateY(-50%); font-size:0.62rem; color:#fff; }
-        .cli-ult { font-size:0.72rem; color:#888; background:#1a1a1a; border-radius:10px; padding:10px 12px; line-height:1.6; }
-        .cli-close { width:100%; padding:12px; margin-top:16px; background:#1a1a1a; border:none; border-radius:12px; color:#888; font-size:0.8rem; cursor:pointer; }
+        .cli-ult { font-size:0.72rem; color:var(--text-muted); background:#1a1a1a; border-radius:10px; padding:10px 12px; line-height:1.6; }
+        .cli-close { width:100%; padding:12px; margin-top:16px; background:#1a1a1a; border:none; border-radius:12px; color:var(--text-muted); font-size:0.8rem; cursor:pointer; }
 
         
         /* ── DETALLE DÍA MODAL ───────────────────────────── */
         #day-modal { display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.88); overflow-y:auto; padding:16px; }
         #day-modal.open { display:flex; align-items:flex-start; justify-content:center; }
-        .day-card { background:#111; border:1px solid var(--grass); border-radius:20px; width:100%; max-width:480px; padding:22px; margin:auto; }
+        .day-card { background:var(--surface); border:1px solid var(--success); border-radius:20px; width:100%; max-width:480px; padding:22px; margin:auto; }
         .day-header { margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid #1e1e1e; display:flex; justify-content:space-between; align-items:center; }
-        .day-header h2 { color:var(--grass); font-size:1rem; font-family:'Syne',sans-serif; margin:0; }
-        .day-total { font-size:1.3rem; font-weight:800; color:var(--grass); }
+        .day-header h2 { color:var(--success); font-size:1rem; font-family:'Syne',sans-serif; margin:0; }
+        .day-total { font-size:1.3rem; font-weight:800; color:var(--success); }
         .day-table { width:100%; border-collapse:collapse; font-size:0.72rem; }
-        .day-table th { color:#555; font-size:0.6rem; text-transform:uppercase; padding:5px 4px; border-bottom:1px solid #222; text-align:left; }
+        .day-table th { color:var(--text-subtle); font-size:0.6rem; text-transform:none; padding:5px 4px; border-bottom:1px solid #222; text-align:left; }
         .day-table td { padding:6px 4px; border-bottom:1px solid #1a1a1a; }
-        .day-table td:last-child { text-align:right; color:var(--grass); }
-        .day-close { width:100%; padding:12px; margin-top:16px; background:#1a1a1a; border:none; border-radius:12px; color:#888; font-size:0.8rem; cursor:pointer; }
+        .day-table td:last-child { text-align:right; color:var(--success); }
+        .day-close { width:100%; padding:12px; margin-top:16px; background:#1a1a1a; border:none; border-radius:12px; color:var(--text-muted); font-size:0.8rem; cursor:pointer; }
         .day-box { cursor:pointer; transition:transform .15s; }
         .day-box:hover { transform:scale(1.05); }
 
@@ -424,7 +710,7 @@
     <div class="login-box">
         <img src="https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/logo-international.png" class="logo-login" alt="International" onerror="this.style.display='none'">
         <h3 style="color:var(--gold); margin-top:0;">CATOSA PERFORMANCE 2026</h3>
-        <div id="login-status" style="font-size:0.7rem; color:#555; margin-bottom:10px;">Cargando datos...</div>
+        <div id="login-status" style="font-size:0.7rem; color:var(--text-subtle); margin-bottom:10px;">Cargando datos...</div>
         <input type="text" id="u-name" placeholder="NOMBRE ASESOR">
         <input type="password" id="u-pass" placeholder="CONTRASEÑA">
         <button class="btn" id="btn-login" onclick="login()" disabled>CARGANDO...</button>
@@ -458,8 +744,8 @@
         <div id="truck-ind" class="truck"></div>
     </div>
     <div style="display:flex; justify-content:space-between; padding:0 4px; margin-bottom:4px;">
-        <span style="font-size:0.6rem; color:#555;">Meta mensual: <b id="label-meta-ind" style="color:var(--gold);">—</b></span>
-        <span style="font-size:0.6rem; color:#555;">Falta para ORO: <b id="label-falta-ind" style="color:var(--red);">—</b></span>
+        <span style="font-size:0.6rem; color:var(--text-subtle);">Meta mensual: <b id="label-meta-ind" style="color:var(--gold);">—</b></span>
+        <span style="font-size:0.6rem; color:var(--text-subtle);">Falta para ORO: <b id="label-falta-ind" style="color:var(--red);">—</b></span>
     </div>
 
     <span class="race-label" id="suc-label">🏟️ DESEMPEÑO SUCURSAL</span>
@@ -469,8 +755,8 @@
         <div id="truck-grp" class="truck" style="filter:invert(1) hue-rotate(150deg);"></div>
     </div>
     <div style="display:flex; justify-content:space-between; padding:0 4px; margin-bottom:4px;">
-        <span style="font-size:0.6rem; color:#555;">Meta sucursal: <b id="label-meta-grp" style="color:var(--blue);">—</b></span>
-        <span style="font-size:0.6rem; color:#555;">Avance: <b id="label-pct-grp" style="color:var(--blue);">—</b></span>
+        <span style="font-size:0.6rem; color:var(--text-subtle);">Meta sucursal: <b id="label-meta-grp" style="color:var(--accent);">—</b></span>
+        <span style="font-size:0.6rem; color:var(--text-subtle);">Avance: <b id="label-pct-grp" style="color:var(--accent);">—</b></span>
     </div>
 
     <span class="race-label" id="prov-label" style="color:var(--purple)">🌟 CHALLENGE ACEITE MOTOR</span>
@@ -480,8 +766,8 @@
         <div id="truck-prov" class="truck" style="filter:invert(1) hue-rotate(280deg);"></div>
     </div>
     <div style="display:flex; justify-content:space-between; padding:0 4px; margin-bottom:4px;">
-        <span style="font-size:0.6rem; color:#555;">Promedio 2025: <b id="label-base-aceite" style="color:var(--purple);">—</b></span>
-        <span style="font-size:0.6rem; color:#555;">Este mes: <b id="label-litros-mes" style="color:var(--purple);">—</b></span>
+        <span style="font-size:0.6rem; color:var(--text-subtle);">Promedio 2025: <b id="label-base-aceite" style="color:var(--purple);">—</b></span>
+        <span style="font-size:0.6rem; color:var(--text-subtle);">Este mes: <b id="label-litros-mes" style="color:var(--purple);">—</b></span>
     </div>
 
     <button onclick="abrirResumen()" style="width:100%;padding:14px;background:linear-gradient(135deg,#1a1600,#3a2e00);border:1px solid var(--gold);border-radius:14px;color:var(--gold);font-size:0.85rem;font-weight:700;cursor:pointer;margin-bottom:12px;">
@@ -503,10 +789,10 @@
 
     <!-- ══ REGISTRO DE VISITA ══════════════════════════════════════════════ -->
     <div class="visita-form">
-        <h2 style="font-size:0.8rem; border-bottom:1px solid var(--blue); padding-bottom:10px; margin-bottom:14px; color:var(--blue); text-transform:uppercase;">📋 REGISTRAR VISITA</h2>
+        <h2 style="font-size:0.8rem; border-bottom:1px solid var(--accent); padding-bottom:10px; margin-bottom:14px; color:var(--accent); text-transform:none;">📋 REGISTRAR VISITA</h2>
 
         <!-- Cliente -->
-        <label style="font-size:0.6rem; color:#888; text-transform:uppercase; display:block; margin-bottom:4px;">Cliente</label>
+        <label style="font-size:0.6rem; color:var(--text-muted); text-transform:none; display:block; margin-bottom:4px;">Cliente</label>
         <select id="vis-cliente" onchange="onVisClienteChange()">
             <option value="">— Selecciona cliente —</option>
         </select>
@@ -516,11 +802,11 @@
 
         <!-- Info del cliente -->
         <div id="vis-cliente-info" style="display:none; background:rgba(0,0,0,0.3); border-radius:8px; padding:10px; margin-bottom:10px; font-size:0.7rem;">
-            <span id="vis-info-txt" style="color:#888;"></span>
+            <span id="vis-info-txt" style="color:var(--text-muted);"></span>
         </div>
 
         <!-- Motivo -->
-        <label style="font-size:0.6rem; color:#888; text-transform:uppercase; display:block; margin-bottom:4px;">Motivo de visita</label>
+        <label style="font-size:0.6rem; color:var(--text-muted); text-transform:none; display:block; margin-bottom:4px;">Motivo de visita</label>
         <select id="vis-motivo">
             <option value="">— Selecciona motivo —</option>
             <option value="Visita">📍 Visita</option>
@@ -535,18 +821,18 @@
         </select>
 
         <!-- Monto potencial -->
-        <label style="font-size:0.6rem; color:#888; text-transform:uppercase; display:block; margin-bottom:4px;">
+        <label style="font-size:0.6rem; color:var(--text-muted); text-transform:none; display:block; margin-bottom:4px;">
             Monto potencial del mes
             <span id="vis-semaforo" class="semaforo-potencial" style="display:none;"></span>
         </label>
         <div style="position:relative;">
-            <span style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:#888; font-size:0.8rem;">$</span>
+            <span style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--text-muted); font-size:0.8rem;">$</span>
             <input type="number" id="vis-monto" placeholder="0.00" oninput="onVisMonto()" style="padding-left:24px;">
         </div>
-        <div id="vis-promedio-txt" style="font-size:0.6rem; color:#555; margin-top:-6px; margin-bottom:10px;"></div>
+        <div id="vis-promedio-txt" style="font-size:0.6rem; color:var(--text-subtle); margin-top:-6px; margin-bottom:10px;"></div>
 
         <!-- Notas -->
-        <label style="font-size:0.6rem; color:#888; text-transform:uppercase; display:block; margin-bottom:4px;">Notas (opcional)</label>
+        <label style="font-size:0.6rem; color:var(--text-muted); text-transform:none; display:block; margin-bottom:4px;">Notas (opcional)</label>
         <input type="text" id="vis-notas" placeholder="Comentarios adicionales...">
 
         <button class="btn-registrar" id="btn-registrar-visita" onclick="registrarVisita()">
@@ -555,8 +841,8 @@
         <div id="vis-msg" style="text-align:center; font-size:0.7rem; margin-top:8px;"></div>
     </div>
 
-    <div style="background:var(--card); border-radius:20px; padding:20px; border:1px solid #333; margin-bottom:15px;">
-        <h2 style="font-size:0.8rem; border-bottom:1px solid var(--red); padding-bottom:10px; margin-bottom:12px; color:var(--red); text-transform:uppercase;">⚠️ CORES</h2>
+    <div style="background:var(--card); border-radius:20px; padding:20px; border:1px solid var(--border); margin-bottom:15px;">
+        <h2 style="font-size:0.8rem; border-bottom:1px solid var(--red); padding-bottom:10px; margin-bottom:12px; color:var(--red); text-transform:none;">⚠️ CORES</h2>
         <div style="display:flex; gap:6px; margin-bottom:14px;">
             <button onclick="setCoresFiltro('devueltos')" id="cores-f-dev" class="btn-filtro activo" style="border-color:var(--red); color:var(--red);">📤 Devueltos</button>
             <button onclick="setCoresFiltro('pendientes')" id="cores-f-pen" class="btn-filtro" style="border-color:var(--gold); color:var(--gold);">⏳ Sin Pagar</button>
@@ -590,29 +876,29 @@
             <h2 style="margin-bottom:12px;">💰 PROYECCIÓN DE PREMIOS</h2>
 
             <!-- Nivel actual grande -->
-            <div id="premio-nivel" style="text-align:center; padding:16px; border-radius:14px; background:#111; margin-bottom:12px; border:2px solid #333; transition: all 0.5s;">
+            <div id="premio-nivel" style="text-align:center; padding:16px; border-radius:14px; background:var(--surface); margin-bottom:12px; border:2px solid #333; transition: all 0.5s;">
                 <div id="premio-emoji" style="font-size:2.5rem;">⏳</div>
                 <div id="premio-titulo" style="font-size:1.1rem; font-weight:900; letter-spacing:2px; margin:4px 0;">CARGANDO...</div>
-                <div id="premio-monto" style="font-size:1.8rem; font-weight:900; color:var(--grass);">$0</div>
-                <div id="premio-sub" style="font-size:0.65rem; color:#888; margin-top:4px;">-- de venta acumulada</div>
+                <div id="premio-monto" style="font-size:1.8rem; font-weight:900; color:var(--success);">$0</div>
+                <div id="premio-sub" style="font-size:0.65rem; color:var(--text-muted); margin-top:4px;">-- de venta acumulada</div>
             </div>
 
             <!-- Barra de niveles -->
-            <div style="position:relative; height:28px; border-radius:10px; background:#111; overflow:hidden; margin-bottom:8px; border:1px solid #333;">
+            <div style="position:relative; height:28px; border-radius:10px; background:var(--surface); overflow:hidden; margin-bottom:8px; border:1px solid var(--border);">
                 <div id="premio-barra" style="height:100%; width:0%; border-radius:10px; transition:width 1s ease; background:linear-gradient(90deg, var(--bronze), var(--silver), var(--gold));"></div>
                 <!-- Marcadores -->
                 <div style="position:absolute; top:0; bottom:0; left:62.5%; width:1px; background:var(--bronze); opacity:0.7;"></div>
                 <div style="position:absolute; top:0; bottom:0; left:91.6%; width:1px; background:var(--silver); opacity:0.7;"></div>
-                <div style="position:absolute; top:50%; left:10px; transform:translateY(-50%); font-size:0.5rem; color:#888; font-weight:bold;">FUERA</div>
+                <div style="position:absolute; top:50%; left:10px; transform:translateY(-50%); font-size:0.5rem; color:var(--text-muted); font-weight:bold;">FUERA</div>
                 <div style="position:absolute; top:50%; left:64%; transform:translateY(-50%); font-size:0.5rem; color:var(--bronze); font-weight:bold;">BRONCE</div>
                 <div style="position:absolute; top:50%; left:93%; transform:translateY(-50%); font-size:0.5rem; color:var(--silver); font-weight:bold;">PLATA</div>
             </div>
-            <div style="display:flex; justify-content:space-between; font-size:0.55rem; color:#555; margin-bottom:14px; padding:0 2px;">
+            <div style="display:flex; justify-content:space-between; font-size:0.55rem; color:var(--text-subtle); margin-bottom:14px; padding:0 2px;">
                 <span>0%</span><span style="color:var(--bronze);">75%</span><span style="color:var(--silver);">110%</span><span style="color:var(--gold);">120% ORO</span>
             </div>
 
             <!-- Grid de días -->
-            <div style="font-size:0.6rem; color:#888; margin-bottom:6px; text-transform:uppercase;">Venta diaria del mes</div>
+            <div style="font-size:0.6rem; color:var(--text-muted); margin-bottom:6px; text-transform:none;">Venta diaria del mes</div>
             <div class="cal-grid" id="cal-grid" style="flex:1; overflow-y:auto;"></div>
         </div>
 
@@ -666,7 +952,7 @@
         const diasMes = new Date(new Date().getFullYear(), new Date().getMonth()+1, 0).getDate();
         for (let i = 1; i <= diasMes; i++) {
             cg.innerHTML += `<div class="day-box" id="dbox_${i}" onclick="abrirDetalleDia(${i})">
-                <span style="font-size:0.5rem;color:#555;">${i}</span>
+                <span style="font-size:0.5rem;color:var(--text-subtle);">${i}</span>
                 <div class="day-in" id="in_day_${i}" style="color:#333;">—</div>
             </div>`;
         }
@@ -792,7 +1078,7 @@
                             <b>${nom}</b><br>
                             <small>${d} días inactivo</small>
                         </div>
-                        <b style="color:var(--grass)">${fM(c.Venta_Mes)}</b>
+                        <b style="color:var(--success)">${fM(c.Venta_Mes)}</b>
                     </div>`;
             });
             if (clientes.length === 0) lc.innerHTML = '<div class="loading">Sin clientes registrados</div>';
@@ -823,19 +1109,19 @@
             const dir    = (c.Direccion || '').trim();
             const dirEnc = dir ? encodeURIComponent(dir) : '';
             const badgeHTML = c.EsCartera
-                ? `<span style="display:inline-block;font-size:0.5rem;font-weight:900;padding:1px 6px;border-radius:10px;margin-left:6px;background:rgba(0,212,255,0.15);color:var(--blue);border:1px solid rgba(0,212,255,0.3);">⭐ CARTERA</span>`
-                : `<span style="display:inline-block;font-size:0.5rem;font-weight:900;padding:1px 6px;border-radius:10px;margin-left:6px;background:rgba(255,255,255,0.06);color:#666;border:1px solid #333;">VISITADO</span>`;
+                ? `<span style="display:inline-block;font-size:0.5rem;font-weight:900;padding:1px 6px;border-radius:10px;margin-left:6px;background:rgba(0,212,255,0.15);color:var(--accent);border:1px solid rgba(0,212,255,0.3);">⭐ CARTERA</span>`
+                : `<span style="display:inline-block;font-size:0.5rem;font-weight:900;padding:1px 6px;border-radius:10px;margin-left:6px;background:rgba(255,255,255,0.06);color:#666;border:1px solid var(--border);">VISITADO</span>`;
             ml.innerHTML += `
                 <div class="mapa-item ${col}" onclick="abrirDetalleCliente('${encodeURIComponent(c.Codigo||'')}','${(c.Cliente||c.Codigo||'').replace(/'/g,"\\'")}','${encodeURIComponent(c.NombreCompleto||'')}',${c.Venta_Mes||0},${c.PromedioMensual||0},${parseInt(c.Dias)||0})" style="cursor:pointer;">
                     <div style="display:flex; justify-content:space-between; align-items:flex-start;">
                         <div style="flex:1; min-width:0;">
                             <b style="font-size:0.85rem;">${nom}</b>${badgeHTML}<br>
-                            ${c.NombreCompleto && c.NombreCompleto !== nom ? `<small style="color:#888;">${c.NombreCompleto}</small><br>` : ''}
-                            <small style="color:#555;">${dir || 'Sin dirección registrada'}</small>
+                            ${c.NombreCompleto && c.NombreCompleto !== nom ? `<small style="color:var(--text-muted);">${c.NombreCompleto}</small><br>` : ''}
+                            <small style="color:var(--text-subtle);">${dir || 'Sin dirección registrada'}</small>
                         </div>
                         <div style="text-align:right; white-space:nowrap; margin-left:8px;">
-                            <b style="color:var(--grass); font-size:0.8rem;">${fM(c.Venta_Mes)}</b><br>
-                            <small style="color:#888;">${d} días</small>
+                            <b style="color:var(--success); font-size:0.8rem;">${fM(c.Venta_Mes)}</b><br>
+                            <small style="color:var(--text-muted);">${d} días</small>
                         </div>
                     </div>
                     ${dirEnc ? `
@@ -880,7 +1166,7 @@
                 const miPremio = posicion <= 4 ? premios[posicion] : '—';
                 badge.className = 'wc-fase-badge wc-clasificado';
                 badge.innerText = `🏆 EN LA FINAL — #${posicion}`;
-                texto.innerHTML = `Tu % en Julio: <b style="color:var(--gold)">${pct.toFixed(1)}%</b> &nbsp;|&nbsp; Premio proyectado: <b style="color:var(--grass)">${miPremio} + 🍿</b><br>
+                texto.innerHTML = `Tu % en Julio: <b style="color:var(--gold)">${pct.toFixed(1)}%</b> &nbsp;|&nbsp; Premio proyectado: <b style="color:var(--success)">${miPremio} + 🍿</b><br>
                     <small style="color:#666;">Quedan ${17 - dia} días de competencia.</small>`;
             }
         } else if (enGrupos) {
@@ -971,7 +1257,7 @@
             const vent = parseFloat(opt.dataset.venta)    || 0;
             const dias = parseInt(opt.dataset.dias)       || 0;
             info.style.display = 'block';
-            infoTxt.innerHTML = `Promedio mensual: <b style="color:var(--blue)">${fM(prom)}</b> &nbsp;|&nbsp; Venta este mes: <b style="color:var(--grass)">${fM(vent)}</b> &nbsp;|&nbsp; Último contacto: <b>${dias} días</b>`;
+            infoTxt.innerHTML = `Promedio mensual: <b style="color:var(--accent)">${fM(prom)}</b> &nbsp;|&nbsp; Venta este mes: <b style="color:var(--success)">${fM(vent)}</b> &nbsp;|&nbsp; Último contacto: <b>${dias} días</b>`;
             // Auto-rellenar monto potencial con el promedio histórico
             if (prom > 0) {
                 document.getElementById('vis-monto').value = Math.round(prom);
@@ -1077,7 +1363,7 @@
             document.getElementById('vis-semaforo').style.display          = 'none';
             document.getElementById('vis-promedio-txt').textContent        = '';
 
-            msg.innerHTML = `<span style="color:var(--grass)">✅ Visita registrada — ${fecha} ${hora}</span>`;
+            msg.innerHTML = `<span style="color:var(--success)">✅ Visita registrada — ${fecha} ${hora}</span>`;
         } catch(err) {
             msg.innerHTML = `<span style="color:var(--red)">❌ Error: ${err.message}</span>`;
         } finally {
@@ -1106,9 +1392,9 @@
                 })
             });
             btn.textContent = '✅ Check-In registrado';
-            btn.style.background = 'linear-gradient(135deg,#0a2e0a,#1a5a1a)';
-            btn.style.borderColor = 'var(--grass)';
-            msg.innerHTML = `<span style="color:var(--grass)">✅ ${fecha} ${hora} — +10 pts 🏆</span>`;
+            btn.style.background = 'var(--success-dim)';
+            btn.style.borderColor = 'var(--success)';
+            msg.innerHTML = `<span style="color:var(--success)">✅ ${fecha} ${hora} — +10 pts 🏆</span>`;
         } catch(err) {
             btn.disabled = false;
             btn.textContent = '📍 REGISTRAR CHECK-IN';
@@ -1148,8 +1434,8 @@
                         </div>
                     </div>
                     <div style="text-align:right; white-space:nowrap;">
-                        <b style="color:var(--blue); font-size:1rem;">${valor}</b>
-                        <br><small style="color:#555;">${etiq}</small>
+                        <b style="color:var(--accent); font-size:1rem;">${valor}</b>
+                        <br><small style="color:var(--text-subtle);">${etiq}</small>
                     </div>
                 </div>`;
         });
@@ -1191,9 +1477,9 @@
                     valEl.innerText       = '—';
                 } else if (venta > 0) {
                     // Día con venta — verde
-                    box.style.borderColor = 'var(--grass)';
+                    box.style.borderColor = 'var(--success)';
                     box.style.background  = 'rgba(0,255,136,0.05)';
-                    valEl.style.color     = 'var(--grass)';
+                    valEl.style.color     = 'var(--success)';
                     valEl.innerText       = '$' + (venta >= 1000 ? (venta/1000).toFixed(1)+'k' : Math.round(venta));
                     total += venta;
                 } else {
@@ -1239,7 +1525,7 @@
         // Actualizar UI
         const nivelEl = document.getElementById('premio-nivel');
         nivelEl.style.borderColor  = color;
-        nivelEl.style.background   = `linear-gradient(135deg, #111, ${color}22)`;
+        nivelEl.style.background   = `linear-gradient(135deg, var(--surface), ${color}22)`;
         document.getElementById('premio-emoji').innerText   = emoji;
         document.getElementById('premio-titulo').innerText  = nivel;
         document.getElementById('premio-titulo').style.color = color;
@@ -1302,11 +1588,11 @@
                 const tipo  = (c.TipoVenta || '').includes('8%') ? 'CORES 8%' : 'CORES';
                 tbody.innerHTML += `
                     <tr>
-                        <td style="color:var(--blue);font-weight:bold;">${c.Referencia || c.NroPedido || '—'}</td>
+                        <td style="color:var(--accent);font-weight:bold;">${c.Referencia || c.NroPedido || '—'}</td>
                         <td style="color:#ccc;">${c.Codigo || '—'}</td>
                         <td style="color:#aaa;max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${c.Articulo||''}">${c.Articulo||'—'}</td>
-                        <td style="color:#888;font-size:0.65rem;">${tipo}</td>
-                        <td style="color:#888;white-space:nowrap;">${c.FechaFactura||'—'}</td>
+                        <td style="color:var(--text-muted);font-size:0.65rem;">${tipo}</td>
+                        <td style="color:var(--text-muted);white-space:nowrap;">${c.FechaFactura||'—'}</td>
                         <td style="text-align:center;">${c.CantidadPedida||0}</td>
                         <td style="color:var(--gold);font-weight:bold;white-space:nowrap;">${fM(c.Monto)}</td>
                         <td><span class="dias-badge ${clase}">${dias} días</span></td>
@@ -1351,11 +1637,11 @@
                 const tipo  = (c.TipoVenta || '').includes('8%') ? 'CORES 8%' : 'CORES';
                 tbody.innerHTML += `
                     <tr>
-                        <td style="color:var(--blue);font-weight:bold;">${c.NumFactura || c.Referencia || '—'}</td>
+                        <td style="color:var(--accent);font-weight:bold;">${c.NumFactura || c.Referencia || '—'}</td>
                         <td style="color:#ccc;">${c.Codigo || '—'}</td>
                         <td style="color:#aaa; max-width:180px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${c.Articulo || ''}">${c.Articulo || '—'}</td>
-                        <td style="color:#888; font-size:0.65rem;">${tipo}</td>
-                        <td style="color:#888; white-space:nowrap;">${c.FechaFactura || '—'}</td>
+                        <td style="color:var(--text-muted); font-size:0.65rem;">${tipo}</td>
+                        <td style="color:var(--text-muted); white-space:nowrap;">${c.FechaFactura || '—'}</td>
                         <td style="text-align:center;">${c.Cantidad || 0}</td>
                         <td style="color:var(--red);font-weight:bold;white-space:nowrap;">${fM(c.Monto)}</td>
                         <td><span class="dias-badge ${clase}">${dias} días</span></td>
@@ -1393,13 +1679,13 @@
             const tp = document.getElementById('r-productos');
             tp.innerHTML = d.topProductos.map((p,i) =>
                 `<tr><td>${i+1}. ${(p.Descripcion||p.Parte).substring(0,28)}</td><td>${fM2(p.Monto)}</td></tr>`
-            ).join('') || '<tr><td colspan="2" style="color:#888;text-align:center;">Sin datos</td></tr>';
+            ).join('') || '<tr><td colspan="2" style="color:var(--text-muted);text-align:center;">Sin datos</td></tr>';
 
             // Top clientes
             const tc = document.getElementById('r-clientes');
             tc.innerHTML = d.topClientes.map((c,i) =>
                 `<tr><td>${i+1}. ${(c.Cliente||c.Codigo).substring(0,28)}</td><td>${fM2(c.Monto)}</td></tr>`
-            ).join('') || '<tr><td colspan="2" style="color:#888;text-align:center;">Sin datos</td></tr>';
+            ).join('') || '<tr><td colspan="2" style="color:var(--text-muted);text-align:center;">Sin datos</td></tr>';
 
             // Oportunidades
             document.getElementById('r-oportunidades').innerHTML =
@@ -1426,7 +1712,7 @@
             document.head.appendChild(s);
             await new Promise(r => s.onload = r);
         }
-        const canvas = await html2canvas(el, { backgroundColor:'#111', scale:2 });
+        const canvas = await html2canvas(el, { backgroundColor:'var(--surface)', scale:2 });
         const a = document.createElement('a');
         a.href = canvas.toDataURL('image/png');
         const mes = document.getElementById('r-mes').innerText.replace(/ /g,'_');
@@ -1482,7 +1768,7 @@
                     </div>`;
                 }).join('');
             } else {
-                barsEl.innerHTML = '<div style="color:#555;font-size:0.72rem;">Sin historial</div>';
+                barsEl.innerHTML = '<div style="color:var(--text-subtle);font-size:0.72rem;">Sin historial</div>';
             }
 
             // ── Top productos ─────────────────────────────────────────────
@@ -1492,7 +1778,7 @@
                     `<tr><td>${i+1}. ${(p.Descripcion||p.Parte||'').substring(0,30)}</td><td>${fM(p.Monto)}</td></tr>`
                 ).join('');
             } else {
-                prodEl.innerHTML = '<tr><td colspan="2" style="color:#555;">Sin datos</td></tr>';
+                prodEl.innerHTML = '<tr><td colspan="2" style="color:var(--text-subtle);">Sin datos</td></tr>';
             }
 
             // ── Última compra ─────────────────────────────────────────────
@@ -1535,7 +1821,7 @@
 
         document.getElementById('day-fecha').textContent  = '📅 ' + fechaLabel;
         document.getElementById('day-total').textContent  = document.getElementById('in_day_' + dia)?.innerText || '—';
-        document.getElementById('day-rows').innerHTML     = '<tr><td colspan="3" style="color:#555;text-align:center;">Cargando...</td></tr>';
+        document.getElementById('day-rows').innerHTML     = '<tr><td colspan="3" style="color:var(--text-subtle);text-align:center;">Cargando...</td></tr>';
         document.getElementById('day-modal').classList.add('open');
 
         try {
@@ -1544,7 +1830,7 @@
 
             if (!d.ventas || !d.ventas.length) {
                 document.getElementById('day-rows').innerHTML =
-                    '<tr><td colspan="3" style="color:#555;text-align:center;">Sin ventas registradas</td></tr>';
+                    '<tr><td colspan="3" style="color:var(--text-subtle);text-align:center;">Sin ventas registradas</td></tr>';
                 return;
             }
 
@@ -1638,13 +1924,13 @@
             <div class="cli-section">
                 <h3>📈 Últimos 6 meses</h3>
                 <div class="cli-bars" id="cli-bars">
-                    <div style="color:#555;font-size:0.72rem;">Cargando...</div>
+                    <div style="color:var(--text-subtle);font-size:0.72rem;">Cargando...</div>
                 </div>
             </div>
             <div class="cli-section">
                 <h3>🏆 Top productos (último año)</h3>
                 <table class="cli-table" id="cli-productos">
-                    <tr><td colspan="2" style="color:#555;">Cargando...</td></tr>
+                    <tr><td colspan="2" style="color:var(--text-subtle);">Cargando...</td></tr>
                 </table>
             </div>
             <div class="cli-section" id="cli-ult-section">
@@ -1665,7 +1951,7 @@
             </div>
             <table class="day-table">
                 <thead><tr><th>Cliente</th><th>Producto</th><th style="text-align:right">Monto</th></tr></thead>
-                <tbody id="day-rows"><tr><td colspan="3" style="color:#555;text-align:center;">Cargando...</td></tr></tbody>
+                <tbody id="day-rows"><tr><td colspan="3" style="color:var(--text-subtle);text-align:center;">Cargando...</td></tr></tbody>
             </table>
             <button class="day-close" onclick="cerrarDetalleDia()">✕ Cerrar</button>
         </div>
