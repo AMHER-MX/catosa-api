@@ -31,12 +31,12 @@
             document.getElementById('r-equipo').innerHTML = equipo.map(v => `
                 <tr>
                     <td>${(v.Nombre||'').split(' ').slice(0,3).join(' ')}</td>
-                    <td style="color:#888;font-size:0.65rem">${v.Sucursal||''}</td>
+                    <td style="color:var(--text-muted);font-size:0.65rem">${v.Sucursal||''}</td>
                     <td class="num">${fMg(v.Ventas)}</td>
                     <td class="num">${fMg(v.Meta)}</td>
                     <td class="${v.Cumple?'pct-ok':'pct-no'}">${v.Pct}%${v.Cumple?' ✓':''}</td>
                 </tr>
-            `).join('') || '<tr><td colspan="5" style="color:#888;text-align:center">Sin datos</td></tr>';
+            `).join('') || '<tr><td colspan="5" style="color:var(--text-muted);text-align:center">Sin datos</td></tr>';
 
             // Oportunidades
             const ops = [];
@@ -433,12 +433,12 @@
             document.getElementById('r-equipo').innerHTML = equipo.map(v => `
                 <tr>
                     <td>${(v.Nombre||'').split(' ').slice(0,3).join(' ')}</td>
-                    <td style="color:#888;font-size:0.65rem">${v.Sucursal||''}</td>
+                    <td style="color:var(--text-muted);font-size:0.65rem">${v.Sucursal||''}</td>
                     <td class="num">${fMg(v.Ventas)}</td>
                     <td class="num">${fMg(v.Meta)}</td>
                     <td class="${v.Cumple?'pct-ok':'pct-no'}">${v.Pct}%${v.Cumple?' ✓':''}</td>
                 </tr>
-            `).join('') || '<tr><td colspan="5" style="color:#888;text-align:center">Sin datos</td></tr>';
+            `).join('') || '<tr><td colspan="5" style="color:var(--text-muted);text-align:center">Sin datos</td></tr>';
 
             // Oportunidades
             const ops = [];
@@ -811,30 +811,45 @@
     </script>
     <style>
         :root {
-            --gold: #ffd700;
-            --gold2: #ffaa00;
-            --grass: #00ff88;
-            --red: #ff4b2b;
-            --blue: #00d4ff;
-            --silver: #c0c0c0;
-            --bronze: #cd7f32;
-            --purple: #a855f7;
-            --card: #0d1117;
-            --card2: #161b22;
-            --border: rgba(255,255,255,0.07);
+            --bg:          #0f172a;
+            --surface:     #1e293b;
+            --surface-2:   #263348;
+            --border:      #334155;
+            --border-light:#2a3a50;
+            --text:        #f1f5f9;
+            --text-muted:  #94a3b8;
+            --text-subtle: #64748b;
+            --accent:      #3b82f6;
+            --accent-dim:  rgba(59,130,246,0.12);
+            --success:     #22c55e;
+            --success-dim: rgba(34,197,94,0.12);
+            --warning:     #f59e0b;
+            --warning-dim: rgba(245,158,11,0.12);
+            --danger:      #ef4444;
+            --danger-dim:  rgba(239,68,68,0.12);
+            --gold:        #f59e0b;
+            --gold2:       #d97706;
+            --silver:      #94a3b8;
+            --bronze:      #b45309;
+            --grass:       #22c55e;
+            --red:         #ef4444;
+            --blue:        #3b82f6;
+            --purple:      #8b5cf6;
+            --card:        #1e293b;
+            --card2:       #263348;
+            --radius:      12px;
+            --radius-pill: 999px;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
             font-family: 'Inter', sans-serif;
-            background: #060810;
-            background-image:
-                radial-gradient(ellipse at 20% 20%, rgba(255,215,0,0.04) 0%, transparent 50%),
-                radial-gradient(ellipse at 80% 80%, rgba(0,212,255,0.04) 0%, transparent 50%);
-            color: #fff;
+            background: var(--bg);
+            color: var(--text);
             min-height: 100vh;
             overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
         }
 
         /* ── LOGIN ─────────────────────────────────────────────────────── */
@@ -851,16 +866,15 @@
         }
         .login-box {
             position: relative; z-index: 1;
-            background: rgba(13,17,23,0.95);
-            border: 1px solid rgba(255,215,0,0.3);
-            border-radius: 24px; padding: 40px 35px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px; padding: 36px 32px;
             width: 340px; text-align: center;
-            box-shadow: 0 0 60px rgba(255,215,0,0.1), 0 0 120px rgba(0,0,0,0.8);
-            backdrop-filter: blur(10px);
+            box-shadow: 0 24px 48px rgba(0,0,0,0.5);
         }
         .login-logo { height: 45px; margin-bottom: 8px; }
-        .login-title { font-family: 'Bebas Neue', sans-serif; font-size: 2rem; color: var(--gold); letter-spacing: 3px; margin-bottom: 4px; }
-        .login-sub { font-size: 0.65rem; color: #666; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 28px; }
+        .login-title { font-size: 1.1rem; font-weight: 600; color: var(--text); letter-spacing: 0; margin-bottom: 4px; }
+        .login-sub { font-size: 0.7rem; color: var(--text-muted); margin-bottom: 24px; }
         .login-input {
             width: 100%; background: rgba(255,255,255,0.05);
             border: 1px solid rgba(255,255,255,0.1);
@@ -868,12 +882,12 @@
             font-size: 0.85rem; margin-bottom: 12px;
             transition: border-color 0.2s;
         }
-        .login-input:focus { outline: none; border-color: var(--gold); }
+        .login-input:focus { outline: none; border-color: var(--accent); }
         .login-btn {
-            width: 100%; padding: 15px; border-radius: 10px; border: none;
-            background: linear-gradient(135deg, var(--gold), var(--gold2));
-            color: #000; font-weight: 900; font-size: 0.85rem;
-            letter-spacing: 2px; cursor: pointer; text-transform: uppercase;
+            width: 100%; padding: 13px; border-radius: 10px; border: none;
+            background: var(--accent);
+            color: #fff; font-weight: 600; font-size: 0.85rem;
+            cursor: pointer; font-family: inherit;
             transition: opacity 0.2s;
         }
         .login-btn:hover { opacity: 0.9; }
@@ -886,22 +900,24 @@
         .top-bar {
             display: flex; justify-content: space-between; align-items: center;
             padding: 12px 18px; margin-bottom: 14px;
-            background: rgba(255,255,255,0.03);
+            background: var(--surface);
             border: 1px solid var(--border); border-radius: 14px;
         }
         .top-bar-left { display: flex; align-items: center; gap: 12px; }
         .logo-bar { height: 30px; }
         .role-pill {
-            font-size: 0.6rem; font-weight: 700; letter-spacing: 2px;
-            padding: 4px 12px; border-radius: 20px;
-            background: linear-gradient(135deg, var(--gold), var(--gold2));
-            color: #000; text-transform: uppercase;
+            font-size: 0.65rem; font-weight: 600;
+            padding: 4px 12px; border-radius: 999px;
+            background: var(--accent-dim);
+            color: var(--accent); border: 1px solid rgba(59,130,246,0.3);
         }
         .btn-salir {
-            background: none; border: 1px solid var(--red); color: var(--red);
-            padding: 6px 14px; border-radius: 6px; cursor: pointer;
-            font-size: 0.65rem; font-weight: 700; letter-spacing: 1px;
+            background: none; border: 1px solid var(--border); color: var(--text-muted);
+            padding: 6px 14px; border-radius: 999px; cursor: pointer;
+            font-size: 0.7rem; font-weight: 500; font-family: inherit;
+            transition: border-color 0.15s, color 0.15s;
         }
+        .btn-salir:hover { border-color: var(--danger); color: var(--danger); }
 
         /* TIME PANEL */
         .time-panel {
@@ -912,8 +928,8 @@
             background: var(--card); border-radius: 12px; padding: 14px;
             text-align: center; border: 1px solid var(--border);
         }
-        .time-label { font-size: 0.5rem; color: var(--grass); text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 5px; font-weight: 700; }
-        .time-value { font-family: 'Bebas Neue', sans-serif; font-size: 1.4rem; letter-spacing: 2px; }
+        .time-label { font-size: 0.6rem; color: var(--text-muted); display: block; margin-bottom: 4px; font-weight: 500; }
+        .time-value { font-size: 1.1rem; font-weight: 700; color: var(--text); }
 
         /* FILTROS */
         .filters-bar {
@@ -921,9 +937,9 @@
             margin-bottom: 14px;
         }
         .filter-select {
-            background: var(--card2); border: 1px solid var(--border);
-            color: #fff; padding: 10px 14px; border-radius: 10px;
-            font-size: 0.75rem; cursor: pointer;
+            background: var(--surface-2); border: 1px solid var(--border);
+            color: var(--text); padding: 10px 14px; border-radius: 10px;
+            font-size: 0.75rem; cursor: pointer; font-family: inherit;
         }
 
         /* KPI GRID */
@@ -940,12 +956,12 @@
             content: ''; position: absolute; top: 0; left: 0; right: 0;
             height: 3px;
         }
-        .kpi-card.blue::before { background: var(--blue); }
-        .kpi-card.gold::before { background: var(--gold); }
-        .kpi-card.red::before  { background: var(--red); }
-        .kpi-card.grass::before { background: var(--grass); }
-        .kpi-label { font-size: 0.5rem; color: #666; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; display: block; }
-        .kpi-value { font-family: 'Bebas Neue', sans-serif; font-size: 1.5rem; letter-spacing: 1px; }
+        .kpi-card.blue::before { background: var(--accent); }
+        .kpi-card.gold::before { background: var(--warning); }
+        .kpi-card.red::before  { background: var(--danger); }
+        .kpi-card.grass::before { background: var(--success); }
+        .kpi-label { font-size: 0.65rem; color: var(--text-muted); margin-bottom: 6px; display: block; font-weight: 500; }
+        .kpi-value { font-size: 1.4rem; font-weight: 700; color: var(--text); }
 
         /* PISTA */
         .race-section { margin-bottom: 14px; }
@@ -953,9 +969,9 @@
             display: flex; justify-content: space-between; align-items: center;
             margin-bottom: 8px;
         }
-        .race-title { font-size: 0.6rem; color: var(--gold); font-weight: 700; text-transform: uppercase; letter-spacing: 2px; }
+        .race-title { font-size: 0.72rem; color: var(--text-muted); font-weight: 600; }
         .race-legend { display: flex; gap: 12px; }
-        .legend-item { font-size: 0.5rem; color: #666; display: flex; align-items: center; gap: 4px; }
+        .legend-item { font-size: 0.5rem; color: var(--text-subtle); display: flex; align-items: center; gap: 4px; }
         .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
 
         .race-track {
@@ -1004,8 +1020,7 @@
             border: 1px solid var(--border);
         }
         .card-title {
-            font-size: 0.65rem; color: var(--grass); font-weight: 700;
-            text-transform: uppercase; letter-spacing: 2px;
+            font-size: 0.75rem; color: var(--text); font-weight: 600;
             border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 14px;
             display: flex; justify-content: space-between; align-items: center;
         }
@@ -1018,19 +1033,19 @@
         }
         .v-row-left { display: flex; flex-direction: column; gap: 2px; }
         .v-row-name { font-weight: 600; }
-        .v-row-sub  { font-size: 0.6rem; color: #555; }
+        .v-row-sub  { font-size: 0.6rem; color: var(--text-subtle); }
 
         /* SEMAFORO */
         .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; flex-shrink: 0; }
-        .dot.verde { background: #0f0; box-shadow: 0 0 6px #0f0; }
-        .dot.ambar { background: #ff0; box-shadow: 0 0 6px #ff0; }
-        .dot.rojo  { background: #f00; box-shadow: 0 0 6px #f00; }
+        .dot.verde { background: var(--success); }
+        .dot.ambar { background: var(--warning); }
+        .dot.rojo  { background: var(--danger); }
 
         /* PROSPECTOS */
         .prospecto-item {
             padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 0.75rem;
         }
-        .prospecto-name { font-weight: 700; color: var(--blue); margin-bottom: 2px; }
+        .prospecto-name { font-weight: 600; color: var(--accent); margin-bottom: 2px; }
         .prospecto-meta { font-size: 0.6rem; color: #555; }
 
         /* PREMIOS SECTION */
@@ -1050,11 +1065,11 @@
             text-shadow: 0 0 20px rgba(255,215,0,0.5);
             letter-spacing: 4px; text-align: center; margin-bottom: 4px;
         }
-        .premios-sub { font-size: 0.6rem; color: #888; text-align: center; margin-bottom: 16px; letter-spacing: 1px; }
+        .premios-sub { font-size: 0.6rem; color: var(--text-muted); text-align: center; margin-bottom: 16px; letter-spacing: 1px; }
 
         /* TABLA PREMIOS VENDEDORES */
         .premios-table { width: 100%; border-collapse: collapse; font-size: 0.72rem; }
-        .premios-table th { color: var(--gold); font-size: 0.55rem; text-transform: uppercase; letter-spacing: 1px; padding: 6px 8px; border-bottom: 1px solid rgba(255,215,0,0.2); text-align: left; }
+        .premios-table th { color: var(--text-muted); font-size: 0.65rem; font-weight: 500; padding: 6px 8px; border-bottom: 1px solid rgba(255,215,0,0.2); text-align: left; }
         .premios-table td { padding: 8px; border-bottom: 1px solid var(--border); }
         .nivel-badge {
             display: inline-block; padding: 2px 8px; border-radius: 20px;
@@ -1063,39 +1078,39 @@
         .nivel-oro    { background: var(--gold); color: #000; }
         .nivel-plata  { background: var(--silver); color: #000; }
         .nivel-bronce { background: var(--bronze); color: #fff; }
-        .nivel-fuera  { background: #222; color: #666; }
+        .nivel-fuera  { background: #222; color: var(--text-subtle); }
 
         /* TOP 10 */
         .top-item {
             display: flex; justify-content: space-between; align-items: center;
             padding: 9px 0; border-bottom: 1px solid var(--border); font-size: 0.75rem;
         }
-        .top-num { color: var(--gold); font-family: 'Bebas Neue', sans-serif; font-size: 1rem; margin-right: 8px; }
+        .top-num { color: var(--text-muted); font-size: 0.9rem; font-weight: 600; margin-right: 8px; }
 
         /* RANKING */
         .rank-item {
             display: flex; align-items: center; padding: 9px 0;
             border-bottom: 1px solid var(--border); gap: 10px; font-size: 0.75rem;
         }
-        .rank-pos { font-family: 'Bebas Neue', sans-serif; font-size: 1.1rem; color: #444; width: 22px; }
+        .rank-pos { font-size: 1rem; font-weight: 700; color: var(--text-subtle); width: 22px; }
         .rank-pos.one   { color: var(--gold); }
         .rank-pos.two   { color: var(--silver); }
         .rank-pos.three { color: var(--bronze); }
-        .rank-bar-wrap  { flex: 1; height: 4px; background: #222; border-radius: 2px; }
-        .rank-bar       { height: 4px; border-radius: 2px; background: var(--grass); transition: width 1s; }
+        .rank-bar-wrap  { flex: 1; height: 4px; background: var(--border); border-radius: 2px; }
+        .rank-bar       { height: 4px; border-radius: 2px; background: var(--accent); transition: width 1s; }
 
         input, select { font-family: 'Inter', sans-serif; }
         ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-thumb { background: var(--grass); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
 
         /* CORES TABLE */
         .cores-table { width:100%; border-collapse:collapse; font-size:0.7rem; }
-        .cores-table th { color:var(--gold); font-size:0.52rem; text-transform:uppercase; padding:6px 8px; border-bottom:1px solid var(--border); text-align:left; white-space:nowrap; }
+        .cores-table th { color:var(--text-muted); font-size:0.65rem; font-weight:500; padding:6px 8px; border-bottom:1px solid var(--border); text-align:left; white-space:nowrap; }
         .cores-table td { padding:6px 8px; border-bottom:1px solid var(--border); vertical-align:middle; }
         .dias-badge { display:inline-block; padding:2px 7px; border-radius:20px; font-weight:900; font-size:0.65rem; white-space:nowrap; }
-        .dias-verde { background:rgba(0,255,136,0.12); color:var(--grass); }
-        .dias-ambar { background:rgba(255,215,0,0.12); color:var(--gold); }
-        .dias-rojo  { background:rgba(255,75,43,0.15); color:var(--red); }
+        .dias-verde { background:var(--success-dim); color:var(--success); }
+        .dias-ambar { background:var(--warning-dim); color:var(--warning); }
+        .dias-rojo  { background:var(--danger-dim);  color:var(--danger); }
 
         /* ── RESPONSIVE MÓVIL ──────────────────────────────────────────── */
         @media(max-width:600px) {
@@ -1127,10 +1142,10 @@
         }
 
         /* WORLD CUP BADGES */
-        .wc-fase-badge { display:inline-block; padding:2px 10px; border-radius:20px; font-size:0.55rem; font-weight:900; letter-spacing:1px; text-transform:uppercase; }
-        .wc-clasificado { background:rgba(0,255,136,0.15); color:var(--grass); border:1px solid var(--grass); }
-        .wc-pendiente   { background:rgba(255,215,0,0.1);  color:var(--gold);  border:1px solid var(--gold); }
-        .wc-fuera       { background:rgba(255,75,43,0.1);  color:var(--red);   border:1px solid var(--red); }
+        .wc-fase-badge { display:inline-block; padding:2px 10px; border-radius:20px; font-size:0.55rem; font-weight:900; letter-spacing:0;; }
+        .wc-clasificado { background:var(--success-dim); color:var(--success); border:1px solid rgba(34,197,94,0.3); }
+        .wc-pendiente   { background:var(--warning-dim); color:var(--warning); border:1px solid rgba(245,158,11,0.3); }
+        .wc-fuera       { background:var(--danger-dim);  color:var(--danger);  border:1px solid rgba(239,68,68,0.3); }
 
         /* TORNEO TRACK */
         .torneo-track { border-radius:12px; overflow:hidden; border:1px solid rgba(255,255,255,0.1); margin-bottom:4px; }
@@ -1163,75 +1178,75 @@
         .torneo-ball.lider { filter: drop-shadow(0 0 12px var(--gold)) brightness(1.3); }
         .torneo-meta-line { position:absolute; top:0; bottom:0; width:1px; z-index:3; }
         .torneo-porteria { position:absolute; right:0; top:0; bottom:0; width:30px;
-            background:rgba(255,255,255,0.06); border-left:2px dashed rgba(255,255,255,0.3);
+            background:rgba(59,130,246,0.06); border-left:2px dashed rgba(255,255,255,0.3);
             display:flex; align-items:center; justify-content:center; font-size:0.9rem; z-index:5; }
 
         /* CORES TABLE */
         .cores-table { width:100%; border-collapse:collapse; font-size:0.7rem; }
-        .cores-table th { color:var(--gold); font-size:0.52rem; text-transform:uppercase; padding:6px 8px; border-bottom:1px solid var(--border); text-align:left; white-space:nowrap; }
+        .cores-table th { color:var(--text-muted); font-size:0.65rem; font-weight:500; padding:6px 8px; border-bottom:1px solid var(--border); text-align:left; white-space:nowrap; }
         .cores-table td { padding:8px; border-bottom:1px solid var(--border); }
         .dias-badge { display:inline-block; padding:2px 7px; border-radius:20px; font-weight:900; font-size:0.65rem; }
-        .dias-verde { background:rgba(0,255,136,0.12); color:var(--grass); }
-        .dias-ambar { background:rgba(255,215,0,0.12); color:var(--gold); }
-        .dias-rojo  { background:rgba(255,75,43,0.15); color:var(--red); }
+        .dias-verde { background:var(--success-dim); color:var(--success); }
+        .dias-ambar { background:var(--warning-dim); color:var(--warning); }
+        .dias-rojo  { background:var(--danger-dim);  color:var(--danger); }
     
         /* ── RESUMEN MES MODAL GERENCIA ──────────────────── */
         #resumen-modal { display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.85); overflow-y:auto; padding:16px; }
         #resumen-modal.open { display:flex; align-items:flex-start; justify-content:center; }
-        .resumen-card { background:#111; border:1px solid var(--gold); border-radius:20px; width:100%; max-width:600px; padding:24px; margin:auto; }
-        .resumen-header { text-align:center; margin-bottom:20px; border-bottom:1px solid #2a2a2a; padding-bottom:16px; }
-        .resumen-header h2 { color:var(--gold); font-size:1.1rem; margin:0 0 4px; letter-spacing:1px; }
-        .resumen-header p  { color:#888; font-size:0.75rem; margin:0; }
+        .resumen-card { background:var(--surface); border:1px solid var(--border); border-radius:16px; width:100%; max-width:600px; padding:24px; margin:auto; }
+        .resumen-header { text-align:center; margin-bottom:20px; border-bottom:1px solid var(--border); padding-bottom:16px; }
+        .resumen-header h2 { color:var(--text); font-size:1rem; margin:0 0 4px; }
+        .resumen-header p  { color:var(--text-muted); font-size:0.75rem; margin:0; }
         .resumen-kpis { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:18px; }
-        .resumen-kpi  { background:#1a1a1a; border-radius:12px; padding:12px; text-align:center; }
-        .resumen-kpi .rk-val { font-size:1.1rem; font-weight:700; color:var(--gold); }
-        .resumen-kpi .rk-lbl { font-size:0.6rem; color:#888; margin-top:3px; }
-        .resumen-kpi.cumple .rk-val { color:#00ff88; }
-        .resumen-kpi.nocumple .rk-val { color:#ff4444; }
+        .resumen-kpi  { background:var(--surface-2); border-radius:var(--radius); padding:12px; text-align:center; border:1px solid var(--border); }
+        .resumen-kpi .rk-val { font-size:1.1rem; font-weight:700; color:var(--text); }
+        .resumen-kpi .rk-lbl { font-size:0.6rem; color:var(--text-muted); margin-top:3px; }
+        .resumen-kpi.cumple .rk-val { color:var(--success); }
+        .resumen-kpi.nocumple .rk-val { color:var(--danger); }
         .resumen-section { margin-bottom:16px; }
-        .resumen-section h3 { font-size:0.7rem; color:#888; text-transform:uppercase; letter-spacing:1px; margin:0 0 8px; }
+        .resumen-section h3 { font-size:0.7rem; color:var(--text-muted); text-transform:none; letter-spacing:1px; margin:0 0 8px; }
         .resumen-table { width:100%; border-collapse:collapse; font-size:0.72rem; }
-        .resumen-table th { color:#888; font-size:0.6rem; text-transform:uppercase; padding:5px 4px; border-bottom:1px solid #333; text-align:left; }
-        .resumen-table td { padding:6px 4px; border-bottom:1px solid #1e1e1e; }
-        .resumen-table td.num { text-align:right; color:var(--gold); }
-        .resumen-table td.pct-ok { color:#00ff88; text-align:right; font-weight:700; }
-        .resumen-table td.pct-no { color:#ff4444; text-align:right; font-weight:700; }
-        .oportu-item { background:#1a1a1a; border-left:3px solid var(--gold); border-radius:0 8px 8px 0; padding:8px 12px; margin-bottom:8px; font-size:0.75rem; line-height:1.4; }
+        .resumen-table th { color:var(--text-muted); font-size:0.6rem; text-transform:none; padding:5px 4px; border-bottom:1px solid var(--border); text-align:left; }
+        .resumen-table td { padding:6px 4px; border-bottom:1px solid var(--border-light); }
+        .resumen-table td.num { text-align:right; color:var(--accent); }
+        .resumen-table td.pct-ok { color:var(--success); text-align:right; font-weight:700; }
+        .resumen-table td.pct-no { color:var(--danger); text-align:right; font-weight:700; }
+        .oportu-item { background:var(--surface-2); border-left:3px solid var(--accent); border-radius:0 8px 8px 0; padding:8px 12px; margin-bottom:8px; font-size:0.75rem; line-height:1.4; color:var(--text-muted); }
         .resumen-btns { display:flex; gap:10px; margin-top:20px; }
         .resumen-btns button { flex:1; padding:12px; border-radius:12px; font-size:0.8rem; font-weight:600; cursor:pointer; border:none; }
         .btn-pdf { background:var(--gold); color:#000; }
-        .btn-png { background:#1a1a1a; color:var(--gold); border:1px solid var(--gold) !important; }
-        .btn-close-resumen { background:#222; color:#888; }
+        .btn-png { background:var(--surface-2); color:var(--gold); border:1px solid var(--gold) !important; }
+        .btn-close-resumen { background:#222; color:var(--text-muted); }
         @media print { body > *:not(#resumen-modal) { display:none !important; } #resumen-modal { display:flex !important; position:static; background:white; padding:0; } .resumen-btns { display:none; } .resumen-card { border:none; } }
 
         
         /* ── DETALLE CLIENTE MODAL ───────────────────────── */
         #cli-modal { display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.88); overflow-y:auto; padding:16px; }
         #cli-modal.open { display:flex; align-items:flex-start; justify-content:center; }
-        .cli-card { background:#111; border:1px solid #2a2a2a; border-radius:20px; width:100%; max-width:480px; padding:22px; margin:auto; }
-        .cli-header { margin-bottom:16px; padding-bottom:14px; border-bottom:1px solid #1e1e1e; }
+        .cli-card { background:var(--surface); border:1px solid #2a2a2a; border-radius:20px; width:100%; max-width:480px; padding:22px; margin:auto; }
+        .cli-header { margin-bottom:16px; padding-bottom:14px; border-bottom:1px solid var(--border-light); }
         .cli-nombre { font-size:1rem; font-weight:800; font-family:'Syne',sans-serif; color:var(--gold); }
         .cli-codigo { font-size:0.7rem; color:#555; margin-top:2px; }
         .cli-kpis { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:16px; }
-        .cli-kpi { background:#1a1a1a; border-radius:12px; padding:10px; text-align:center; }
+        .cli-kpi { background:var(--surface-2); border-radius:12px; padding:10px; text-align:center; }
         .cli-kpi .ck-val { font-size:1rem; font-weight:700; }
-        .cli-kpi .ck-lbl { font-size:0.6rem; color:#888; margin-top:2px; }
-        .cli-kpi.arriba .ck-val { color:#00ff88; }
-        .cli-kpi.abajo  .ck-val { color:#ff4444; }
+        .cli-kpi .ck-lbl { font-size:0.6rem; color:var(--text-muted); margin-top:2px; }
+        .cli-kpi.arriba .ck-val { color:var(--success); }
+        .cli-kpi.abajo  .ck-val { color:var(--danger); }
         .cli-kpi.igual  .ck-val { color:var(--gold); }
         .cli-section { margin-bottom:14px; }
-        .cli-section h3 { font-size:0.65rem; color:#666; text-transform:uppercase; letter-spacing:1px; margin:0 0 8px; }
+        .cli-section h3 { font-size:0.65rem; color:var(--text-subtle); text-transform:none; letter-spacing:1px; margin:0 0 8px; }
         .cli-table { width:100%; border-collapse:collapse; font-size:0.72rem; }
         .cli-table td { padding:5px 3px; border-bottom:1px solid #1a1a1a; }
         .cli-table td:last-child { text-align:right; color:var(--gold); }
         .cli-bars { display:flex; flex-direction:column; gap:5px; }
         .cli-bar-row { display:flex; align-items:center; gap:8px; font-size:0.68rem; }
-        .cli-bar-lbl { width:42px; color:#888; text-align:right; flex-shrink:0; }
-        .cli-bar-track { flex:1; background:#1a1a1a; border-radius:4px; height:16px; position:relative; overflow:hidden; }
+        .cli-bar-lbl { width:42px; color:var(--text-muted); text-align:right; flex-shrink:0; }
+        .cli-bar-track { flex:1; background:var(--surface-2); border-radius:4px; height:16px; position:relative; overflow:hidden; }
         .cli-bar-fill { height:100%; border-radius:4px; background:rgba(200,168,75,0.7); transition:width .4s; }
         .cli-bar-val { position:absolute; right:6px; top:50%; transform:translateY(-50%); font-size:0.62rem; color:#fff; }
-        .cli-ult { font-size:0.72rem; color:#888; background:#1a1a1a; border-radius:10px; padding:10px 12px; line-height:1.6; }
-        .cli-close { width:100%; padding:12px; margin-top:16px; background:#1a1a1a; border:none; border-radius:12px; color:#888; font-size:0.8rem; cursor:pointer; }
+        .cli-ult { font-size:0.72rem; color:var(--text-muted); background:var(--surface-2); border-radius:10px; padding:10px 12px; line-height:1.6; }
+        .cli-close { width:100%; padding:12px; margin-top:16px; background:var(--surface-2); border:none; border-radius:12px; color:var(--text-muted); font-size:0.8rem; cursor:pointer; }
 
         
         /* ── PANTALLA TV ─────────────────────────────────── */
@@ -1244,21 +1259,21 @@
         .tv-logos img { height:32px; object-fit:contain; }
         .tv-title { font-family:'Syne',sans-serif; font-size:1rem; font-weight:800; color:var(--gold); letter-spacing:3px; text-align:center; }
         .tv-controls { display:flex; align-items:center; gap:8px; }
-        .tv-controls select { background:#111; border:1px solid #2a2a2a; color:#888; border-radius:8px; padding:4px 8px; font-size:10px; cursor:pointer; }
-        .tv-controls button { background:none; border:1px solid #2a2a2a; color:#666; padding:4px 12px; border-radius:8px; cursor:pointer; font-size:10px; }
+        .tv-controls select { background:var(--surface); border:1px solid #2a2a2a; color:var(--text-muted); border-radius:8px; padding:4px 8px; font-size:10px; cursor:pointer; }
+        .tv-controls button { background:none; border:1px solid #2a2a2a; color:var(--text-subtle); padding:4px 12px; border-radius:8px; cursor:pointer; font-size:10px; }
         .tv-controls button:hover { border-color:var(--gold); color:var(--gold); }
-                .vd-btn { background:#1a1a1a; border:1px solid #333; color:#888; border-radius:20px; padding:3px 10px; font-size:0.55rem; cursor:pointer; font-family:inherit; transition:all 0.2s; }
+                .vd-btn { background:var(--surface-2); border:1px solid var(--border); color:var(--text-muted); border-radius:20px; padding:3px 10px; font-size:0.55rem; cursor:pointer; font-family:inherit; transition:all 0.2s; }
         .vd-btn:hover { border-color:#4a9eff; color:#4a9eff; }
         .vd-btn.active { background:#4a9eff22; border-color:#4a9eff; color:#4a9eff; font-weight:700; }
         .tv-countdown-mes { display:flex; flex-direction:column; align-items:flex-end; line-height:1; }
-        .tv-countdown-mes .label { font-size:0.6rem; color:#ff4444; letter-spacing:2px; text-transform:uppercase; font-weight:700; }
-        .tv-countdown-mes .timer { font-family:'Syne',sans-serif; font-size:1.7rem; font-weight:900; color:#ff4444; letter-spacing:1px; white-space:nowrap; text-shadow: 0 0 20px rgba(255,68,68,0.6), 0 0 40px rgba(255,68,68,0.3); }
+        .tv-countdown-mes .label { font-size:0.6rem; color:var(--danger); letter-spacing:2px; text-transform:none; font-weight:700; }
+        .tv-countdown-mes .timer { font-family:'Syne',sans-serif; font-size:1.7rem; font-weight:900; color:var(--danger); letter-spacing:1px; white-space:nowrap; text-shadow: 0 0 20px rgba(255,68,68,0.6), 0 0 40px rgba(255,68,68,0.3); }
         /* Layout */
         .tv-main { flex:1; display:grid; grid-template-columns:1fr 1fr; overflow:hidden; }
         .tv-bottom { height:130px; flex-shrink:0; border-top:1px solid #1a1a1a; display:flex; align-items:stretch; background:#080810; }
         .tv-panel { padding:12px 20px; display:flex; flex-direction:column; overflow:hidden; }
         .tv-panel:first-child { border-right:1px solid #1a1a1a; }
-        .tv-panel-title { font-size:0.55rem; color:#555; text-transform:uppercase; letter-spacing:2px; margin-bottom:8px; flex-shrink:0; display:flex; align-items:center; gap:8px; }
+        .tv-panel-title { font-size:0.55rem; color:#555; text-transform:none; letter-spacing:2px; margin-bottom:8px; flex-shrink:0; display:flex; align-items:center; gap:8px; }
         .tv-panel-title span { color:var(--gold); }
         /* Race track World Cup */
         .tv-wc-row { display:flex; align-items:center; gap:8px; margin-bottom:5px; }
@@ -1270,7 +1285,7 @@
         .tv-wc-ball.noclasif { filter:drop-shadow(0 2px 4px rgba(0,0,0,0.8)); opacity:0.9; }
         .tv-wc-pct { width:42px; text-align:right; font-size:0.68rem; font-weight:700; flex-shrink:0; }
         .tv-wc-badge { width:80px; text-align:center; font-size:0.55rem; flex-shrink:0; border-radius:20px; padding:2px 4px; }
-        .tv-wc-badge.ok { color:#00ff88; background:rgba(0,255,136,0.1); }
+        .tv-wc-badge.ok { color:var(--success); background:rgba(0,255,136,0.1); }
         .tv-wc-badge.no { color:#555; }
         /* Race track Aceite */
         .tv-ac-row { display:flex; align-items:center; gap:8px; margin-bottom:5px; }
@@ -1282,8 +1297,8 @@
         /* Bottom sucursales */
         .tv-suc-panel { flex:1; padding:10px 20px; display:flex; flex-direction:column; justify-content:center; border-right:1px solid #1a1a1a; }
         .tv-suc-panel:last-child { border-right:none; }
-        .tv-suc-name { font-size:0.6rem; color:#888; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px; }
-        .tv-suc-track { background:#111; border-radius:20px; height:18px; position:relative; overflow:hidden; margin-bottom:4px; }
+        .tv-suc-name { font-size:0.6rem; color:var(--text-muted); text-transform:none; letter-spacing:1px; margin-bottom:6px; }
+        .tv-suc-track { background:var(--surface); border-radius:20px; height:18px; position:relative; overflow:hidden; margin-bottom:4px; }
         .tv-suc-fill { height:100%; border-radius:20px; transition:width 1s; }
         .tv-suc-fill.ok  { background:linear-gradient(90deg,#00b04f,#00ff88); }
         .tv-suc-fill.mid { background:linear-gradient(90deg,#b07800,var(--gold)); }
@@ -1380,7 +1395,7 @@
             <div>🌟 CHALLENGE ACEITE MOTOR — LITROS INCREMENTALES
             <span id="aceite-resumen" style="font-size:0.55rem; color:#555; font-weight:400;"></span></div>
             <div style="display:flex; align-items:center; gap:8px;">
-                <select id="sel-mes-reporte" style="background:#1a1a1a; border:1px solid #333; color:#aaa; border-radius:8px; padding:4px 8px; font-size:0.7rem; cursor:pointer;">
+                <select id="sel-mes-reporte" style="background:var(--surface-2); border:1px solid var(--border); color:#aaa; border-radius:8px; padding:4px 8px; font-size:0.7rem; cursor:pointer;">
                     <option value="2026-05">Mayo 2026</option>
                     <option value="2026-06" selected>Junio 2026</option>
                     <option value="2026-07">Julio 2026</option>
@@ -1422,13 +1437,13 @@
             <span style="font-size:0.5rem;color:#555;font-weight:400;margin-left:8px;">vs mismo mes año anterior</span>
         </div>
         <div id="urea-kpis" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;margin-bottom:12px;"></div>
-        <div style="font-size:0.55rem;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Por Sucursal</div>
+        <div style="font-size:0.55rem;color:var(--text-muted);text-transform:none;letter-spacing:1px;margin-bottom:6px;">Por Sucursal</div>
         <div id="urea-sucursales" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;margin-bottom:12px;"></div>
-        <div style="font-size:0.55rem;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Por Vendedor</div>
+        <div style="font-size:0.55rem;color:var(--text-muted);text-transform:none;letter-spacing:1px;margin-bottom:6px;">Por Vendedor</div>
         <div style="overflow-x:auto;">
             <table style="width:100%;border-collapse:collapse;font-size:0.6rem;">
                 <thead>
-                    <tr style="color:#888;border-bottom:1px solid #222;">
+                    <tr style="color:var(--text-muted);border-bottom:1px solid #222;">
                         <th style="text-align:left;padding:4px 8px;">Asesor</th>
                         <th style="text-align:left;padding:4px 8px;">Sede</th>
                         <th style="text-align:right;padding:4px 8px;">Litros</th>
@@ -1507,7 +1522,7 @@
                 <span>📱 CHECK-IN DIARIO</span>
                 <div style="display:flex;gap:6px;align-items:center;">
                     <span style="font-size:0.52rem;color:#555;" id="checkin-count">—</span>
-                    <input type="date" id="checkin-fecha-fil" onchange="loadCheckins()" style="background:#111;border:1px solid #333;color:#aaa;border-radius:6px;padding:2px 6px;font-size:0.55rem;">
+                    <input type="date" id="checkin-fecha-fil" onchange="loadCheckins()" style="background:var(--surface);border:1px solid var(--border);color:#aaa;border-radius:6px;padding:2px 6px;font-size:0.55rem;">
                 </div>
             </div>
             <div id="checkin-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;padding:4px 0 4px;">
@@ -1799,7 +1814,7 @@ function cargarVentasDiarias(suc) {
                     const esHoy = d === diaHoy;
                     const color = esHoy ? '#4a9eff' : v >= promedio ? 'var(--grass)' : 'var(--bronze)';
                     return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;">
-                        <div style="font-size:0.42rem;color:#666;margin-bottom:2px;">${v>0?fmtK(v):''}</div>
+                        <div style="font-size:0.42rem;color:var(--text-subtle);margin-bottom:2px;">${v>0?fmtK(v):''}</div>
                         <div style="width:100%;background:${color};height:${h}%;border-radius:3px 3px 0 0;min-height:${v>0?'3px':'1px'};opacity:${esHoy?1:0.8};" title="Día ${d}: ${fmtK(v)}"></div>
                         <div style="font-size:0.42rem;color:${esHoy?'#4a9eff':'#555'};margin-top:3px;font-weight:${esHoy?'bold':'normal'};">${d}</div>
                     </div>`;
@@ -1837,24 +1852,24 @@ function loadPromoUrea() {
 
         document.getElementById('urea-kpis').innerHTML = `
             <div style="background:rgba(255,215,0,0.08);border:1px solid #ffd70044;border-radius:10px;padding:10px;">
-                <div style="font-size:0.5rem;color:#888;">LITROS TOTALES</div>
+                <div style="font-size:0.5rem;color:var(--text-muted);">LITROS TOTALES</div>
                 <div style="font-size:1.3rem;font-weight:900;color:#ffd700;">${fmtL(totL)}</div>
                 <div style="font-size:0.52rem;margin-top:2px;">${fmtC(crecL)} vs ${meses[hoy.getMonth()]} ${hoy.getFullYear()-1}</div>
             </div>
             <div style="background:rgba(255,215,0,0.08);border:1px solid #ffd70044;border-radius:10px;padding:10px;">
-                <div style="font-size:0.5rem;color:#888;">PIEZAS TOTALES</div>
+                <div style="font-size:0.5rem;color:var(--text-muted);">PIEZAS TOTALES</div>
                 <div style="font-size:1.3rem;font-weight:900;color:#ffd700;">${totP.toLocaleString()}</div>
             </div>
             <div style="background:rgba(255,215,0,0.08);border:1px solid #ffd70044;border-radius:10px;padding:10px;">
-                <div style="font-size:0.5rem;color:#888;">MONTO TOTAL</div>
+                <div style="font-size:0.5rem;color:var(--text-muted);">MONTO TOTAL</div>
                 <div style="font-size:1.3rem;font-weight:900;color:#ffd700;">${fmtM(totM)}</div>
                 <div style="font-size:0.52rem;margin-top:2px;">${fmtC(crecM)} vs ${meses[hoy.getMonth()]} ${hoy.getFullYear()-1}</div>
             </div>`;
 
         // Por sucursal
         document.getElementById('urea-sucursales').innerHTML = data.sucursales.map(s => `
-            <div style="background:#111;border:1px solid #222;border-radius:10px;padding:10px;">
-                <div style="font-size:0.52rem;color:#888;font-weight:700;">${s.Sucursal}</div>
+            <div style="background:var(--surface);border:1px solid #222;border-radius:10px;padding:10px;">
+                <div style="font-size:0.52rem;color:var(--text-muted);font-weight:700;">${s.Sucursal}</div>
                 <div style="font-size:0.9rem;font-weight:800;color:#ffd700;">${fmtL(s.Litros)}</div>
                 <div style="font-size:0.52rem;color:#aaa;">${fmtM(s.Monto)} · ${s.Piezas} pzas</div>
                 <div style="font-size:0.5rem;margin-top:3px;">${fmtC(s.CrecLitros)} L · ${fmtC(s.CrecMonto)} $</div>
@@ -1871,7 +1886,7 @@ function loadPromoUrea() {
 
             return `<tr style="border-bottom:1px solid #111;">
                 <td style="padding:5px 8px;color:#fff;">${v.Vendedor.split(' ').slice(0,2).join(' ')}</td>
-                <td style="padding:5px 8px;color:#666;">${v.Sucursal}</td>
+                <td style="padding:5px 8px;color:var(--text-subtle);">${v.Sucursal}</td>
                 <td style="padding:5px 8px;text-align:right;color:#ffd700;font-weight:700;">${fmtL(v.Litros)}</td>
                 <td style="padding:5px 8px;text-align:right;color:#aaa;">${v.Piezas}</td>
                 <td style="padding:5px 8px;text-align:right;color:#aaa;">${fmtM(v.Monto)}</td>
@@ -1918,7 +1933,7 @@ function renderDistNiveles() {
         return `<div style="background:${n.bg};border:1px solid ${n.border};border-radius:12px;padding:10px;">
             <div style="font-size:0.65rem;font-weight:800;color:${n.color};margin-bottom:6px;">${n.label}</div>
             <div style="font-size:1.8rem;font-weight:900;color:${n.color};line-height:1;">${lista.length}</div>
-            <div style="font-size:0.45rem;color:#888;margin-top:2px;">vendedor${lista.length!==1?'es':''}</div>
+            <div style="font-size:0.45rem;color:var(--text-muted);margin-top:2px;">vendedor${lista.length!==1?'es':''}</div>
             <div style="margin-top:8px;display:flex;flex-direction:column;gap:3px;">
                 ${lista.map(v => `<div style="font-size:0.48rem;color:#ccc;display:flex;justify-content:space-between;">
                     <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:75%;">${v.nombre}</span>
@@ -1965,7 +1980,7 @@ function renderGanadoresWC(lista) {
         const nombre = v.Nombre.split(' ')[0] + ' ' + (v.Nombre.split(' ')[1]||'');
         return `<div style="border-radius:12px;overflow:hidden;background:rgba(255,255,255,0.04);border:1px solid ${medalColors[pos]};text-align:center;position:relative;">
             <div style="position:absolute;top:6px;left:6px;background:${medalColors[pos]};color:#000;font-size:0.48rem;font-weight:900;padding:2px 7px;border-radius:20px;">${medalLabel[pos]}</div>
-            <img src="${premioImgs[pos]}" style="width:100%;aspect-ratio:1/1;object-fit:contain;background:#111;display:block;">
+            <img src="${premioImgs[pos]}" style="width:100%;aspect-ratio:1/1;object-fit:contain;background:var(--surface);display:block;">
             <div style="padding:6px 4px;">
                 <div style="font-size:0.62rem;font-weight:800;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${nombre}</div>
                 <div style="font-size:0.55rem;color:${medalColors[pos]};font-weight:700;">${premiosNames[pos]}</div>
@@ -2037,7 +2052,7 @@ function renderPremios(lista) {
         tbody.innerHTML += `
             <tr>
                 <td style="font-weight:600;">${v.Nombre}</td>
-                <td class="cores-hide-mobile" style="color:#666; font-size:0.65rem;">${v.Sucursal||'—'}</td>
+                <td class="cores-hide-mobile" style="color:var(--text-subtle); font-size:0.65rem;">${v.Sucursal||'—'}</td>
                 <td style="color:${pct>=120?'var(--gold)':pct>=75?'var(--grass)':'var(--red)'}; font-weight:700;">${pct.toFixed(1)}%</td>
                 <td><span class="nivel-badge ${cls}">${nivel}</span></td>
                 <td>${estadoHTML}</td>
@@ -2261,8 +2276,8 @@ async function loadCoresPendientesG() {
                     <td style="color:var(--blue);font-weight:bold;white-space:nowrap;">${c.Referencia||'—'}</td>
                     <td style="color:#aaa;font-size:0.6rem;">${(c.Vendedor||'—').split(' ')[0]} ${(c.Vendedor||'').split(' ')[1]||''}</td>
                     <td class="cores-hide-mobile" style="color:#ccc;">${c.Codigo||'—'}</td>
-                    <td style="color:#888;max-width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${c.Articulo||'—'}</td>
-                    <td class="cores-hide-mobile" style="color:#888;white-space:nowrap;">${c.FechaFactura||'—'}</td>
+                    <td style="color:var(--text-muted);max-width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${c.Articulo||'—'}</td>
+                    <td class="cores-hide-mobile" style="color:var(--text-muted);white-space:nowrap;">${c.FechaFactura||'—'}</td>
                     <td style="color:var(--gold);font-weight:bold;white-space:nowrap;">${fM(c.Monto)}</td>
                     <td><span class="dias-badge ${clase}">${dias}d</span></td>
                 </tr>`;
@@ -2301,8 +2316,8 @@ async function loadCores() {
                     <td style="color:var(--blue);font-weight:bold;white-space:nowrap;">${c.NumFactura||c.Referencia||'—'}</td>
                     <td style="color:#aaa;font-size:0.6rem;">${(c.Vendedor||'—').split(' ')[0]} ${(c.Vendedor||'').split(' ')[1]||''}</td>
                     <td class="cores-hide-mobile" style="color:#ccc;">${c.Codigo||'—'}</td>
-                    <td style="color:#888;max-width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${c.Articulo||'—'}</td>
-                    <td class="cores-hide-mobile" style="color:#888;white-space:nowrap;">${c.FechaFactura||'—'}</td>
+                    <td style="color:var(--text-muted);max-width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${c.Articulo||'—'}</td>
+                    <td class="cores-hide-mobile" style="color:var(--text-muted);white-space:nowrap;">${c.FechaFactura||'—'}</td>
                     <td style="color:var(--red);font-weight:bold;white-space:nowrap;">${fM(c.Monto)}</td>
                     <td><span class="dias-badge ${clase}">${dias}d</span></td>
                 </tr>`;
@@ -2335,7 +2350,7 @@ async function loadAceiteG() {
                 <div class="aceite-lane">
                     <span class="aceite-vname">${v.Nombre.split(' ')[0]} ${v.Nombre.split(' ')[1]||''}</span>
                     <div style="position:absolute;left:calc(130px + (100% - 130px)*0.5);top:0;bottom:0;width:1px;background:rgba(168,85,247,0.4);z-index:3;"></div>
-                    <div style="position:absolute;right:0;top:0;bottom:0;width:28px;background:rgba(255,255,255,0.06);border-left:2px dashed rgba(168,85,247,0.5);display:flex;align-items:center;justify-content:center;font-size:0.8rem;z-index:5;">🏆</div>
+                    <div style="position:absolute;right:0;top:0;bottom:0;width:28px;background:rgba(59,130,246,0.06);border-left:2px dashed rgba(168,85,247,0.5);display:flex;align-items:center;justify-content:center;font-size:0.8rem;z-index:5;">🏆</div>
                     <div class="aceite-ball ${esGanador ? 'ganador' : ''}"
                         style="left:calc(130px + (100% - 158px) * ${pos/100});">
                     </div>
@@ -2353,7 +2368,7 @@ async function loadAceiteG() {
                 <tr>
                     <td style="color:var(--gold);font-weight:bold;text-align:center;">${i+1}</td>
                     <td style="font-weight:600;">${v.Nombre}</td>
-                    <td style="color:#666;font-size:0.6rem;">${v.Sucursal||'—'}</td>
+                    <td style="color:var(--text-subtle);font-size:0.6rem;">${v.Sucursal||'—'}</td>
                     <td style="color:var(--blue);">${v.LitrosTotal} L</td>
                     <td style="color:#555;">${v.BasePromedio} L</td>
                     <td style="color:${v.LitrosIncrementales > 0 ? 'var(--grass)' : '#444'}; font-weight:bold;">
@@ -2400,7 +2415,7 @@ async function loadTorneo() {
         } else if (enGrupos) {
             faseHTML = `<span class="wc-fase-badge wc-pendiente">⚽ FASE DE GRUPOS — ${mes===5?'Mayo 18–31':'Junio'}</span>`;
         } else {
-            faseHTML = `<span class="wc-fase-badge" style="background:rgba(255,255,255,0.05);color:#555;border:1px solid #333;">Torneo inicia 18 Mayo</span>`;
+            faseHTML = `<span class="wc-fase-badge" style="background:rgba(255,255,255,0.05);color:#555;border:1px solid var(--border);">Torneo inicia 18 Mayo</span>`;
         }
         faseBadge.innerHTML = faseHTML;
 
@@ -2409,7 +2424,7 @@ async function loadTorneo() {
         const total = data.length;
         leyenda.innerHTML = `
             <span>🟢 Clasificados: <b style="color:var(--grass)">${clasificados}</b></span>
-            <span>⚪ Pendientes: <b style="color:#666">${total - clasificados}</b></span>
+            <span>⚪ Pendientes: <b style="color:var(--text-subtle)">${total - clasificados}</b></span>
             ${enFinal ? `<span>🏆 Compiten por premios los top 4 clasificados en % de Julio</span>` : ''}
         `;
 
@@ -2526,7 +2541,7 @@ function loadCheckins() {
 
             grid.innerHTML = Object.entries(porVend).sort((a,b)=>a[0].localeCompare(b[0])).map(([vend, horas]) => {
                 const nombre = vend.split(' ').slice(0,2).join(' ');
-                return `<div style="background:#111;border:1px solid #4a9eff33;border-radius:10px;padding:8px;text-align:center;">
+                return `<div style="background:var(--surface);border:1px solid #4a9eff33;border-radius:10px;padding:8px;text-align:center;">
                     <div style="font-size:0.55rem;font-weight:700;color:#fff;margin-bottom:4px;">${nombre}</div>
                     <div style="font-size:1rem;">📱</div>
                     <div style="font-size:0.48rem;color:#4a9eff;margin-top:2px;">${horas[horas.length-1]}</div>
@@ -2630,7 +2645,7 @@ function renderVisitas() {
             <div class="prospecto-item">
                 <div class="prospecto-name">
                     📍 ${v['Cliente'] || '—'}
-                    <span style="font-size:0.5rem; background:rgba(255,255,255,0.06); color:${motivoColor}; 
+                    <span style="font-size:0.5rem; background:rgba(59,130,246,0.06); color:${motivoColor}; 
                         border:1px solid ${motivoColor}; padding:1px 6px; border-radius:10px; margin-left:6px;">
                         ${motivo}
                     </span>
@@ -2669,12 +2684,12 @@ function renderVisitas() {
             document.getElementById('r-equipo').innerHTML = equipo.map(v => `
                 <tr>
                     <td>${(v.Nombre||'').split(' ').slice(0,3).join(' ')}</td>
-                    <td style="color:#888;font-size:0.65rem">${v.Sucursal||''}</td>
+                    <td style="color:var(--text-muted);font-size:0.65rem">${v.Sucursal||''}</td>
                     <td class="num">${fMg(v.Ventas)}</td>
                     <td class="num">${fMg(v.Meta)}</td>
                     <td class="${v.Cumple?'pct-ok':'pct-no'}">${v.Pct}%${v.Cumple?' ✓':''}</td>
                 </tr>
-            `).join('') || '<tr><td colspan="5" style="color:#888;text-align:center">Sin datos</td></tr>';
+            `).join('') || '<tr><td colspan="5" style="color:var(--text-muted);text-align:center">Sin datos</td></tr>';
 
             // Oportunidades
             const ops = [];
@@ -3165,7 +3180,7 @@ function renderVisitas() {
             <div class="tv-panel">
                 <div class="tv-panel-title">
                     🚛 DESEMPEÑO VENTAS &nbsp;·&nbsp; <span id="tv-wc-fase">—</span>
-                    &nbsp;&nbsp; 🟢 <span id="tv-wc-clasif" style="color:#00ff88;">—</span> clasificados
+                    &nbsp;&nbsp; 🟢 <span id="tv-wc-clasif" style="color:var(--success);">—</span> clasificados
                     &nbsp; ⚪ <span id="tv-wc-pend" style="color:#555;">—</span> pendientes
                 </div>
                 <div id="tv-wc-rows" style="flex:1;overflow-y:auto;"></div>
@@ -3182,7 +3197,7 @@ function renderVisitas() {
         <!-- Bottom: Metas por sucursal -->
         <div class="tv-bottom" id="tv-suc-bottom">
             <div class="tv-suc-panel" style="border-right:1px solid #1a1a1a;display:flex;align-items:center;padding:0 20px;">
-                <div style="font-size:0.55rem;color:#444;text-transform:uppercase;letter-spacing:2px;white-space:nowrap;margin-right:16px;">META POR SUCURSAL</div>
+                <div style="font-size:0.55rem;color:#444;text-transform:none;letter-spacing:2px;white-space:nowrap;margin-right:16px;">META POR SUCURSAL</div>
             </div>
         </div>
         <div class="tv-footer">
