@@ -1501,6 +1501,20 @@
             <div class="scroll-list" id="top-list"><div class="loading">Cargando...</div></div>
         </div>
 
+        <!-- CHECK-IN DIARIO -->
+        <div class="card" style="margin-bottom:14px;">
+            <div class="card-title" style="color:#4a9eff; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
+                <span>📱 CHECK-IN DIARIO</span>
+                <div style="display:flex;gap:6px;align-items:center;">
+                    <span style="font-size:0.52rem;color:#555;" id="checkin-count">—</span>
+                    <input type="date" id="checkin-fecha-fil" onchange="loadCheckins()" style="background:#111;border:1px solid #333;color:#aaa;border-radius:6px;padding:2px 6px;font-size:0.55rem;">
+                </div>
+            </div>
+            <div id="checkin-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;padding:4px 0 4px;">
+                <div class="loading">Cargando...</div>
+            </div>
+        </div>
+
         <!-- PROSPECTOS BBD -->
         <div class="card">
             <div class="card-title">
@@ -1559,6 +1573,7 @@
 const API = 'https://api.catosaapps.lat';
 const SHEETS_BBD = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTXRBcfvzRWWgd4GI6OZ2CI4fPXdDzkQIucSNCb_1lZhKW9kmBVcXCFx19L5kdTCMEy0d9Yy5GOttRH/pub?gid=349527356&single=true&output=csv';
 const SHEETS_VISITAS = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTXRBcfvzRWWgd4GI6OZ2CI4fPXdDzkQIucSNCb_1lZhKW9kmBVcXCFx19L5kdTCMEy0d9Yy5GOttRH/pub?gid=1425733996&single=true&output=csv';
+    const SHEETS_CHECKIN_ID = '1vUYJz5r1kgMNDel9-6LqaiKAeb3g_n0JwS5_Hs59yeM';
 
 const USUARIOS = {
     'GERENTE':   'CATOSA2026',
@@ -1616,6 +1631,7 @@ async function login() {
     loadTopProductos();
     loadBBD();
     loadVisitas();
+    loadCheckins();
     loadCores();
     loadTorneo();
     loadAceiteG();
@@ -2457,6 +2473,71 @@ async function loadTorneo() {
     } catch(err) {
         pista.innerHTML = `<div class="error-msg">❌ ${err.message}</div>`;
     }
+}
+
+function loadCheckins() {
+    const grid = document.getElementById('checkin-grid');
+    const countEl = document.getElementById('checkin-count');
+    if (!grid) return;
+
+    // Default to today
+    const fil = document.getElementById('checkin-fecha-fil');
+    if (!fil.value) {
+        const hoy = new Date();
+        fil.value = hoy.toISOString().split('T')[0];
+    }
+    const fechaBuscar = fil.value; // YYYY-MM-DD
+
+    const csvUrl = `https://docs.google.com/spreadsheets/d/${SHEETS_CHECKIN_ID}/gviz/tq?tqx=out:csv&sheet=CHECK%20IN`;
+
+    grid.innerHTML = '<div class="loading">Cargando check-ins...</div>';
+
+    Papa.parse(csvUrl, {
+        download: true, header: true, skipEmptyLines: true,
+        complete: r => {
+            // Filter by date - fecha col may be in various formats
+            const rows = r.data.filter(row => {
+                const f = (row['Fecha'] || row['fecha'] || '').trim();
+                // Try to match YYYY-MM-DD or DD/MM/YYYY
+                if (f.includes('/')) {
+                    const parts = f.split('/');
+                    if (parts.length === 3) {
+                        const iso = `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`;
+                        return iso === fechaBuscar;
+                    }
+                }
+                return f === fechaBuscar;
+            });
+
+            countEl.textContent = `${rows.length} registro${rows.length!==1?'s':''} — ${fechaBuscar}`;
+
+            if (!rows.length) {
+                grid.innerHTML = '<div style="color:#555;font-size:0.6rem;padding:8px;">Sin check-ins para esta fecha</div>';
+                return;
+            }
+
+            // Group by vendedor
+            const porVend = {};
+            rows.forEach(r => {
+                const v = (r['Vendedor'] || r['vendedor'] || '').trim();
+                if (!porVend[v]) porVend[v] = [];
+                porVend[v].push(r['Hora'] || r['hora'] || '');
+            });
+
+            grid.innerHTML = Object.entries(porVend).sort((a,b)=>a[0].localeCompare(b[0])).map(([vend, horas]) => {
+                const nombre = vend.split(' ').slice(0,2).join(' ');
+                return `<div style="background:#111;border:1px solid #4a9eff33;border-radius:10px;padding:8px;text-align:center;">
+                    <div style="font-size:0.55rem;font-weight:700;color:#fff;margin-bottom:4px;">${nombre}</div>
+                    <div style="font-size:1rem;">📱</div>
+                    <div style="font-size:0.48rem;color:#4a9eff;margin-top:2px;">${horas[horas.length-1]}</div>
+                    <div style="font-size:0.42rem;color:#555;">${horas.length} registro${horas.length>1?'s':''}</div>
+                </div>`;
+            }).join('');
+        },
+        error: () => {
+            grid.innerHTML = '<div style="color:#f44;font-size:0.6rem;">❌ Error cargando check-ins</div>';
+        }
+    });
 }
 
 function loadBBD() {
