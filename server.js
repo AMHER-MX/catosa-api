@@ -526,6 +526,95 @@ app.get('/api/ventas-diarias', async (req, res) => {
   }
 });
 
+// ── PROMO UREA ───────────────────────────────────────────────────────────────
+const UREA_ARTS = "'0/UREA2','0/UREA3','1/ZFLRTUREAG'";
+
+app.get('/api/promo-urea', async (req, res) => {
+  try {
+    const db  = await getPool();
+    const hoy = new Date();
+    const mesActual  = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}`;
+    const mesAnterior = `${hoy.getFullYear()-1}-${String(hoy.getMonth()+1).padStart(2,'0')}`;
+
+    const rAct = await db.request().query(`
+      SELECT s.NOM_VENDEDOR AS Vendedor, s.NOM_ALMACEN_LIN AS Sucursal,
+        SUM(s.CANTIDAD) AS Litros, COUNT(*) AS Piezas, SUM(s.IMP_TOTAL_LINEA) AS Monto
+      FROM FTSABI_PR s
+      WHERE s.ARTICULO IN (${UREA_ARTS})
+        AND LEFT(s.FECHA,7) = '${mesActual}'
+        AND ${TIPO_EXCL_SQL}
+        AND s.NOM_ALMACEN_LIN IN (${SUCURSALES})
+      GROUP BY s.NOM_VENDEDOR, s.NOM_ALMACEN_LIN
+    `);
+
+    const rAnt = await db.request().query(`
+      SELECT s.NOM_VENDEDOR AS Vendedor, s.NOM_ALMACEN_LIN AS Sucursal,
+        SUM(s.CANTIDAD) AS Litros, COUNT(*) AS Piezas, SUM(s.IMP_TOTAL_LINEA) AS Monto
+      FROM FTSABI_PR s
+      WHERE s.ARTICULO IN (${UREA_ARTS})
+        AND LEFT(s.FECHA,7) = '${mesAnterior}'
+        AND ${TIPO_EXCL_SQL}
+        AND s.NOM_ALMACEN_LIN IN (${SUCURSALES})
+      GROUP BY s.NOM_VENDEDOR, s.NOM_ALMACEN_LIN
+    `);
+
+    const r6m = await db.request().query(`
+      SELECT s.NOM_VENDEDOR AS Vendedor, LEFT(s.FECHA,7) AS Mes,
+        SUM(s.CANTIDAD) AS Litros, SUM(s.IMP_TOTAL_LINEA) AS Monto
+      FROM FTSABI_PR s
+      WHERE s.ARTICULO IN (${UREA_ARTS})
+        AND s.FECHA >= DATEADD(month,-5,DATEFROMPARTS(${hoy.getFullYear()},${hoy.getMonth()+1},1))
+        AND ${TIPO_EXCL_SQL}
+        AND s.NOM_ALMACEN_LIN IN (${SUCURSALES})
+      GROUP BY s.NOM_VENDEDOR, LEFT(s.FECHA,7)
+      ORDER BY s.NOM_VENDEDOR, LEFT(s.FECHA,7)
+    `);
+
+    const antMap = {};
+    rAnt.recordset.forEach(r => { antMap[r.Vendedor] = r; });
+
+    const hist6m = {};
+    r6m.recordset.forEach(r => {
+      if (!hist6m[r.Vendedor]) hist6m[r.Vendedor] = [];
+      hist6m[r.Vendedor].push({ mes: r.Mes, litros: parseFloat(r.Litros)||0, monto: parseFloat(r.Monto)||0 });
+    });
+
+    const vendedores = rAct.recordset.map(r => {
+      const ant = antMap[r.Vendedor] || { Litros:0, Piezas:0, Monto:0 };
+      const litrosAct = parseFloat(r.Litros)||0, litrosAnt = parseFloat(ant.Litros)||0;
+      const montoAct  = parseFloat(r.Monto)||0,  montoAnt  = parseFloat(ant.Monto)||0;
+      return {
+        Vendedor: r.Vendedor, Sucursal: r.Sucursal,
+        Litros: litrosAct, Piezas: parseInt(r.Piezas)||0, Monto: montoAct,
+        LitrosAnt: litrosAnt, MontoAnt: montoAnt,
+        CrecLitros: litrosAnt > 0 ? (litrosAct-litrosAnt)/litrosAnt*100 : null,
+        CrecMonto:  montoAnt  > 0 ? (montoAct-montoAnt)/montoAnt*100   : null,
+        Hist6m: hist6m[r.Vendedor] || []
+      };
+    }).sort((a,b) => b.Litros - a.Litros);
+
+    const sucMap = {};
+    vendedores.forEach(v => {
+      if (!sucMap[v.Sucursal]) sucMap[v.Sucursal] = { Sucursal:v.Sucursal, Litros:0, Piezas:0, Monto:0, LitrosAnt:0, MontoAnt:0 };
+      sucMap[v.Sucursal].Litros    += v.Litros;
+      sucMap[v.Sucursal].Piezas    += v.Piezas;
+      sucMap[v.Sucursal].Monto     += v.Monto;
+      sucMap[v.Sucursal].LitrosAnt += v.LitrosAnt;
+      sucMap[v.Sucursal].MontoAnt  += v.MontoAnt;
+    });
+    const sucursales = Object.values(sucMap).map(s => ({
+      ...s,
+      CrecLitros: s.LitrosAnt > 0 ? (s.Litros-s.LitrosAnt)/s.LitrosAnt*100 : null,
+      CrecMonto:  s.MontoAnt  > 0 ? (s.Monto-s.MontoAnt)/s.MontoAnt*100    : null,
+    })).sort((a,b) => b.Litros - a.Litros);
+
+    res.json({ vendedores, sucursales, mes: mesActual, mesAnt: mesAnterior });
+  } catch (err) {
+    console.error('Error /api/promo-urea:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ── CORES PENDIENTES DE PAGO (FTPDCBI_PR sin FEC_CANCELACION) ─────────────────
 app.get('/api/cores-pendientes', async (req, res) => {
   try {
