@@ -289,8 +289,9 @@
             if (!podioG.mesActual) { container.innerHTML = '<div style="color:#555;font-size:0.65rem;">El concurso inicia el 1 de septiembre.</div>'; return; }
 
             const t = TEMAS_PODIO[podioG.mesActual];
-            document.getElementById('tv-po-mes').textContent = `${t?t.emoji:''} ${fMesG(podioG.mesActual).toUpperCase()}`.trim();
-            const hero = document.getElementById('tv-po-hero');
+            document.getElementById('tv-po-tema').textContent = t ? `${t.emoji} ${t.nombre}` : '';
+            document.getElementById('tv-po-mes').textContent = fMesG(podioG.mesActual).toUpperCase();
+            const hero = document.getElementById('tv-hero-banner');
             const img = TV_PODIO_IMG[podioG.mesActual];
             hero.style.backgroundImage = img ? `url('${img}')` : 'none';
 
@@ -688,8 +689,9 @@
             if (!podioG.mesActual) { container.innerHTML = '<div style="color:#555;font-size:0.65rem;">El concurso inicia el 1 de septiembre.</div>'; return; }
 
             const t = TEMAS_PODIO[podioG.mesActual];
-            document.getElementById('tv-po-mes').textContent = `${t?t.emoji:''} ${fMesG(podioG.mesActual).toUpperCase()}`.trim();
-            const hero = document.getElementById('tv-po-hero');
+            document.getElementById('tv-po-tema').textContent = t ? `${t.emoji} ${t.nombre}` : '';
+            document.getElementById('tv-po-mes').textContent = fMesG(podioG.mesActual).toUpperCase();
+            const hero = document.getElementById('tv-hero-banner');
             const img = TV_PODIO_IMG[podioG.mesActual];
             hero.style.backgroundImage = img ? `url('${img}')` : 'none';
 
@@ -1324,8 +1326,12 @@
         .tv-panel-title { font-size:0.55rem; color:#555; text-transform:none; letter-spacing:2px; margin-bottom:8px; flex-shrink:0; display:flex; align-items:center; gap:8px; }
         .tv-panel-title span { color:var(--gold); }
         /* RUTA AL PODIO — panel TV */
-        .tv-po-hero { height:140px; border-radius:12px; background-size:cover; background-position:center 18%; margin-bottom:10px; position:relative; overflow:hidden; flex-shrink:0; border:1px solid rgba(255,255,255,0.1); }
-        .tv-po-hero::after { content:''; position:absolute; inset:0; background:linear-gradient(180deg, rgba(0,0,0,0.1), rgba(8,8,16,0.65)); }
+        .tv-hero-banner { height:190px; flex-shrink:0; position:relative; overflow:hidden; background-size:cover; background-position:center 22%; border-bottom:2px solid var(--gold); }
+        .tv-hero-banner::after { content:''; position:absolute; inset:0; background:linear-gradient(90deg, rgba(6,6,10,0.88) 0%, rgba(6,6,10,0.35) 42%, rgba(6,6,10,0.1) 65%, rgba(6,6,10,0.75) 100%); }
+        .tv-hero-logo { position:absolute; left:36px; top:50%; transform:translateY(-50%); height:150px; z-index:2; filter:drop-shadow(0 6px 18px rgba(0,0,0,0.6)); }
+        .tv-hero-mes { position:absolute; right:28px; bottom:16px; z-index:2; text-align:right; }
+        .tv-hero-mes .tema { font-size:1.1rem; font-weight:800; color:var(--gold); text-shadow:0 2px 8px rgba(0,0,0,0.8); letter-spacing:1px; }
+        .tv-hero-mes .rango { font-size:0.6rem; color:rgba(255,255,255,0.6); margin-top:2px; }
         .tv-po-podium { margin-bottom:12px; flex-shrink:0; }
         .tv-po-podium .pd-name, .tv-po-podium .pd-sub { font-size:0.62rem; }
         .tv-po-row { display:flex; align-items:center; gap:10px; padding:6px 4px; border-bottom:1px solid #1a1a1a; }
@@ -3052,8 +3058,9 @@ function renderVisitas() {
             if (!podioG.mesActual) { container.innerHTML = '<div style="color:#555;font-size:0.65rem;">El concurso inicia el 1 de septiembre.</div>'; return; }
 
             const t = TEMAS_PODIO[podioG.mesActual];
-            document.getElementById('tv-po-mes').textContent = `${t?t.emoji:''} ${fMesG(podioG.mesActual).toUpperCase()}`.trim();
-            const hero = document.getElementById('tv-po-hero');
+            document.getElementById('tv-po-tema').textContent = t ? `${t.emoji} ${t.nombre}` : '';
+            document.getElementById('tv-po-mes').textContent = fMesG(podioG.mesActual).toUpperCase();
+            const hero = document.getElementById('tv-hero-banner');
             const img = TV_PODIO_IMG[podioG.mesActual];
             hero.style.backgroundImage = img ? `url('${img}')` : 'none';
 
@@ -3273,7 +3280,6 @@ function renderVisitas() {
             <div class="tv-logos">
                 <img src="https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/logo-catosa.png" alt="Catosa">
                 <img src="https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/logo-international.png" alt="International">
-                <img src="https://amher-mx.github.io/catosa-api/ruta-podio-logo.jpg" alt="Ruta al Podio" style="height:40px;border-radius:6px;">
             </div>
             <div class="tv-title">⚡ CATOSA PERFORMANCE 2026</div>
             <div style="display:flex;align-items:center;gap:16px;">
@@ -3293,13 +3299,19 @@ function renderVisitas() {
             </div>
             </div>
         </div>
+        <div id="tv-hero-banner" class="tv-hero-banner">
+            <img src="https://amher-mx.github.io/catosa-api/ruta-podio-logo-transparent.png" alt="Ruta al Podio" class="tv-hero-logo">
+            <div class="tv-hero-mes">
+                <div class="tema" id="tv-po-tema">—</div>
+                <div class="rango">1 sep – 30 nov 2026 &nbsp;·&nbsp; <span id="tv-po-mes">—</span></div>
+            </div>
+        </div>
         <div class="tv-main">
             <!-- Panel izquierdo: Ruta al Podio -->
             <div class="tv-panel">
                 <div class="tv-panel-title">
-                    🏁 RUTA AL PODIO &nbsp;·&nbsp; <span id="tv-po-mes">—</span>
+                    🏁 RUTA AL PODIO &nbsp;·&nbsp; RANKING
                 </div>
-                <div id="tv-po-hero" class="tv-po-hero"></div>
                 <div id="tv-po-podium" class="podium tv-po-podium"></div>
                 <div id="tv-po-rows" style="flex:1;overflow-y:auto;"></div>
             </div>
