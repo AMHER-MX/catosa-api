@@ -940,6 +940,7 @@
             background: var(--surface-2); border: 1px solid var(--border);
             color: var(--text); padding: 10px 14px; border-radius: 10px;
             font-size: 0.75rem; cursor: pointer; font-family: inherit;
+            min-width: 0; width: 100%;
         }
 
         /* KPI GRID */
@@ -1018,6 +1019,7 @@
         .card {
             background: var(--card2); border-radius: 16px; padding: 18px;
             border: 1px solid var(--border);
+            min-width: 0;
         }
         .card-title {
             font-size: 0.75rem; color: var(--text); font-weight: 600;
@@ -1036,8 +1038,8 @@
         .podio-ctl select, .podio-ctl button { background:var(--surface-2); border:1px solid var(--border); color:#aaa; border-radius:8px; padding:4px 8px; font-size:0.65rem; cursor:pointer; }
         .podio-ctl button.activo { border-color:var(--accent); color:var(--accent); background:var(--accent-dim); }
         .podium { display:grid; grid-template-columns:repeat(5,1fr); gap:8px; align-items:end; margin:6px 0 16px; }
-        .podium .pd { text-align:center; display:flex; flex-direction:column; justify-content:flex-end; }
-        .podium .pd-name { font-size:0.62rem; font-weight:700; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .podium .pd { min-width:0; text-align:center; display:flex; flex-direction:column; justify-content:flex-end; }
+        .podium .pd-name { min-width:0; font-size:0.62rem; font-weight:700; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
         .podium .pd-sub { font-size:0.52rem; color:var(--text-subtle); margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
         .podium .pd-pts { font-size:0.9rem; font-weight:800; }
         .podium .pd-box { border-radius:10px 10px 4px 4px; margin-top:6px; display:flex; align-items:center; justify-content:center; font-size:1.3rem;
@@ -1167,6 +1169,10 @@
             /* CORES — ocultar columnas menos importantes en móvil */
             .cores-hide-mobile { display:none; }
             .cores-table td, .cores-table th { padding:5px 4px; font-size:0.62rem; }
+
+            /* RUTA AL PODIO — tabla: ocultar columnas secundarias, quedan #/Asesor/Total/%Meta */
+            .podio-hide-mobile { display:none; }
+            .podio-tabla .chip-canal { display:block; margin-left:0; margin-top:2px; width:fit-content; }
 
             /* KPIs */
             .kpi-value { font-size:1.1rem; }
@@ -1440,9 +1446,9 @@
         <div style="overflow-x:auto;">
             <table class="cores-table podio-tabla" id="podio-tabla">
                 <thead><tr>
-                    <th>#</th><th>Asesor</th><th>Sede</th>
-                    <th class="num">Total</th><th class="num">Check-in</th><th class="num">Constancia</th>
-                    <th class="num">Racha</th><th class="num">Visitas / QR</th><th class="num">Fleetrite</th><th class="num">% Meta</th>
+                    <th>#</th><th>Asesor</th><th class="podio-hide-mobile">Sede</th>
+                    <th class="num">Total</th><th class="num podio-hide-mobile">Check-in</th><th class="num podio-hide-mobile">Constancia</th>
+                    <th class="num podio-hide-mobile">Racha</th><th class="num podio-hide-mobile">Visitas / QR</th><th class="num podio-hide-mobile">Fleetrite</th><th class="num">% Meta</th>
                 </tr></thead>
                 <tbody id="podio-tbody"><tr><td colspan="10" class="loading">Cargando...</td></tr></tbody>
             </table>
@@ -1785,13 +1791,13 @@ function renderPodioG() {
         <tr class="${r.puesto <= 3 ? 'top3' : ''}">
             <td>${MEDALLAS[r.puesto - 1] || r.puesto}</td>
             <td><b>${r.Nombre}</b><span class="chip-canal">${r.Canal}</span></td>
-            <td>${r.Sucursal}</td>
+            <td class="podio-hide-mobile">${r.Sucursal}</td>
             <td class="num tot">${r.total}</td>
-            <td class="num">${r.checkin}</td>
-            <td class="num">${r.constancia}</td>
-            <td class="num">${r.racha > 0 ? `<span class="racha-chip">🔥 ${r.racha}</span>` : '<span style="color:var(--text-subtle)">—</span>'}</td>
-            <td class="num">${r.semanal}</td>
-            <td class="num">${r.fleetrite}${r.nps !== undefined ? ` <span style="color:var(--text-subtle);font-size:0.55rem;">(${r.nps} NPs)</span>` : ''}</td>
+            <td class="num podio-hide-mobile">${r.checkin}</td>
+            <td class="num podio-hide-mobile">${r.constancia}</td>
+            <td class="num podio-hide-mobile">${r.racha > 0 ? `<span class="racha-chip">🔥 ${r.racha}</span>` : '<span style="color:var(--text-subtle)">—</span>'}</td>
+            <td class="num podio-hide-mobile">${r.semanal}</td>
+            <td class="num podio-hide-mobile">${r.fleetrite}${r.nps !== undefined ? ` <span style="color:var(--text-subtle);font-size:0.55rem;">(${r.nps} NPs)</span>` : ''}</td>
             <td class="num" style="color:${r.pct >= 120 ? 'var(--gold)' : r.pct >= 100 ? 'var(--success)' : 'var(--text-muted)'}">${r.pct}%</td>
         </tr>`).join('') || '<tr><td colspan="10" class="loading">Sin participantes</td></tr>';
 
