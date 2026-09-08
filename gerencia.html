@@ -1026,6 +1026,44 @@
         }
         .scroll-list { max-height: 280px; overflow-y: auto; }
 
+        /* RUTA AL PODIO */
+        .podio-g { --tema-a:#16a34a; --tema-b:#dc2626; --tema-c:#f8fafc; position:relative; overflow:hidden; }
+        .podio-g::before { content:''; position:absolute; left:0; right:0; top:0; height:3px;
+            background:linear-gradient(90deg, var(--tema-a) 0 33%, var(--tema-c) 33% 66%, var(--tema-b) 66%); }
+        .podio-g .card-title { flex-wrap:wrap; gap:8px; }
+        .podio-tema { font-size:0.62rem; font-weight:600; padding:3px 9px; border-radius:999px; background:rgba(255,255,255,0.06); border:1px solid var(--border); color:var(--text); }
+        .podio-ctl { display:flex; gap:6px; flex-wrap:wrap; align-items:center; }
+        .podio-ctl select, .podio-ctl button { background:var(--surface-2); border:1px solid var(--border); color:#aaa; border-radius:8px; padding:4px 8px; font-size:0.65rem; cursor:pointer; }
+        .podio-ctl button.activo { border-color:var(--accent); color:var(--accent); background:var(--accent-dim); }
+        .podium { display:grid; grid-template-columns:repeat(5,1fr); gap:8px; align-items:end; margin:6px 0 16px; }
+        .podium .pd { text-align:center; display:flex; flex-direction:column; justify-content:flex-end; }
+        .podium .pd-name { font-size:0.62rem; font-weight:700; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .podium .pd-sub { font-size:0.52rem; color:var(--text-subtle); margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .podium .pd-pts { font-size:0.9rem; font-weight:800; }
+        .podium .pd-box { border-radius:10px 10px 4px 4px; margin-top:6px; display:flex; align-items:center; justify-content:center; font-size:1.3rem;
+            background:var(--surface-2); border:1px solid var(--border); border-bottom:none; }
+        .podium .p1 .pd-box { height:96px; background:linear-gradient(180deg, rgba(245,158,11,0.35), rgba(245,158,11,0.08)); border-color:rgba(245,158,11,0.5); }
+        .podium .p2 .pd-box { height:76px; background:linear-gradient(180deg, rgba(148,163,184,0.35), rgba(148,163,184,0.08)); border-color:rgba(148,163,184,0.5); }
+        .podium .p3 .pd-box { height:60px; background:linear-gradient(180deg, rgba(180,83,9,0.4), rgba(180,83,9,0.08)); border-color:rgba(180,83,9,0.6); }
+        .podium .p4 .pd-box, .podium .p5 .pd-box { height:44px; font-size:0.9rem; color:var(--text-muted); }
+        .podium .p1 .pd-pts { color:var(--gold); } .podium .p2 .pd-pts { color:var(--silver); } .podium .p3 .pd-pts { color:#d97706; }
+        .podio-tabla td.num { text-align:right; font-variant-numeric:tabular-nums; }
+        .podio-tabla th.num { text-align:right; }
+        .podio-tabla tr.top3 td:first-child { font-weight:800; }
+        .podio-tabla .tot { font-weight:800; color:var(--text); }
+        .chip-canal { font-size:0.52rem; padding:1px 6px; border-radius:999px; border:1px solid var(--border); color:var(--text-muted); margin-left:4px; }
+        .racha-chip { color:var(--warning); font-weight:700; }
+        .jefes-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:10px; }
+        .jefe { background:var(--surface-2); border:1px solid var(--border); border-radius:10px; padding:12px; }
+        .jefe .j-pos { font-size:0.55rem; color:var(--text-subtle); font-weight:700; letter-spacing:0.05em; }
+        .jefe .j-name { font-size:0.72rem; font-weight:700; margin:2px 0; }
+        .jefe .j-suc { font-size:0.58rem; color:var(--text-muted); }
+        .jefe .j-pct { font-size:1.4rem; font-weight:800; margin-top:6px; }
+        .jefe .j-bar { height:6px; border-radius:3px; background:rgba(255,255,255,0.06); overflow:hidden; margin-top:6px; }
+        .jefe .j-bar i { display:block; height:100%; border-radius:3px; }
+        .jefe .j-sub { font-size:0.55rem; color:var(--text-subtle); margin-top:4px; }
+        @media(max-width:600px) { .podium { gap:4px; } .podium .pd-name { font-size:0.52rem; } .podium .pd-pts { font-size:0.75rem; } }
+
         /* VENDEDOR ROW */
         .v-row {
             display: flex; justify-content: space-between; align-items: center;
@@ -1383,6 +1421,43 @@
 
 
 
+    <!-- RUTA AL PODIO -->
+    <div class="card podio-g" id="podio-g" style="margin-bottom:14px;">
+        <div class="card-title">
+            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                <span>🏁 RUTA AL PODIO <span id="podio-g-sub" style="font-size:0.58rem; color:var(--text-subtle); font-weight:400;">1 sep – 30 nov 2026</span></span>
+                <span class="podio-tema" id="podio-g-tema">🇲🇽 Viva México</span>
+            </div>
+            <div class="podio-ctl">
+                <button class="activo" id="pc-TODOS" onclick="setPodioCanal('TODOS')">Todos</button>
+                <button id="pc-CALLE" onclick="setPodioCanal('CALLE')">Calle</button>
+                <button id="pc-MOSTRADOR" onclick="setPodioCanal('MOSTRADOR')">Mostrador</button>
+                <select id="podio-mes-sel" onchange="renderPodioG()"><option value="TOTAL">Acumulado</option></select>
+                <button onclick="descargarPodioCSV()" title="Descargar tabla" style="background:var(--gold); color:#000; border:none; font-weight:700;">⬇️ CSV</button>
+            </div>
+        </div>
+        <div class="podium" id="podium"><div class="loading" style="grid-column:1/-1;">Cargando concurso...</div></div>
+        <div style="overflow-x:auto;">
+            <table class="cores-table podio-tabla" id="podio-tabla">
+                <thead><tr>
+                    <th>#</th><th>Asesor</th><th>Sede</th>
+                    <th class="num">Total</th><th class="num">Check-in</th><th class="num">Constancia</th>
+                    <th class="num">Racha</th><th class="num">Visitas / QR</th><th class="num">Fleetrite</th><th class="num">% Meta</th>
+                </tr></thead>
+                <tbody id="podio-tbody"><tr><td colspan="10" class="loading">Cargando...</td></tr></tbody>
+            </table>
+        </div>
+        <div id="podio-g-nota" style="font-size:0.55rem; color:var(--text-subtle); margin-top:8px;"></div>
+    </div>
+
+    <!-- JEFES DE SUCURSAL -->
+    <div class="card" style="margin-bottom:14px;">
+        <div class="card-title">
+            <span>🏢 CONCURSO JEFES DE SUCURSAL — <span id="jefes-mes" style="color:var(--text-muted); font-weight:400;">% de sucursal vs cuota</span></span>
+        </div>
+        <div class="jefes-grid" id="jefes-grid"><div class="loading">Cargando...</div></div>
+    </div>
+
     <!-- DISTRIBUCIÓN POR NIVEL -->
     <div class="card" style="margin-bottom:14px;">
         <div class="card-title" style="color:#fff;">🎯 DISTRIBUCIÓN POR NIVEL — MES ACTUAL</div>
@@ -1650,7 +1725,145 @@ async function login() {
     loadCores();
     loadTorneo();
     loadAceiteG();
+    loadPodioG();
+    loadJefesG();
 };
+
+// ── RUTA AL PODIO ─────────────────────────────────────────────────────────────
+const TEMAS_PODIO = {
+    '2026-09': { nombre: 'Viva México',              emoji: '🇲🇽', a: '#16a34a', b: '#dc2626', c: '#f8fafc' },
+    '2026-10': { nombre: 'Halloween',                emoji: '🎃', a: '#f97316', b: '#7c3aed', c: '#111827' },
+    '2026-11': { nombre: 'Día de Muertos + Navidad', emoji: '💀🎄', a: '#d946ef', b: '#dc2626', c: '#16a34a' },
+};
+const MEDALLAS = ['🥇', '🥈', '🥉', '4', '5'];
+const fMesG = m => { const [y, mm] = m.split('-'); return new Date(y, mm - 1, 1).toLocaleDateString('es-MX', { month: 'long' }); };
+let podioG = null, podioCanal = 'TODOS';
+
+async function loadPodioG() {
+    try {
+        podioG = await apiFetch('/api/podio');
+        const sel = document.getElementById('podio-mes-sel');
+        sel.innerHTML = '<option value="TOTAL">Acumulado</option>' +
+            (podioG.meses || []).map(m => `<option value="${m}">${fMesG(m)}</option>`).join('');
+        if (podioG.mesActual) {
+            const t = TEMAS_PODIO[podioG.mesActual];
+            const card = document.getElementById('podio-g');
+            if (t) { card.style.setProperty('--tema-a', t.a); card.style.setProperty('--tema-b', t.b); card.style.setProperty('--tema-c', t.c);
+                     document.getElementById('podio-g-tema').textContent = `${t.emoji} ${t.nombre}`; }
+            document.getElementById('podio-g-sub').textContent = `1 sep – 30 nov 2026 · corte ${podioG.hoy.slice(8)}/${podioG.hoy.slice(5,7)}`;
+        }
+        renderPodioG();
+    } catch (e) {
+        document.getElementById('podium').innerHTML = `<div style="grid-column:1/-1;color:var(--danger);font-size:0.65rem;">❌ ${e.message}</div>`;
+        document.getElementById('podio-tbody').innerHTML = '';
+    }
+}
+
+function setPodioCanal(c) {
+    podioCanal = c;
+    ['TODOS', 'CALLE', 'MOSTRADOR'].forEach(x => document.getElementById('pc-' + x).classList.toggle('activo', x === c));
+    renderPodioG();
+}
+
+// Filas normalizadas según la vista (acumulado o un mes)
+function filasPodio() {
+    if (!podioG || !podioG.mesActual) return [];
+    const mes = document.getElementById('podio-mes-sel').value;
+    let filas;
+    if (mes === 'TOTAL') {
+        filas = podioG.ranking.map(r => {
+            const a = r.actual || {};
+            const ms = Object.values(r.meses);
+            return { Nombre: r.Nombre, Sucursal: r.Sucursal, Canal: r.Canal, total: r.total,
+                checkin: ms.reduce((s, m) => s + m.checkin, 0), constancia: ms.reduce((s, m) => s + m.constancia, 0),
+                semanal: ms.reduce((s, m) => s + m.visitas + m.encuesta, 0), fleetrite: ms.reduce((s, m) => s + m.fleetrite, 0),
+                racha: a.constancia ? a.constancia.rachaActual : 0, pct: r.Pct, constanciaPts: r.constanciaPts };
+        });
+    } else {
+        filas = (podioG.porMes[mes] || []).map(r => ({ Nombre: r.Nombre, Sucursal: r.Sucursal, Canal: r.Canal, total: r.total,
+            checkin: r.checkin.pts, constancia: r.constancia.pts, semanal: (r.visitas ? r.visitas.pts : 0) + (r.encuesta ? r.encuesta.pts : 0),
+            fleetrite: r.fleetrite.pts, racha: r.constancia.rachaActual, pct: r.Pct, constanciaPts: r.constancia.pts, nps: r.fleetrite.nps }));
+    }
+    if (podioCanal !== 'TODOS') filas = filas.filter(f => f.Canal === podioCanal);
+    filas.sort((a, b) => (b.total - a.total) || (b.constanciaPts - a.constanciaPts) || (b.pct - a.pct) || a.Nombre.localeCompare(b.Nombre));
+    filas.forEach((f, i) => f.puesto = i + 1);
+    return filas;
+}
+
+function renderPodioG() {
+    const filas = filasPodio();
+    const podium = document.getElementById('podium');
+    const tbody  = document.getElementById('podio-tbody');
+    if (!podioG || !podioG.mesActual) {
+        podium.innerHTML = '<div style="grid-column:1/-1;color:var(--text-subtle);font-size:0.65rem;">El concurso inicia el 1 de septiembre.</div>';
+        tbody.innerHTML = ''; return;
+    }
+    // Podio visual: orden 4-2-1-3-5
+    const orden = [3, 1, 0, 2, 4];
+    podium.innerHTML = orden.map(i => {
+        const r = filas[i];
+        if (!r) return `<div class="pd p${i+1}"><div class="pd-name" style="color:var(--text-subtle)">—</div><div class="pd-box"></div></div>`;
+        return `<div class="pd p${i+1}">
+            <div class="pd-name" title="${r.Nombre}">${r.Nombre.split(' ').slice(0,2).join(' ')}</div>
+            <div class="pd-sub">${r.Sucursal} · ${r.Canal}</div>
+            <div class="pd-pts">${r.total} pts</div>
+            <div class="pd-box">${MEDALLAS[i]}</div></div>`;
+    }).join('');
+
+    tbody.innerHTML = filas.map(r => `
+        <tr class="${r.puesto <= 3 ? 'top3' : ''}">
+            <td>${MEDALLAS[r.puesto - 1] || r.puesto}</td>
+            <td><b>${r.Nombre}</b><span class="chip-canal">${r.Canal}</span></td>
+            <td>${r.Sucursal}</td>
+            <td class="num tot">${r.total}</td>
+            <td class="num">${r.checkin}</td>
+            <td class="num">${r.constancia}</td>
+            <td class="num">${r.racha > 0 ? `<span class="racha-chip">🔥 ${r.racha}</span>` : '<span style="color:var(--text-subtle)">—</span>'}</td>
+            <td class="num">${r.semanal}</td>
+            <td class="num">${r.fleetrite}${r.nps !== undefined ? ` <span style="color:var(--text-subtle);font-size:0.55rem;">(${r.nps} NPs)</span>` : ''}</td>
+            <td class="num" style="color:${r.pct >= 120 ? 'var(--gold)' : r.pct >= 100 ? 'var(--success)' : 'var(--text-muted)'}">${r.pct}%</td>
+        </tr>`).join('') || '<tr><td colspan="10" class="loading">Sin participantes</td></tr>';
+
+    const R = podioG.reglas;
+    document.getElementById('podio-g-nota').innerHTML =
+        `Puntos: check-in ${R.CHECKIN_DIA}/día · constancia ${R.CONSTANCIA_DIA}/día sobre meta diaria +${R.RACHA_DIA_EXTRA} por racha · ` +
+        `visitas (Calle) ${R.VISITAS_SEMANA}/semana con ${R.VISITAS_MIN}+ · encuesta QR (Mostrador) ${R.ENCUESTA_SEMANA}/semana con ${R.ENCUESTA_MIN}+ · ` +
+        `Fleetrite ${R.FLEETRITE.slice().reverse().map(t => `${t.min}+ NPs=${t.pts}`).join(', ')}. ` +
+        (podioG.encuestaConfigurada ? '' : '<span style="color:var(--warning)">⚠️ Encuesta QR aún sin configurar (Mostrador suma 0 en ese reto).</span>') +
+        ` <a href="#" onclick="apiFetch('/api/podio?refresh=1').then(d=>{podioG=d;renderPodioG();});return false;" style="color:var(--accent);">↻ Recalcular</a>`;
+}
+
+function descargarPodioCSV() {
+    const filas = filasPodio();
+    const mes = document.getElementById('podio-mes-sel').value;
+    const head = ['Puesto', 'Asesor', 'Sede', 'Canal', 'Total', 'CheckIn', 'Constancia', 'Racha', 'VisitasQR', 'Fleetrite', 'PctMeta'];
+    const csv = [head.join(',')].concat(filas.map(r => [r.puesto, `"${r.Nombre}"`, r.Sucursal, r.Canal, r.total, r.checkin, r.constancia, r.racha, r.semanal, r.fleetrite, r.pct].join(','))).join('\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' }));
+    a.download = `ruta-al-podio-${mes.toLowerCase()}-${podioCanal.toLowerCase()}.csv`; a.click();
+}
+
+async function loadJefesG() {
+    const grid = document.getElementById('jefes-grid');
+    try {
+        const d = await apiFetch('/api/podio/jefes');
+        document.getElementById('jefes-mes').textContent = `${fMesG(d.mes)} · % de sucursal vs cuota`;
+        if (!d.jefes.length) { grid.innerHTML = '<div style="color:var(--text-subtle);font-size:0.65rem;">Sin jefes de sucursal en metas.xlsx (canal JEFE SUCURSAL).</div>'; return; }
+        grid.innerHTML = d.jefes.map(j => {
+            const col = j.Pct >= 120 ? 'var(--gold)' : j.Pct >= 100 ? 'var(--success)' : j.Pct >= 75 ? 'var(--warning)' : 'var(--danger)';
+            return `<div class="jefe">
+                <div class="j-pos">${j.puesto === 1 ? '🥇 1ER LUGAR' : j.puesto === 2 ? '🥈 2DO LUGAR' : j.puesto === 3 ? '🥉 3ER LUGAR' : j.puesto + 'º LUGAR'}</div>
+                <div class="j-name">${j.Nombre}</div>
+                <div class="j-suc">${j.Sucursal}</div>
+                <div class="j-pct" style="color:${col}">${j.Pct}%</div>
+                <div class="j-bar"><i style="width:${Math.min(100, j.Pct / 1.2)}%;background:${col}"></i></div>
+                <div class="j-sub">${fM(j.Venta)} de ${fM(j.Meta)}</div>
+            </div>`;
+        }).join('');
+    } catch (e) {
+        grid.innerHTML = `<div style="color:var(--danger);font-size:0.65rem;">❌ ${e.message}</div>`;
+    }
+}
 
 // ── FILTROS ───────────────────────────────────────────────────────────────────
 function fillFilters() {
