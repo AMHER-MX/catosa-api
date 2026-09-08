@@ -264,7 +264,7 @@
     }
 
     function cerrarTV() {
-        clearInterval(tvTimer); clearInterval(tvTick); clearInterval(tvRubroTimer);
+        clearInterval(tvTimer); clearInterval(tvTick);
         document.getElementById('tv-overlay').classList.remove('open');
         if (document.fullscreenElement) document.exitFullscreen();
     }
@@ -321,15 +321,7 @@
         }
     }
 
-    // ── RUBROS Ruta al Podio (carrusel: check-in, racha, visitas/encuesta, Fleetrite) ──
-    const TV_RUBROS = [
-        { key:'checkin',   label:'📱 CHECK-IN DIARIO',           unit:'pts' },
-        { key:'racha',     label:'🔥 RACHA ACTUAL',              unit:'días' },
-        { key:'semanal',   label:'📍 VISITAS · ENCUESTA QR',     unit:'pts' },
-        { key:'fleetrite', label:'⭐ NPS FLEETRITE',              unit:'pts' },
-    ];
-    let tvRubroIdx = 0, tvRubroTimer = null, tvRubrosData = [];
-
+    // ── RUBROS Ruta al Podio (4 tableros fijos lado a lado: visitas, QR, NPs, racha) ──
     function calcRubrosTotal() {
         if (!podioG || !podioG.ranking) return [];
         return podioG.ranking.map(r => {
@@ -337,46 +329,38 @@
             const ms = Object.values(r.meses || {});
             return {
                 Nombre: r.Nombre, Sucursal: r.Sucursal, Canal: r.Canal,
-                checkin:   ms.reduce((s,m) => s + m.checkin, 0),
+                visitas:   ms.reduce((s,m) => s + (m.visitas || 0), 0),
+                encuesta:  ms.reduce((s,m) => s + (m.encuesta || 0), 0),
+                fleetrite: ms.reduce((s,m) => s + (m.fleetrite || 0), 0),
                 racha:     a.constancia ? a.constancia.rachaActual : 0,
-                semanal:   ms.reduce((s,m) => s + m.visitas + m.encuesta, 0),
-                fleetrite: ms.reduce((s,m) => s + m.fleetrite, 0),
             };
         });
     }
 
-    function renderTVRubroSlide() {
-        const slide = document.getElementById('tv-rubro-slide');
-        const labelEl = document.getElementById('tv-rubro-label');
-        if (!slide) return;
-        const r = TV_RUBROS[tvRubroIdx];
-        labelEl.textContent = r.label;
-        if (!tvRubrosData.length) { slide.innerHTML = '<div style="color:#555;font-size:0.65rem;">Sin datos aún.</div>'; return; }
-        const top = tvRubrosData.slice().sort((a,b) => b[r.key] - a[r.key]).slice(0, 6);
-        slide.innerHTML = top.map((f,i) => `
-            <div class="tv-po-row">
-                <div class="tv-po-pos">${MEDALLAS[i] || (i+1)}</div>
-                <div class="tv-po-name">${f.Nombre.split(' ').slice(0,2).join(' ')}<span class="tv-po-suc">${f.Sucursal} · ${f.Canal}</span></div>
-                <div class="tv-po-pts">${f[r.key]} ${r.unit}</div>
-            </div>`).join('') || '<div style="color:#555;font-size:0.65rem;">Sin participantes</div>';
-        document.querySelectorAll('#tv-rubro-dots span').forEach((d,i) => d.classList.toggle('active', i === tvRubroIdx));
+    function tvRbRows(list, key, unit, n) {
+        const top = list.slice().sort((a,b) => b[key] - a[key]).slice(0, n || 5);
+        return top.map((f,i) => `
+            <div class="tv-rb-row">
+                <div class="tv-rb-pos">${i+1}</div>
+                <div class="tv-rb-name" title="${f.Nombre}">${f.Nombre.split(' ').slice(0,2).join(' ')}</div>
+                <div class="tv-rb-pts">${f[key]} ${unit}</div>
+            </div>`).join('') || '<div style="color:#444;font-size:0.55rem;">Sin datos</div>';
     }
 
     async function renderTVRubros() {
-        const slide = document.getElementById('tv-rubro-slide');
         try {
             if (!podioG || !podioG.mesActual) { podioG = await apiFetch('/api/podio'); }
-            tvRubrosData = calcRubrosTotal();
-            document.getElementById('tv-rubro-dots').innerHTML = TV_RUBROS.map(() => '<span></span>').join('');
-            tvRubroIdx = 0;
-            renderTVRubroSlide();
-            if (tvRubroTimer) clearInterval(tvRubroTimer);
-            tvRubroTimer = setInterval(() => {
-                tvRubroIdx = (tvRubroIdx + 1) % TV_RUBROS.length;
-                renderTVRubroSlide();
-            }, 9000);
+            const data = calcRubrosTotal();
+            const calle     = data.filter(f => f.Canal === 'CALLE');
+            const mostrador = data.filter(f => f.Canal === 'MOSTRADOR');
+            document.getElementById('tv-rb-visitas').innerHTML = tvRbRows(calle, 'visitas', 'pts');
+            document.getElementById('tv-rb-qr').innerHTML      = tvRbRows(mostrador, 'encuesta', 'pts');
+            document.getElementById('tv-rb-nps').innerHTML     = tvRbRows(data, 'fleetrite', 'pts');
+            document.getElementById('tv-rb-racha').innerHTML   = tvRbRows(data, 'racha', 'días');
         } catch(e) {
-            slide.innerHTML = `<div style="color:#f44;font-size:11px;">${e.message}</div>`;
+            ['tv-rb-visitas','tv-rb-qr','tv-rb-nps','tv-rb-racha'].forEach(id => {
+                document.getElementById(id).innerHTML = `<div style="color:#f44;font-size:10px;">${e.message}</div>`;
+            });
         }
     }
 
@@ -698,7 +682,7 @@
     }
 
     function cerrarTV() {
-        clearInterval(tvTimer); clearInterval(tvTick); clearInterval(tvRubroTimer);
+        clearInterval(tvTimer); clearInterval(tvTick);
         document.getElementById('tv-overlay').classList.remove('open');
         if (document.fullscreenElement) document.exitFullscreen();
     }
@@ -755,15 +739,7 @@
         }
     }
 
-    // ── RUBROS Ruta al Podio (carrusel: check-in, racha, visitas/encuesta, Fleetrite) ──
-    const TV_RUBROS = [
-        { key:'checkin',   label:'📱 CHECK-IN DIARIO',           unit:'pts' },
-        { key:'racha',     label:'🔥 RACHA ACTUAL',              unit:'días' },
-        { key:'semanal',   label:'📍 VISITAS · ENCUESTA QR',     unit:'pts' },
-        { key:'fleetrite', label:'⭐ NPS FLEETRITE',              unit:'pts' },
-    ];
-    let tvRubroIdx = 0, tvRubroTimer = null, tvRubrosData = [];
-
+    // ── RUBROS Ruta al Podio (4 tableros fijos lado a lado: visitas, QR, NPs, racha) ──
     function calcRubrosTotal() {
         if (!podioG || !podioG.ranking) return [];
         return podioG.ranking.map(r => {
@@ -771,46 +747,38 @@
             const ms = Object.values(r.meses || {});
             return {
                 Nombre: r.Nombre, Sucursal: r.Sucursal, Canal: r.Canal,
-                checkin:   ms.reduce((s,m) => s + m.checkin, 0),
+                visitas:   ms.reduce((s,m) => s + (m.visitas || 0), 0),
+                encuesta:  ms.reduce((s,m) => s + (m.encuesta || 0), 0),
+                fleetrite: ms.reduce((s,m) => s + (m.fleetrite || 0), 0),
                 racha:     a.constancia ? a.constancia.rachaActual : 0,
-                semanal:   ms.reduce((s,m) => s + m.visitas + m.encuesta, 0),
-                fleetrite: ms.reduce((s,m) => s + m.fleetrite, 0),
             };
         });
     }
 
-    function renderTVRubroSlide() {
-        const slide = document.getElementById('tv-rubro-slide');
-        const labelEl = document.getElementById('tv-rubro-label');
-        if (!slide) return;
-        const r = TV_RUBROS[tvRubroIdx];
-        labelEl.textContent = r.label;
-        if (!tvRubrosData.length) { slide.innerHTML = '<div style="color:#555;font-size:0.65rem;">Sin datos aún.</div>'; return; }
-        const top = tvRubrosData.slice().sort((a,b) => b[r.key] - a[r.key]).slice(0, 6);
-        slide.innerHTML = top.map((f,i) => `
-            <div class="tv-po-row">
-                <div class="tv-po-pos">${MEDALLAS[i] || (i+1)}</div>
-                <div class="tv-po-name">${f.Nombre.split(' ').slice(0,2).join(' ')}<span class="tv-po-suc">${f.Sucursal} · ${f.Canal}</span></div>
-                <div class="tv-po-pts">${f[r.key]} ${r.unit}</div>
-            </div>`).join('') || '<div style="color:#555;font-size:0.65rem;">Sin participantes</div>';
-        document.querySelectorAll('#tv-rubro-dots span').forEach((d,i) => d.classList.toggle('active', i === tvRubroIdx));
+    function tvRbRows(list, key, unit, n) {
+        const top = list.slice().sort((a,b) => b[key] - a[key]).slice(0, n || 5);
+        return top.map((f,i) => `
+            <div class="tv-rb-row">
+                <div class="tv-rb-pos">${i+1}</div>
+                <div class="tv-rb-name" title="${f.Nombre}">${f.Nombre.split(' ').slice(0,2).join(' ')}</div>
+                <div class="tv-rb-pts">${f[key]} ${unit}</div>
+            </div>`).join('') || '<div style="color:#444;font-size:0.55rem;">Sin datos</div>';
     }
 
     async function renderTVRubros() {
-        const slide = document.getElementById('tv-rubro-slide');
         try {
             if (!podioG || !podioG.mesActual) { podioG = await apiFetch('/api/podio'); }
-            tvRubrosData = calcRubrosTotal();
-            document.getElementById('tv-rubro-dots').innerHTML = TV_RUBROS.map(() => '<span></span>').join('');
-            tvRubroIdx = 0;
-            renderTVRubroSlide();
-            if (tvRubroTimer) clearInterval(tvRubroTimer);
-            tvRubroTimer = setInterval(() => {
-                tvRubroIdx = (tvRubroIdx + 1) % TV_RUBROS.length;
-                renderTVRubroSlide();
-            }, 9000);
+            const data = calcRubrosTotal();
+            const calle     = data.filter(f => f.Canal === 'CALLE');
+            const mostrador = data.filter(f => f.Canal === 'MOSTRADOR');
+            document.getElementById('tv-rb-visitas').innerHTML = tvRbRows(calle, 'visitas', 'pts');
+            document.getElementById('tv-rb-qr').innerHTML      = tvRbRows(mostrador, 'encuesta', 'pts');
+            document.getElementById('tv-rb-nps').innerHTML     = tvRbRows(data, 'fleetrite', 'pts');
+            document.getElementById('tv-rb-racha').innerHTML   = tvRbRows(data, 'racha', 'días');
         } catch(e) {
-            slide.innerHTML = `<div style="color:#f44;font-size:11px;">${e.message}</div>`;
+            ['tv-rb-visitas','tv-rb-qr','tv-rb-nps','tv-rb-racha'].forEach(id => {
+                document.getElementById(id).innerHTML = `<div style="color:#f44;font-size:10px;">${e.message}</div>`;
+            });
         }
     }
 
@@ -1399,12 +1367,15 @@
         .tv-hero-mes { position:relative; z-index:2; text-align:right; }
         .tv-hero-mes .tema { font-size:1.15rem; font-weight:800; color:var(--gold); text-shadow:0 2px 8px rgba(0,0,0,0.8); letter-spacing:1px; }
         .tv-hero-mes .rango { font-size:0.62rem; color:rgba(255,255,255,0.65); margin-top:2px; }
-        /* Rubros — panel derecho TV */
-        .tv-rubro-slide { flex:1; overflow:hidden; animation:tvRubroFade 0.5s ease; }
-        @keyframes tvRubroFade { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
-        .tv-rubro-dots { display:flex; gap:6px; justify-content:center; padding-top:8px; flex-shrink:0; }
-        .tv-rubro-dots span { width:7px; height:7px; border-radius:50%; background:#2a2a2a; transition:background 0.3s; }
-        .tv-rubro-dots span.active { background:var(--gold); }
+        /* Rubros — panel derecho TV: 4 tableros fijos en grid 2x2 */
+        .tv-rubro-grid { flex:1; display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; gap:10px; overflow:hidden; }
+        .tv-rubro-cell { background:rgba(255,255,255,0.025); border:1px solid #1a1a1a; border-radius:10px; padding:8px 12px; display:flex; flex-direction:column; overflow:hidden; }
+        .tv-rubro-cell-title { font-size:0.52rem; color:#888; letter-spacing:1px; margin-bottom:6px; flex-shrink:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .tv-rubro-cell-title span { color:#444; font-weight:400; }
+        .tv-rb-row { display:flex; align-items:center; gap:6px; padding:3px 0; border-bottom:1px solid #151515; }
+        .tv-rb-pos { width:14px; text-align:center; font-size:0.58rem; color:#555; flex-shrink:0; }
+        .tv-rb-name { flex:1; font-size:0.62rem; font-weight:600; color:#ddd; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .tv-rb-pts { font-size:0.6rem; font-weight:700; color:var(--gold); flex-shrink:0; }
         .tv-po-podium { margin-bottom:12px; flex-shrink:0; }
         .tv-po-podium .pd-name, .tv-po-podium .pd-sub { font-size:0.62rem; }
         .tv-po-row { display:flex; align-items:center; gap:10px; padding:6px 4px; border-bottom:1px solid #1a1a1a; }
@@ -3099,7 +3070,7 @@ function renderVisitas() {
     }
 
     function cerrarTV() {
-        clearInterval(tvTimer); clearInterval(tvTick); clearInterval(tvRubroTimer);
+        clearInterval(tvTimer); clearInterval(tvTick);
         document.getElementById('tv-overlay').classList.remove('open');
         if (document.fullscreenElement) document.exitFullscreen();
     }
@@ -3156,15 +3127,7 @@ function renderVisitas() {
         }
     }
 
-    // ── RUBROS Ruta al Podio (carrusel: check-in, racha, visitas/encuesta, Fleetrite) ──
-    const TV_RUBROS = [
-        { key:'checkin',   label:'📱 CHECK-IN DIARIO',           unit:'pts' },
-        { key:'racha',     label:'🔥 RACHA ACTUAL',              unit:'días' },
-        { key:'semanal',   label:'📍 VISITAS · ENCUESTA QR',     unit:'pts' },
-        { key:'fleetrite', label:'⭐ NPS FLEETRITE',              unit:'pts' },
-    ];
-    let tvRubroIdx = 0, tvRubroTimer = null, tvRubrosData = [];
-
+    // ── RUBROS Ruta al Podio (4 tableros fijos lado a lado: visitas, QR, NPs, racha) ──
     function calcRubrosTotal() {
         if (!podioG || !podioG.ranking) return [];
         return podioG.ranking.map(r => {
@@ -3172,46 +3135,38 @@ function renderVisitas() {
             const ms = Object.values(r.meses || {});
             return {
                 Nombre: r.Nombre, Sucursal: r.Sucursal, Canal: r.Canal,
-                checkin:   ms.reduce((s,m) => s + m.checkin, 0),
+                visitas:   ms.reduce((s,m) => s + (m.visitas || 0), 0),
+                encuesta:  ms.reduce((s,m) => s + (m.encuesta || 0), 0),
+                fleetrite: ms.reduce((s,m) => s + (m.fleetrite || 0), 0),
                 racha:     a.constancia ? a.constancia.rachaActual : 0,
-                semanal:   ms.reduce((s,m) => s + m.visitas + m.encuesta, 0),
-                fleetrite: ms.reduce((s,m) => s + m.fleetrite, 0),
             };
         });
     }
 
-    function renderTVRubroSlide() {
-        const slide = document.getElementById('tv-rubro-slide');
-        const labelEl = document.getElementById('tv-rubro-label');
-        if (!slide) return;
-        const r = TV_RUBROS[tvRubroIdx];
-        labelEl.textContent = r.label;
-        if (!tvRubrosData.length) { slide.innerHTML = '<div style="color:#555;font-size:0.65rem;">Sin datos aún.</div>'; return; }
-        const top = tvRubrosData.slice().sort((a,b) => b[r.key] - a[r.key]).slice(0, 6);
-        slide.innerHTML = top.map((f,i) => `
-            <div class="tv-po-row">
-                <div class="tv-po-pos">${MEDALLAS[i] || (i+1)}</div>
-                <div class="tv-po-name">${f.Nombre.split(' ').slice(0,2).join(' ')}<span class="tv-po-suc">${f.Sucursal} · ${f.Canal}</span></div>
-                <div class="tv-po-pts">${f[r.key]} ${r.unit}</div>
-            </div>`).join('') || '<div style="color:#555;font-size:0.65rem;">Sin participantes</div>';
-        document.querySelectorAll('#tv-rubro-dots span').forEach((d,i) => d.classList.toggle('active', i === tvRubroIdx));
+    function tvRbRows(list, key, unit, n) {
+        const top = list.slice().sort((a,b) => b[key] - a[key]).slice(0, n || 5);
+        return top.map((f,i) => `
+            <div class="tv-rb-row">
+                <div class="tv-rb-pos">${i+1}</div>
+                <div class="tv-rb-name" title="${f.Nombre}">${f.Nombre.split(' ').slice(0,2).join(' ')}</div>
+                <div class="tv-rb-pts">${f[key]} ${unit}</div>
+            </div>`).join('') || '<div style="color:#444;font-size:0.55rem;">Sin datos</div>';
     }
 
     async function renderTVRubros() {
-        const slide = document.getElementById('tv-rubro-slide');
         try {
             if (!podioG || !podioG.mesActual) { podioG = await apiFetch('/api/podio'); }
-            tvRubrosData = calcRubrosTotal();
-            document.getElementById('tv-rubro-dots').innerHTML = TV_RUBROS.map(() => '<span></span>').join('');
-            tvRubroIdx = 0;
-            renderTVRubroSlide();
-            if (tvRubroTimer) clearInterval(tvRubroTimer);
-            tvRubroTimer = setInterval(() => {
-                tvRubroIdx = (tvRubroIdx + 1) % TV_RUBROS.length;
-                renderTVRubroSlide();
-            }, 9000);
+            const data = calcRubrosTotal();
+            const calle     = data.filter(f => f.Canal === 'CALLE');
+            const mostrador = data.filter(f => f.Canal === 'MOSTRADOR');
+            document.getElementById('tv-rb-visitas').innerHTML = tvRbRows(calle, 'visitas', 'pts');
+            document.getElementById('tv-rb-qr').innerHTML      = tvRbRows(mostrador, 'encuesta', 'pts');
+            document.getElementById('tv-rb-nps').innerHTML     = tvRbRows(data, 'fleetrite', 'pts');
+            document.getElementById('tv-rb-racha').innerHTML   = tvRbRows(data, 'racha', 'días');
         } catch(e) {
-            slide.innerHTML = `<div style="color:#f44;font-size:11px;">${e.message}</div>`;
+            ['tv-rb-visitas','tv-rb-qr','tv-rb-nps','tv-rb-racha'].forEach(id => {
+                document.getElementById(id).innerHTML = `<div style="color:#f44;font-size:10px;">${e.message}</div>`;
+            });
         }
     }
 
@@ -3418,10 +3373,26 @@ function renderVisitas() {
             <!-- Panel derecho: Rubros Ruta al Podio -->
             <div class="tv-panel">
                 <div class="tv-panel-title">
-                    <span id="tv-rubro-label">🏁 RUTA AL PODIO &nbsp;·&nbsp; POR RUBRO</span>
+                    🏁 RUTA AL PODIO &nbsp;·&nbsp; POR RUBRO
                 </div>
-                <div id="tv-rubro-slide" class="tv-rubro-slide"></div>
-                <div class="tv-rubro-dots" id="tv-rubro-dots"></div>
+                <div class="tv-rubro-grid">
+                    <div class="tv-rubro-cell">
+                        <div class="tv-rubro-cell-title">📍 VISITAS <span>· Vendedor Calle</span></div>
+                        <div id="tv-rb-visitas"></div>
+                    </div>
+                    <div class="tv-rubro-cell">
+                        <div class="tv-rubro-cell-title">🔎 ENCUESTA QR <span>· Vendedor Mostrador</span></div>
+                        <div id="tv-rb-qr"></div>
+                    </div>
+                    <div class="tv-rubro-cell">
+                        <div class="tv-rubro-cell-title">⭐ NP's <span>· Fleetrite</span></div>
+                        <div id="tv-rb-nps"></div>
+                    </div>
+                    <div class="tv-rubro-cell">
+                        <div class="tv-rubro-cell-title">🔥 RACHA</div>
+                        <div id="tv-rb-racha"></div>
+                    </div>
+                </div>
             </div>
         </div>
         <!-- Bottom: Metas por sucursal -->
