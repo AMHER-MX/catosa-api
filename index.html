@@ -317,6 +317,70 @@
         }
         .btn-salir:hover { border-color: var(--danger); color: var(--danger); }
 
+        /* ── RUTA AL PODIO ───────────────────────────────────────── */
+        .podio-card {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: var(--radius); margin-bottom: 12px; overflow: hidden;
+            --tema-a: #16a34a; --tema-b: #dc2626; --tema-c: #f8fafc;   /* Viva México por defecto */
+        }
+        .podio-head {
+            padding: 12px 14px 10px; position: relative;
+            background: linear-gradient(135deg, rgba(255,255,255,0.03), rgba(255,255,255,0));
+            border-bottom: 1px solid var(--border);
+        }
+        .podio-head::before {       /* franja temática del mes */
+            content: ''; position: absolute; left: 0; right: 0; top: 0; height: 3px;
+            background: linear-gradient(90deg, var(--tema-a) 0 33%, var(--tema-c) 33% 66%, var(--tema-b) 66%);
+        }
+        .podio-title { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+        .podio-title b { font-size: 0.85rem; font-weight: 700; letter-spacing: 0.02em; }
+        .podio-tema {
+            font-size: 0.62rem; font-weight: 600; padding: 3px 9px; border-radius: var(--radius-pill);
+            background: rgba(255,255,255,0.06); border: 1px solid var(--border); color: var(--text); white-space: nowrap;
+        }
+        .podio-sub { font-size: 0.62rem; color: var(--text-muted); margin-top: 3px; }
+        .podio-hero { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; padding: 12px 14px; }
+        .podio-pos { text-align: center; min-width: 64px; }
+        .podio-pos b { display: block; font-size: 1.9rem; font-weight: 800; line-height: 1; }
+        .podio-pos small { font-size: 0.6rem; color: var(--text-muted); font-weight: 600; letter-spacing: 0.04em; }
+        .podio-pts b { display: block; font-size: 1.35rem; font-weight: 800; color: var(--text); line-height: 1.1; }
+        .podio-pts small { font-size: 0.62rem; color: var(--text-muted); }
+        .podio-racha {
+            text-align: center; padding: 8px 10px; border-radius: var(--radius-sm);
+            background: var(--warning-dim); border: 1px solid rgba(245,158,11,0.35); color: var(--warning); min-width: 66px;
+        }
+        .podio-racha b { display: block; font-size: 1.1rem; font-weight: 800; line-height: 1; }
+        .podio-racha small { font-size: 0.55rem; font-weight: 600; }
+        .podio-racha.off { background: rgba(255,255,255,0.03); border-color: var(--border); color: var(--text-subtle); }
+        .podio-retos { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 0 14px 12px; }
+        .reto {
+            background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px;
+            display: flex; flex-direction: column; gap: 3px;
+        }
+        .reto .r-top { display: flex; justify-content: space-between; align-items: center; font-size: 0.62rem; color: var(--text-muted); font-weight: 600; }
+        .reto .r-pts { color: var(--success); font-weight: 800; font-size: 0.68rem; }
+        .reto .r-val { font-size: 0.95rem; font-weight: 800; color: var(--text); }
+        .reto .r-sub { font-size: 0.58rem; color: var(--text-subtle); }
+        .reto .r-bar { height: 4px; border-radius: 2px; background: rgba(255,255,255,0.06); overflow: hidden; margin-top: 4px; }
+        .reto .r-bar i { display: block; height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.8s ease; }
+        .reto.ok { border-color: rgba(34,197,94,0.4); }
+        .reto.ok .r-bar i { background: var(--success); }
+        .podio-top { padding: 0 14px 12px; }
+        .podio-top .t-title { font-size: 0.62rem; color: var(--text-muted); font-weight: 600; margin-bottom: 6px; display: flex; justify-content: space-between; }
+        .podio-row {
+            display: grid; grid-template-columns: 28px 1fr auto; gap: 8px; align-items: center;
+            padding: 7px 8px; border-radius: var(--radius-sm); font-size: 0.72rem;
+        }
+        .podio-row + .podio-row { margin-top: 3px; }
+        .podio-row.yo { background: var(--accent-dim); border: 1px solid rgba(59,130,246,0.35); }
+        .podio-row .m { font-size: 0.95rem; text-align: center; }
+        .podio-row .n { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .podio-row .n small { display: block; font-weight: 400; color: var(--text-subtle); font-size: 0.58rem; }
+        .podio-row .p { font-weight: 800; }
+        .podio-reglas { padding: 0 14px 12px; }
+        .podio-reglas summary { font-size: 0.62rem; color: var(--text-muted); cursor: pointer; font-weight: 600; }
+        .podio-reglas ul { margin: 6px 0 0; padding-left: 16px; font-size: 0.62rem; color: var(--text-muted); line-height: 1.6; }
+
         /* ── TIME PANEL ──────────────────────────────────────────── */
         .time-panel {
             display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
@@ -737,6 +801,31 @@
         <div class="top-card"><span>Avance Sede</span><b id="k-po">0%</b></div>
     </div>
 
+    <!-- ══ RUTA AL PODIO ═══════════════════════════════════════════════════ -->
+    <div class="podio-card" id="podio-card">
+        <div class="podio-head">
+            <div class="podio-title">
+                <b>🏁 RUTA AL PODIO</b>
+                <span class="podio-tema" id="podio-tema">🇲🇽 Viva México</span>
+            </div>
+            <div class="podio-sub" id="podio-sub">1 sep – 30 nov 2026 · Cargando...</div>
+        </div>
+        <div class="podio-hero">
+            <div class="podio-pos"><b id="podio-pos" style="color:var(--gold);">—</b><small id="podio-medalla">POSICIÓN</small></div>
+            <div class="podio-pts"><b id="podio-total">— pts</b><small id="podio-mes-pts">acumulado del concurso</small></div>
+            <div class="podio-racha off" id="podio-racha"><b>0</b><small>🔥 RACHA</small></div>
+        </div>
+        <div class="podio-retos" id="podio-retos"></div>
+        <div class="podio-top">
+            <div class="t-title"><span>🏆 Podio del concurso</span><span id="podio-top-n"></span></div>
+            <div id="podio-top"><div class="loading">Cargando...</div></div>
+        </div>
+        <details class="podio-reglas">
+            <summary>¿Cómo sumo puntos?</summary>
+            <ul id="podio-reglas"></ul>
+        </details>
+    </div>
+
     <span class="race-label">Mi desempeño individual (120%)</span>
     <div class="race-track">
         <div class="porteria">🏁</div>
@@ -780,7 +869,7 @@
     <!-- CHECK-IN -->
     <div id="checkin-card" style="background:#0d0d0d;border:1px solid #4a9eff44;border-radius:14px;padding:14px;margin-bottom:14px;text-align:center;">
         <div style="font-size:0.75rem;font-weight:600;color:var(--text);margin-bottom:6px;">Check-in diario</div>
-        <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:10px;">Registra tu entrada para sumar puntos al concurso.</div>
+        <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:10px;">Registra tu entrada y suma 10 pts a tu Ruta al Podio.</div>
         <button id="checkin-btn" onclick="registrarCheckIn()" style="background:linear-gradient(135deg,#1a3a6b,#2a5aa0);border:1px solid #4a9eff;color:#fff;border-radius:10px;padding:10px 24px;font-size:0.7rem;font-weight:800;cursor:pointer;width:100%;">
             Registrar check-in
         </button>
@@ -992,10 +1081,143 @@
         document.getElementById('s-disp').innerText = 'SEDE: ' + user.Sucursal;
 
         renderApp();
+        loadPodio();
         loadClientes();
         loadTopProductos();
         loadVentasDiarias();
         loadCores();
+    }
+
+    // ─── RUTA AL PODIO ───────────────────────────────────────────────────────
+    const TEMAS_PODIO = {
+        '2026-09': { nombre: 'Viva México',              emoji: '🇲🇽', a: '#16a34a', b: '#dc2626', c: '#f8fafc' },
+        '2026-10': { nombre: 'Halloween',                emoji: '🎃', a: '#f97316', b: '#7c3aed', c: '#111827' },
+        '2026-11': { nombre: 'Día de Muertos + Navidad', emoji: '💀🎄', a: '#d946ef', b: '#dc2626', c: '#16a34a' },
+    };
+    const MEDALLAS = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
+    const fMes = m => { const [y, mm] = m.split('-'); return new Date(y, mm - 1, 1).toLocaleDateString('es-MX', { month: 'long' }); };
+    let podioData = null;
+
+    function aplicarTemaPodio(mes) {
+        const t = TEMAS_PODIO[mes] || TEMAS_PODIO['2026-09'];
+        const card = document.getElementById('podio-card');
+        card.style.setProperty('--tema-a', t.a); card.style.setProperty('--tema-b', t.b); card.style.setProperty('--tema-c', t.c);
+        document.getElementById('podio-tema').textContent = `${t.emoji} ${t.nombre}`;
+    }
+
+    async function loadPodio() {
+        try {
+            podioData = await apiFetch('/api/podio');
+            renderPodio();
+        } catch (e) {
+            document.getElementById('podio-sub').innerHTML = `<span style="color:var(--danger)">❌ No se pudo cargar el concurso · ${e.message}</span>`;
+            document.getElementById('podio-top').innerHTML = '';
+        }
+    }
+
+    function renderPodio() {
+        const d = podioData;
+        if (!d || !d.mesActual) {
+            document.getElementById('podio-sub').textContent = '1 sep – 30 nov 2026 · El concurso inicia el 1 de septiembre';
+            document.getElementById('podio-top').innerHTML = '';
+            return;
+        }
+        aplicarTemaPodio(d.mesActual);
+        const nMes = d.meses.indexOf(d.mesActual) + 1;
+        document.getElementById('podio-sub').textContent =
+            `1 sep – 30 nov 2026 · Mes ${nMes} de 3 (${fMes(d.mesActual)}) · corte ${d.hoy.slice(8)}/${d.hoy.slice(5,7)}`;
+
+        const yo = d.ranking.find(r => r.Nombre === user.Nombre);
+        const soyParticipante = !!yo;
+        const posEl = document.getElementById('podio-pos');
+        const medEl = document.getElementById('podio-medalla');
+        if (soyParticipante) {
+            posEl.textContent = '#' + yo.puesto;
+            posEl.style.color = yo.puesto === 1 ? 'var(--gold)' : yo.puesto === 2 ? 'var(--silver)' : yo.puesto === 3 ? 'var(--bronze)' : 'var(--text)';
+            medEl.textContent = yo.medalla ? yo.medalla.toUpperCase() + (yo.puesto <= 3 ? ' · EN EL PODIO' : ' LUGAR') : `DE ${d.ranking.length}`;
+            document.getElementById('podio-total').textContent = `${yo.total} pts`;
+            const mesPts = (yo.meses[d.mesActual] || {}).total || 0;
+            document.getElementById('podio-mes-pts').textContent = `acumulado · ${fMes(d.mesActual).slice(0, 3)}: ${mesPts} pts`;
+            const racha = yo.actual ? yo.actual.constancia.rachaActual : 0;
+            const rEl = document.getElementById('podio-racha');
+            rEl.className = 'podio-racha' + (racha > 0 ? '' : ' off');
+            rEl.innerHTML = `<b>${racha}</b><small>🔥 RACHA ${racha === 1 ? 'DÍA' : 'DÍAS'}</small>`;
+            renderRetos(yo.actual, d);
+        } else {
+            posEl.textContent = '—'; posEl.style.color = 'var(--text-subtle)';
+            medEl.textContent = 'SIN PARTICIPAR';
+            document.getElementById('podio-total').textContent = 'Solo CALLE y MOSTRADOR';
+            document.getElementById('podio-mes-pts').textContent = 'Tu canal no participa en este concurso';
+            document.getElementById('podio-retos').innerHTML = '';
+        }
+
+        // Top 5 (+ mi fila si estoy fuera del top)
+        const top = d.ranking.slice(0, 5);
+        if (yo && yo.puesto > 5) top.push(yo);
+        document.getElementById('podio-top-n').textContent = `${d.ranking.length} participantes`;
+        document.getElementById('podio-top').innerHTML = top.map(r => `
+            <div class="podio-row ${r.Nombre === user.Nombre ? 'yo' : ''}">
+                <span class="m">${MEDALLAS[r.puesto - 1] || '#' + r.puesto}</span>
+                <span class="n">${r.Nombre.split(' ').slice(0, 2).join(' ')}<small>${r.Sucursal} · ${r.Canal}</small></span>
+                <span class="p">${r.total} pts</span>
+            </div>`).join('') || '<div class="loading">Sin participantes</div>';
+
+        // Reglas
+        const R = d.reglas;
+        document.getElementById('podio-reglas').innerHTML = `
+            <li><b>Check-in diario</b>: ${R.CHECKIN_DIA} pts por día.</li>
+            <li><b>Constancia</b>: ${R.CONSTANCIA_DIA} pts por cada día que superes tu promedio diario de meta; +${R.RACHA_DIA_EXTRA} pts extra por cada día consecutivo (lun–sáb, el domingo no rompe la racha).</li>
+            <li><b>Visitas</b> (CALLE): ${R.VISITAS_SEMANA} pts por semana con ${R.VISITAS_MIN}+ visitas registradas.</li>
+            <li><b>Encuesta QR</b> (MOSTRADOR): ${R.ENCUESTA_SEMANA} pts por semana con ${R.ENCUESTA_MIN}+ escaneos.</li>
+            <li><b>Fleetrite</b>: números de parte distintos vendidos en el mes → ${R.FLEETRITE.slice().reverse().map(t => `${t.min}+ NPs = ${t.pts} pts`).join(' · ')}.</li>
+            <li>Podio final al 30 de noviembre con los puntos acumulados de los 3 meses: Oro, Plata, Bronce, 4to y 5to lugar.</li>`;
+
+        marcarCheckinHoy(yo);
+    }
+
+    function renderRetos(a, d) {
+        if (!a) { document.getElementById('podio-retos').innerHTML = ''; return; }
+        const R = d.reglas;
+        const c = a.constancia, ck = a.checkin, f = a.fleetrite;
+        const sem = a.visitas || a.encuesta;
+        const semActual = sem && sem.semanas.length ? sem.semanas[sem.semanas.length - 1] : null;
+        const esCalle = a.Canal === 'CALLE';
+        const bar = (v, max) => `<div class="r-bar"><i style="width:${Math.min(100, max > 0 ? v / max * 100 : 0)}%"></i></div>`;
+        const diasHabilesHastaHoy = c.dias.length;
+        let semanaHTML;
+        if (!esCalle && !d.encuestaConfigurada) {
+            semanaHTML = `<div class="reto"><div class="r-top"><span>📱 Encuesta QR</span><span class="r-pts">+0</span></div>
+                <div class="r-val">Próximamente</div><div class="r-sub">${R.ENCUESTA_MIN} escaneos/semana = ${R.ENCUESTA_SEMANA} pts</div>${bar(0, 1)}</div>`;
+        } else {
+            const n = semActual ? semActual.total : 0, meta = sem ? sem.meta : 15;
+            semanaHTML = `<div class="reto ${semActual && semActual.cumple ? 'ok' : ''}">
+                <div class="r-top"><span>${esCalle ? '📋 Visitas' : '📱 Encuesta QR'} · semana</span><span class="r-pts">+${sem ? sem.pts : 0}</span></div>
+                <div class="r-val">${n} / ${meta}</div>
+                <div class="r-sub">${sem ? sem.cumplidas : 0} semana${sem && sem.cumplidas === 1 ? '' : 's'} cumplida${sem && sem.cumplidas === 1 ? '' : 's'} · ${esCalle ? R.VISITAS_SEMANA : R.ENCUESTA_SEMANA} pts c/u</div>${bar(n, meta)}</div>`;
+        }
+        document.getElementById('podio-retos').innerHTML = `
+            <div class="reto ${ck.dias >= diasHabilesHastaHoy && ck.dias > 0 ? 'ok' : ''}">
+                <div class="r-top"><span>📍 Check-in</span><span class="r-pts">+${ck.pts}</span></div>
+                <div class="r-val">${ck.dias} / ${diasHabilesHastaHoy} días</div>
+                <div class="r-sub">${R.CHECKIN_DIA} pts por día · ${ck.fechas.includes(d.hoy) ? 'hoy ✅' : 'hoy pendiente'}</div>${bar(ck.dias, diasHabilesHastaHoy)}</div>
+            <div class="reto ${c.rachaActual >= 2 ? 'ok' : ''}">
+                <div class="r-top"><span>📈 Constancia</span><span class="r-pts">+${c.pts}</span></div>
+                <div class="r-val">${c.diasSuperados} / ${diasHabilesHastaHoy} días</div>
+                <div class="r-sub">Meta diaria ${fM(c.metaDiaria)} · racha máx. ${c.rachaMax}</div>${bar(c.diasSuperados, diasHabilesHastaHoy)}</div>
+            ${semanaHTML}
+            <div class="reto ${f.pts > 0 ? 'ok' : ''}">
+                <div class="r-top"><span>🔧 Fleetrite NPs</span><span class="r-pts">+${f.pts}</span></div>
+                <div class="r-val">${f.nps} NPs</div>
+                <div class="r-sub">${f.siguiente ? `Faltan ${f.faltan} para ${f.siguiente} NPs` : '¡Nivel máximo!'}</div>${bar(f.nps, f.siguiente || 50)}</div>`;
+    }
+
+    function marcarCheckinHoy(yo) {
+        if (!yo || !yo.actual || !podioData) return;
+        if (yo.actual.checkin.fechas.includes(podioData.hoy)) {
+            const btn = document.getElementById('checkin-btn');
+            btn.disabled = true; btn.textContent = 'Check-in de hoy registrado ✅';
+            btn.style.background = 'var(--success-dim)'; btn.style.borderColor = 'var(--success)';
+        }
     }
 
     // ─── RENDER PRINCIPAL ────────────────────────────────────────────────────
@@ -1394,7 +1616,9 @@
             btn.textContent = 'Check-in registrado';
             btn.style.background = 'var(--success-dim)';
             btn.style.borderColor = 'var(--success)';
-            msg.innerHTML = `<span style="color:var(--success);font-size:0.75rem;">${fecha} ${hora} · +10 pts</span>`;
+            msg.innerHTML = `<span style="color:var(--success);font-size:0.75rem;">${fecha} ${hora} · +10 pts Ruta al Podio</span>`;
+            // Refrescar el podio cuando el registro ya esté en la hoja
+            setTimeout(async () => { try { podioData = await apiFetch('/api/podio?refresh=1'); renderPodio(); } catch(_) {} }, 6000);
         } catch(err) {
             btn.disabled = false;
             btn.textContent = 'Registrar check-in';
