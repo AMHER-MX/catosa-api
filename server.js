@@ -4,6 +4,8 @@ const cors    = require('cors');
 const sql     = require('mssql');
 const XLSX    = require('xlsx');
 const path    = require('path');
+const https   = require('https');
+const podio   = require('./podio');   // Ruta al Podio: reglas de puntos
 
 const app = express();
 app.use(cors({ origin: '*', methods: ['GET','POST','OPTIONS'], allowedHeaders: ['Content-Type','Authorization'] }));
@@ -28,6 +30,8 @@ async function getPool() {
 
 // ── EXCEL DE METAS ────────────────────────────────────────────────────────────
 let metasMap = {}, carteraMap = {}, aceiteBaseMap = {}, wcSet = new Set();
+let podioMetasMap = {};
+const HOJA_METAS_PODIO = 'NVOS OBJ VENTA AGO 2026'; // hoja con nuevas cuotas + columna CANAL
 
 function cargarExcel() {
   try {
@@ -61,6 +65,19 @@ function cargarExcel() {
       const nombre = (row['NOMBRE ASESOR'] || '').toString().trim().toUpperCase();
       if (nombre) wcSet.add(nombre);
     });
+    // Metas para RUTA AL PODIO: usa la hoja de nuevas cuotas si existe, si no OBJETIVOS VENTA
+    podioMetasMap = {};
+    const hojaPodio = wb.Sheets[HOJA_METAS_PODIO] ? HOJA_METAS_PODIO : 'OBJETIVOS VENTA';
+    XLSX.utils.sheet_to_json(wb.Sheets[hojaPodio], { defval: null }).forEach(row => {
+      const nombre = (row['NOMBRE ASESOR'] || '').toString().trim().toUpperCase();
+      // Prioridad: columna de cuota nueva (p.ej. "NUEVO SEPT 2026"), si no META MENSUAL
+      const colNueva = Object.keys(row).find(k => /^NUEVO/i.test(k.trim()));
+      const meta   = (colNueva && parseFloat(row[colNueva])) || parseFloat(row['META MENSUAL']) || 0;
+      const canal  = (row['CANAL']    || '').toString().trim().toUpperCase();
+      const suc    = (row['SUCURSAL'] || '').toString().trim().toUpperCase();
+      if (nombre && canal) podioMetasMap[nombre] = { meta, canal, sucursal: suc };
+    });
+    console.log(`Ruta al Podio: metas desde hoja "${hojaPodio}" (${Object.keys(podioMetasMap).length} asesores)`);
     console.log(`Excel cargado: ${Object.keys(metasMap).length} asesores, ${Object.values(carteraMap).flat().length} clientes, ${Object.keys(aceiteBaseMap).length} bases de aceite, ${wcSet.size} concursantes WC, ${Object.keys(aceiteBaseMap).length} concursantes aceite`);
   } catch (err) { console.error('Error leyendo metas.xlsx:', err.message); }
 }
@@ -69,6 +86,7 @@ cargarExcel();
 app.get('/api/recargar-metas', (req, res) => {
   metasMap = {}; carteraMap = {}; aceiteBaseMap = {}; wcSet = new Set();
   cargarExcel();
+  podioCache = {};
   res.json({ ok: true, asesores: Object.keys(metasMap).length });
 });
 
@@ -1475,6 +1493,192 @@ app.get('/api/ventas-dia', async (req, res) => {
   }
 });
 
+
+// ═════════════════════════════════════════════════════════════════════════════
+// ── RUTA AL PODIO (Sep 1 – Nov 30, 2026) ─────────────────────────────────────
+// Fuentes: SQL (ventas diarias, NPs Fleetrite) + Google Sheets (CHECK IN, VISITAS, ENCUESTA QR)
+// Reglas de puntos en podio.js
+// ═════════════════════════════════════════════════════════════════════════════
+const SHEETS_ID_APP   = '1vUYJz5r1kgMNDel9-6LqaiKAeb3g_n0JwS5_Hs59yeM';
+const CSV_CHECKIN     = `https://docs.google.com/spreadsheets/d/${SHEETS_ID_APP}/gviz/tq?tqx=out:csv&sheet=CHECK%20IN`;
+const CSV_VISITAS     = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTXRBcfvzRWWgd4GI6OZ2CI4fPXdDzkQIucSNCb_1lZhKW9kmBVcXCFx19L5kdTCMEy0d9Yy5GOttRH/pub?gid=1425733996&single=true&output=csv';
+// Encuesta QR (MOSTRADOR): respuestas de "Encuesta de Satisfaccion del Cliente Catosa"
+// (Google Form con campo "Asesor" pre-llenado por un link/QR distinto por asesor de Mostrador).
+const CSV_ENCUESTA_QR = 'https://docs.google.com/spreadsheets/d/120SwsVZRm8WsI2JwBAYncay-J9NCTo6RdFwe1Iraokw/gviz/tq?tqx=out:csv&gid=584098663';
+const PODIO_CACHE_MS  = 3 * 60 * 1000;
+let podioCache = {};
+
+// GET de texto con redirects (compatible con Node sin fetch global)
+function httpGetText(url, hops = 0) {
+  return new Promise((resolve, reject) => {
+    if (!url) return resolve('');
+    https.get(url, { headers: { 'User-Agent': 'catosa-api' } }, r => {
+      if ([301, 302, 303, 307, 308].includes(r.statusCode) && r.headers.location && hops < 5) {
+        r.resume(); return resolve(httpGetText(new URL(r.headers.location, url).href, hops + 1));
+      }
+      if (r.statusCode !== 200) { r.resume(); return reject(new Error(`HTTP ${r.statusCode} en ${url.slice(0, 60)}`)); }
+      let data = ''; r.setEncoding('utf8');
+      r.on('data', c => data += c); r.on('end', () => resolve(data));
+    }).on('error', reject);
+  });
+}
+
+// Lee un CSV de Sheets y regresa { NOMBRE: ['YYYY-MM-DD', ...] } usando las columnas indicadas
+async function fechasPorVendedorDesdeCSV(url, colsNombre, colsFecha) {
+  if (!url) return {};
+  const filas = podio.parseCSV(await httpGetText(url));
+  const out = {};
+  filas.forEach(f => {
+    const nombre = podio.nombreKey(podio.col(f, ...colsNombre));
+    const fecha  = podio.normalizarFecha(podio.col(f, ...colsFecha));
+    if (!nombre || !fecha || !podio.mesConcurso(fecha)) return;
+    (out[nombre] = out[nombre] || []).push(fecha);
+  });
+  return out;
+}
+
+// Match flexible nombre SQL → metas del podio (misma lógica que buscarMeta)
+function buscarMetaPodio(nombreSql) {
+  const key = nombreKey(nombreSql);
+  if (podioMetasMap[key]) return { ...podioMetasMap[key], excel: key };
+  for (const [k, v] of Object.entries(podioMetasMap)) {
+    if (key.includes(k.split(' ')[0]) || k.includes(key.split(' ')[0])) return { ...v, excel: k };
+  }
+  return null;
+}
+
+// Meses del concurso transcurridos hasta hoy
+function mesesPodioHastaHoy(hoy) {
+  return podio.PODIO.MESES.filter(m => m <= hoy.slice(0, 7));
+}
+
+async function calcularPodio() {
+  const db  = await getPool();
+  const hoy = podio.hoyISO();
+  const meses = mesesPodioHastaHoy(hoy);
+  if (!meses.length) return { hoy, mesActual: null, meses: [], ranking: [], porMes: {}, tema: podio.temaDe('2026-09') };
+
+  // Sheets (en paralelo, tolerante a fallas)
+  const [checkins, visitas, encuestas] = await Promise.all([
+    fechasPorVendedorDesdeCSV(CSV_CHECKIN, ['Vendedor', 'Asesor'], ['Fecha']).catch(e => { console.warn('Podio CHECK IN:', e.message); return {}; }),
+    fechasPorVendedorDesdeCSV(CSV_VISITAS, ['Asesor', 'Vendedor'], ['Fecha']).catch(e => { console.warn('Podio VISITAS:', e.message); return {}; }),
+    fechasPorVendedorDesdeCSV(CSV_ENCUESTA_QR, ['Vendedor', 'Asesor', 'Nombre del asesor'], ['Marca temporal', 'Timestamp', 'Fecha']).catch(e => { console.warn('Podio ENCUESTA:', e.message); return {}; }),
+  ]);
+
+  // SQL: ventas por día y NPs Fleetrite, por mes del concurso
+  const ventasDia = {}, ventasMes = {}, fleetrite = {}, nombresSql = new Set();
+  const porMesSql = {};
+  for (const mes of meses) {
+    const rVentas = await db.request().input('mes', sql.VarChar, mes).query(`
+      SELECT s.NOM_VENDEDOR AS Vendedor, LEFT(s.FECHA, 10) AS Fecha, SUM(s.IMP_TOTAL_LINEA) AS Venta
+      FROM FTSABI_PR s
+      WHERE LEFT(s.FECHA, 7) = @mes
+        AND ${TIPO_EXCL_SQL}
+        AND s.NOM_ALMACEN_LIN IN (${SUCURSALES})
+        AND s.NOM_VENDEDOR IS NOT NULL AND s.NOM_VENDEDOR <> ''
+      GROUP BY s.NOM_VENDEDOR, LEFT(s.FECHA, 10)
+    `);
+    const rFlrt = await db.request().input('mes', sql.VarChar, mes).query(`
+      SELECT s.NOM_VENDEDOR AS Vendedor, COUNT(DISTINCT s.ARTICULO) AS NPs
+      FROM FTSABI_PR s
+      WHERE LEFT(s.FECHA, 7) = @mes
+        AND ${TIPO_EXCL_SQL}
+        AND s.NOM_ALMACEN_LIN IN (${SUCURSALES})
+        AND s.DES_FAM_APRO LIKE '%FLEETRITE%'
+        AND s.NOM_VENDEDOR IS NOT NULL AND s.NOM_VENDEDOR <> ''
+      GROUP BY s.NOM_VENDEDOR
+    `);
+    const vd = {}, vm = {}, fl = {};
+    rVentas.recordset.forEach(r => {
+      const k = podio.nombreKey(r.Vendedor); nombresSql.add(r.Vendedor);
+      (vd[k] = vd[k] || {})[r.Fecha] = (vd[k][r.Fecha] || 0) + (parseFloat(r.Venta) || 0);
+      vm[k] = (vm[k] || 0) + (parseFloat(r.Venta) || 0);
+    });
+    rFlrt.recordset.forEach(r => { fl[podio.nombreKey(r.Vendedor)] = parseInt(r.NPs) || 0; nombresSql.add(r.Vendedor); });
+    porMesSql[mes] = { ventasDia: vd, ventasMes: vm, fleetrite: fl };
+  }
+
+  // Participantes: vendedores SQL cuyo canal (Excel) sea CALLE o MOSTRADOR
+  const participantes = [], usados = new Set();
+  [...nombresSql].forEach(n => {
+    const m = buscarMetaPodio(n);
+    if (!m || !podio.PODIO.CANALES.includes(m.canal) || usados.has(m.excel)) return;
+    usados.add(m.excel);
+    participantes.push({ Nombre: n, Sucursal: normSuc(m.sucursal), Canal: m.canal, Meta: m.meta });
+  });
+  // Asesores del Excel sin ventas aún (aparecen con 0)
+  Object.entries(podioMetasMap).forEach(([k, m]) => {
+    if (podio.PODIO.CANALES.includes(m.canal) && !usados.has(k)) {
+      usados.add(k); participantes.push({ Nombre: k, Sucursal: normSuc(m.sucursal), Canal: m.canal, Meta: m.meta });
+    }
+  });
+
+  const porMes = {};
+  meses.forEach(mes => {
+    const d = porMesSql[mes];
+    porMes[mes] = podio.rankear(
+      podio.calcularMes({ mes, hoy, participantes, ventasDia: d.ventasDia, ventasMes: d.ventasMes,
+                          fleetrite: d.fleetrite, checkins, visitas, encuestas })
+        .map(r => ({ ...r, constanciaPts: r.constancia.pts }))
+    );
+  });
+  const mesActual = meses[meses.length - 1];
+  return {
+    hoy, mesActual, meses, periodo: { ini: podio.PODIO.INI, fin: podio.PODIO.FIN },
+    tema: podio.temaDe(mesActual), reglas: podio.PODIO.PTS,
+    encuestaConfigurada: !!CSV_ENCUESTA_QR,
+    ranking: podio.acumular(porMes, mesActual),   // acumulado del concurso, ya ordenado con puesto
+    porMes,                                        // detalle por mes (ordenado por mes)
+  };
+}
+
+app.get('/api/podio', async (req, res) => {
+  try {
+    const ahora = Date.now();
+    if (!podioCache.data || ahora - podioCache.ts > PODIO_CACHE_MS || req.query.refresh === '1') {
+      podioCache = { data: await calcularPodio(), ts: ahora };
+    }
+    res.json(podioCache.data);
+  } catch (err) {
+    console.error('Error /api/podio:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Concurso de Jefes de Sucursal: % de la sucursal vs su cuota mensual
+app.get('/api/podio/jefes', async (req, res) => {
+  try {
+    const db  = await getPool();
+    const hoy = podio.hoyISO();
+    const mes = /^\d{4}-\d{2}$/.test(req.query.mes || '') ? req.query.mes : hoy.slice(0, 7);
+    const r = await db.request().input('mes', sql.VarChar, mes).query(`
+      SELECT s.NOM_ALMACEN_LIN AS Sucursal, SUM(s.IMP_TOTAL_LINEA) AS Venta
+      FROM FTSABI_PR s
+      WHERE LEFT(s.FECHA, 7) = @mes
+        AND ${TIPO_EXCL_SQL}
+        AND s.NOM_ALMACEN_LIN IN (${SUCURSALES})
+      GROUP BY s.NOM_ALMACEN_LIN
+    `);
+    const ventaSuc = {};
+    r.recordset.forEach(x => { ventaSuc[normSuc(x.Sucursal)] = parseFloat(x.Venta) || 0; });
+
+    const jefes = Object.entries(podioMetasMap)
+      .filter(([, m]) => m.canal === 'JEFE SUCURSAL')
+      .map(([nombre, m]) => {
+        const suc   = normSuc(m.sucursal);
+        const meta  = META_SUCURSAL[suc] || m.meta || 0;   // cuota mensual de la sucursal
+        const venta = ventaSuc[suc] || 0;
+        return { Nombre: nombre, Sucursal: suc, Meta: meta, Venta: Math.round(venta),
+                 Pct: meta > 0 ? Math.round((venta / meta) * 1000) / 10 : 0 };
+      })
+      .sort((a, b) => b.Pct - a.Pct);
+    jefes.forEach((j, i) => { j.puesto = i + 1; });
+    res.json({ mes, hoy, jefes });
+  } catch (err) {
+    console.error('Error /api/podio/jefes:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, '0.0.0.0', () => {
