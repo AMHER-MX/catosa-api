@@ -264,7 +264,7 @@
     }
 
     function cerrarTV() {
-        clearInterval(tvTimer); clearInterval(tvTick);
+        clearInterval(tvTimer); clearInterval(tvTick); clearInterval(tvRubroTimer);
         document.getElementById('tv-overlay').classList.remove('open');
         if (document.fullscreenElement) document.exitFullscreen();
     }
@@ -272,7 +272,7 @@
     async function refreshTV() {
         document.getElementById('tv-updated').textContent =
             '⟳ Actualizado: ' + new Date().toLocaleTimeString('es-MX');
-        await Promise.all([renderTVPodio(), renderTVAceite(), renderTVSucursales()]);
+        await Promise.all([renderTVPodio(), renderTVRubros(), renderTVSucursales()]);
     }
 
     const TV_PODIO_IMG = {
@@ -291,9 +291,9 @@
             const t = TEMAS_PODIO[podioG.mesActual];
             document.getElementById('tv-po-tema').textContent = t ? `${t.emoji} ${t.nombre}` : '';
             document.getElementById('tv-po-mes').textContent = fMesG(podioG.mesActual).toUpperCase();
-            const hero = document.getElementById('tv-hero-banner');
+            const overlay = document.getElementById('tv-overlay');
             const img = TV_PODIO_IMG[podioG.mesActual];
-            hero.style.backgroundImage = img ? `url('${img}')` : 'none';
+            overlay.style.backgroundImage = img ? `url('${img}')` : '';
 
             const filas = (podioG.ranking || []).slice().sort((a,b) => b.total - a.total);
             filas.forEach((f,i) => f.puesto = i+1);
@@ -321,28 +321,62 @@
         }
     }
 
-    async function renderTVAceite() {
-        const container = document.getElementById('tv-ac-rows');
-        try {
-            const data = await apiFetch('/api/aceite-todos');
-            const maxLitros = Math.max(...data.map(v => v.LitrosTotal), 1);
-            document.getElementById('tv-ac-resumen').textContent =
-                `${data.reduce((s,v)=>s+v.LitrosIncrementales,0)} L incrementales del equipo`;
+    // ── RUBROS Ruta al Podio (carrusel: check-in, racha, visitas/encuesta, Fleetrite) ──
+    const TV_RUBROS = [
+        { key:'checkin',   label:'📱 CHECK-IN DIARIO',           unit:'pts' },
+        { key:'racha',     label:'🔥 RACHA ACTUAL',              unit:'días' },
+        { key:'semanal',   label:'📍 VISITAS · ENCUESTA QR',     unit:'pts' },
+        { key:'fleetrite', label:'⭐ NPS FLEETRITE',              unit:'pts' },
+    ];
+    let tvRubroIdx = 0, tvRubroTimer = null, tvRubrosData = [];
 
-            container.innerHTML = data.map(v => {
-                const trackPct = Math.min(92, (v.LitrosTotal / maxLitros) * 90);
-                const inc      = v.LitrosIncrementales;
-                const nombre   = v.Nombre.split(' ').slice(0,2).join(' ');
-                return `<div class="tv-ac-row">
-                    <div class="tv-ac-name">${nombre}</div>
-                    <div class="tv-ac-track">
-                        <span class="tv-ac-truck" style="left:calc(${trackPct}% - 26px)"></span>
-                    </div>
-                    <div class="tv-ac-inc" style="color:${inc>0?'#a855f7':'#444'}">${inc>0?'+'+Math.round((inc/Math.max(v.BasePromedio,1))*100)+'%':'—'}${v.Bloques>0?' <span style="color:#ffd700;font-size:0.75em;margin-left:4px;">🛢 '+v.Bloques+' blq</span>':''}</div>
-                </div>`;
-            }).join('');
+    function calcRubrosTotal() {
+        if (!podioG || !podioG.ranking) return [];
+        return podioG.ranking.map(r => {
+            const a = r.actual || {};
+            const ms = Object.values(r.meses || {});
+            return {
+                Nombre: r.Nombre, Sucursal: r.Sucursal, Canal: r.Canal,
+                checkin:   ms.reduce((s,m) => s + m.checkin, 0),
+                racha:     a.constancia ? a.constancia.rachaActual : 0,
+                semanal:   ms.reduce((s,m) => s + m.visitas + m.encuesta, 0),
+                fleetrite: ms.reduce((s,m) => s + m.fleetrite, 0),
+            };
+        });
+    }
+
+    function renderTVRubroSlide() {
+        const slide = document.getElementById('tv-rubro-slide');
+        const labelEl = document.getElementById('tv-rubro-label');
+        if (!slide) return;
+        const r = TV_RUBROS[tvRubroIdx];
+        labelEl.textContent = r.label;
+        if (!tvRubrosData.length) { slide.innerHTML = '<div style="color:#555;font-size:0.65rem;">Sin datos aún.</div>'; return; }
+        const top = tvRubrosData.slice().sort((a,b) => b[r.key] - a[r.key]).slice(0, 6);
+        slide.innerHTML = top.map((f,i) => `
+            <div class="tv-po-row">
+                <div class="tv-po-pos">${MEDALLAS[i] || (i+1)}</div>
+                <div class="tv-po-name">${f.Nombre.split(' ').slice(0,2).join(' ')}<span class="tv-po-suc">${f.Sucursal} · ${f.Canal}</span></div>
+                <div class="tv-po-pts">${f[r.key]} ${r.unit}</div>
+            </div>`).join('') || '<div style="color:#555;font-size:0.65rem;">Sin participantes</div>';
+        document.querySelectorAll('#tv-rubro-dots span').forEach((d,i) => d.classList.toggle('active', i === tvRubroIdx));
+    }
+
+    async function renderTVRubros() {
+        const slide = document.getElementById('tv-rubro-slide');
+        try {
+            if (!podioG || !podioG.mesActual) { podioG = await apiFetch('/api/podio'); }
+            tvRubrosData = calcRubrosTotal();
+            document.getElementById('tv-rubro-dots').innerHTML = TV_RUBROS.map(() => '<span></span>').join('');
+            tvRubroIdx = 0;
+            renderTVRubroSlide();
+            if (tvRubroTimer) clearInterval(tvRubroTimer);
+            tvRubroTimer = setInterval(() => {
+                tvRubroIdx = (tvRubroIdx + 1) % TV_RUBROS.length;
+                renderTVRubroSlide();
+            }, 9000);
         } catch(e) {
-            container.innerHTML = `<div style="color:#f44;font-size:11px;">${e.message}</div>`;
+            slide.innerHTML = `<div style="color:#f44;font-size:11px;">${e.message}</div>`;
         }
     }
 
@@ -664,7 +698,7 @@
     }
 
     function cerrarTV() {
-        clearInterval(tvTimer); clearInterval(tvTick);
+        clearInterval(tvTimer); clearInterval(tvTick); clearInterval(tvRubroTimer);
         document.getElementById('tv-overlay').classList.remove('open');
         if (document.fullscreenElement) document.exitFullscreen();
     }
@@ -672,7 +706,7 @@
     async function refreshTV() {
         document.getElementById('tv-updated').textContent =
             '⟳ Actualizado: ' + new Date().toLocaleTimeString('es-MX');
-        await Promise.all([renderTVPodio(), renderTVAceite(), renderTVSucursales()]);
+        await Promise.all([renderTVPodio(), renderTVRubros(), renderTVSucursales()]);
     }
 
     const TV_PODIO_IMG = {
@@ -691,9 +725,9 @@
             const t = TEMAS_PODIO[podioG.mesActual];
             document.getElementById('tv-po-tema').textContent = t ? `${t.emoji} ${t.nombre}` : '';
             document.getElementById('tv-po-mes').textContent = fMesG(podioG.mesActual).toUpperCase();
-            const hero = document.getElementById('tv-hero-banner');
+            const overlay = document.getElementById('tv-overlay');
             const img = TV_PODIO_IMG[podioG.mesActual];
-            hero.style.backgroundImage = img ? `url('${img}')` : 'none';
+            overlay.style.backgroundImage = img ? `url('${img}')` : '';
 
             const filas = (podioG.ranking || []).slice().sort((a,b) => b.total - a.total);
             filas.forEach((f,i) => f.puesto = i+1);
@@ -721,28 +755,62 @@
         }
     }
 
-    async function renderTVAceite() {
-        const container = document.getElementById('tv-ac-rows');
-        try {
-            const data = await apiFetch('/api/aceite-todos');
-            const maxLitros = Math.max(...data.map(v => v.LitrosTotal), 1);
-            document.getElementById('tv-ac-resumen').textContent =
-                `${data.reduce((s,v)=>s+v.LitrosIncrementales,0)} L incrementales del equipo`;
+    // ── RUBROS Ruta al Podio (carrusel: check-in, racha, visitas/encuesta, Fleetrite) ──
+    const TV_RUBROS = [
+        { key:'checkin',   label:'📱 CHECK-IN DIARIO',           unit:'pts' },
+        { key:'racha',     label:'🔥 RACHA ACTUAL',              unit:'días' },
+        { key:'semanal',   label:'📍 VISITAS · ENCUESTA QR',     unit:'pts' },
+        { key:'fleetrite', label:'⭐ NPS FLEETRITE',              unit:'pts' },
+    ];
+    let tvRubroIdx = 0, tvRubroTimer = null, tvRubrosData = [];
 
-            container.innerHTML = data.map(v => {
-                const trackPct = Math.min(92, (v.LitrosTotal / maxLitros) * 90);
-                const inc      = v.LitrosIncrementales;
-                const nombre   = v.Nombre.split(' ').slice(0,2).join(' ');
-                return `<div class="tv-ac-row">
-                    <div class="tv-ac-name">${nombre}</div>
-                    <div class="tv-ac-track">
-                        <span class="tv-ac-truck" style="left:calc(${trackPct}% - 26px)"></span>
-                    </div>
-                    <div class="tv-ac-inc" style="color:${inc>0?'#a855f7':'#444'}">${inc>0?'+'+Math.round((inc/Math.max(v.BasePromedio,1))*100)+'%':'—'}${v.Bloques>0?' <span style="color:#ffd700;font-size:0.75em;margin-left:4px;">🛢 '+v.Bloques+' blq</span>':''}</div>
-                </div>`;
-            }).join('');
+    function calcRubrosTotal() {
+        if (!podioG || !podioG.ranking) return [];
+        return podioG.ranking.map(r => {
+            const a = r.actual || {};
+            const ms = Object.values(r.meses || {});
+            return {
+                Nombre: r.Nombre, Sucursal: r.Sucursal, Canal: r.Canal,
+                checkin:   ms.reduce((s,m) => s + m.checkin, 0),
+                racha:     a.constancia ? a.constancia.rachaActual : 0,
+                semanal:   ms.reduce((s,m) => s + m.visitas + m.encuesta, 0),
+                fleetrite: ms.reduce((s,m) => s + m.fleetrite, 0),
+            };
+        });
+    }
+
+    function renderTVRubroSlide() {
+        const slide = document.getElementById('tv-rubro-slide');
+        const labelEl = document.getElementById('tv-rubro-label');
+        if (!slide) return;
+        const r = TV_RUBROS[tvRubroIdx];
+        labelEl.textContent = r.label;
+        if (!tvRubrosData.length) { slide.innerHTML = '<div style="color:#555;font-size:0.65rem;">Sin datos aún.</div>'; return; }
+        const top = tvRubrosData.slice().sort((a,b) => b[r.key] - a[r.key]).slice(0, 6);
+        slide.innerHTML = top.map((f,i) => `
+            <div class="tv-po-row">
+                <div class="tv-po-pos">${MEDALLAS[i] || (i+1)}</div>
+                <div class="tv-po-name">${f.Nombre.split(' ').slice(0,2).join(' ')}<span class="tv-po-suc">${f.Sucursal} · ${f.Canal}</span></div>
+                <div class="tv-po-pts">${f[r.key]} ${r.unit}</div>
+            </div>`).join('') || '<div style="color:#555;font-size:0.65rem;">Sin participantes</div>';
+        document.querySelectorAll('#tv-rubro-dots span').forEach((d,i) => d.classList.toggle('active', i === tvRubroIdx));
+    }
+
+    async function renderTVRubros() {
+        const slide = document.getElementById('tv-rubro-slide');
+        try {
+            if (!podioG || !podioG.mesActual) { podioG = await apiFetch('/api/podio'); }
+            tvRubrosData = calcRubrosTotal();
+            document.getElementById('tv-rubro-dots').innerHTML = TV_RUBROS.map(() => '<span></span>').join('');
+            tvRubroIdx = 0;
+            renderTVRubroSlide();
+            if (tvRubroTimer) clearInterval(tvRubroTimer);
+            tvRubroTimer = setInterval(() => {
+                tvRubroIdx = (tvRubroIdx + 1) % TV_RUBROS.length;
+                renderTVRubroSlide();
+            }, 9000);
         } catch(e) {
-            container.innerHTML = `<div style="color:#f44;font-size:11px;">${e.message}</div>`;
+            slide.innerHTML = `<div style="color:#f44;font-size:11px;">${e.message}</div>`;
         }
     }
 
@@ -1300,7 +1368,7 @@
 
         
         /* ── PANTALLA TV ─────────────────────────────────── */
-        #tv-overlay { display:none; position:fixed; inset:0; z-index:99999; background:#060608 url('https://amher-mx.github.io/catosa-api/SERIE_LT_navigation.jpg') center/cover no-repeat; overflow:hidden; flex-direction:column; }
+        #tv-overlay { display:none; position:fixed; inset:0; z-index:99999; background:#060608 center/cover no-repeat; overflow:hidden; flex-direction:column; transition:background-image 0.6s ease; }
         #tv-overlay::before { content:''; position:absolute; inset:0; background:rgba(6,6,8,0.82); z-index:0; pointer-events:none; }
         #tv-overlay > * { position:relative; z-index:1; }
         #tv-overlay.open { display:flex; }
@@ -1326,12 +1394,17 @@
         .tv-panel-title { font-size:0.55rem; color:#555; text-transform:none; letter-spacing:2px; margin-bottom:8px; flex-shrink:0; display:flex; align-items:center; gap:8px; }
         .tv-panel-title span { color:var(--gold); }
         /* RUTA AL PODIO — panel TV */
-        .tv-hero-banner { height:190px; flex-shrink:0; position:relative; overflow:hidden; background-size:cover; background-position:center 22%; border-bottom:2px solid var(--gold); }
-        .tv-hero-banner::after { content:''; position:absolute; inset:0; background:linear-gradient(90deg, rgba(6,6,10,0.88) 0%, rgba(6,6,10,0.35) 42%, rgba(6,6,10,0.1) 65%, rgba(6,6,10,0.75) 100%); }
-        .tv-hero-logo { position:absolute; left:36px; top:50%; transform:translateY(-50%); height:150px; z-index:2; filter:drop-shadow(0 6px 18px rgba(0,0,0,0.6)); }
-        .tv-hero-mes { position:absolute; right:28px; bottom:16px; z-index:2; text-align:right; }
-        .tv-hero-mes .tema { font-size:1.1rem; font-weight:800; color:var(--gold); text-shadow:0 2px 8px rgba(0,0,0,0.8); letter-spacing:1px; }
-        .tv-hero-mes .rango { font-size:0.6rem; color:rgba(255,255,255,0.6); margin-top:2px; }
+        .tv-hero-banner { height:96px; flex-shrink:0; position:relative; overflow:hidden; display:flex; align-items:center; justify-content:space-between; padding:0 32px; background:rgba(6,6,10,0.62); backdrop-filter:blur(2px); border-bottom:2px solid var(--gold); }
+        .tv-hero-logo { height:64px; z-index:2; filter:drop-shadow(0 4px 12px rgba(0,0,0,0.7)); }
+        .tv-hero-mes { position:relative; z-index:2; text-align:right; }
+        .tv-hero-mes .tema { font-size:1.15rem; font-weight:800; color:var(--gold); text-shadow:0 2px 8px rgba(0,0,0,0.8); letter-spacing:1px; }
+        .tv-hero-mes .rango { font-size:0.62rem; color:rgba(255,255,255,0.65); margin-top:2px; }
+        /* Rubros — panel derecho TV */
+        .tv-rubro-slide { flex:1; overflow:hidden; animation:tvRubroFade 0.5s ease; }
+        @keyframes tvRubroFade { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+        .tv-rubro-dots { display:flex; gap:6px; justify-content:center; padding-top:8px; flex-shrink:0; }
+        .tv-rubro-dots span { width:7px; height:7px; border-radius:50%; background:#2a2a2a; transition:background 0.3s; }
+        .tv-rubro-dots span.active { background:var(--gold); }
         .tv-po-podium { margin-bottom:12px; flex-shrink:0; }
         .tv-po-podium .pd-name, .tv-po-podium .pd-sub { font-size:0.62rem; }
         .tv-po-row { display:flex; align-items:center; gap:10px; padding:6px 4px; border-bottom:1px solid #1a1a1a; }
@@ -1340,13 +1413,6 @@
         .tv-po-suc { display:block; font-size:0.55rem; font-weight:400; color:#666; }
         .tv-po-pts { width:70px; text-align:right; font-size:0.75rem; font-weight:800; color:var(--gold); flex-shrink:0; }
         .tv-po-pct { width:52px; text-align:right; font-size:0.68rem; font-weight:700; flex-shrink:0; }
-        /* Race track Aceite */
-        .tv-ac-row { display:flex; align-items:center; gap:8px; margin-bottom:5px; }
-        .tv-ac-name { width:110px; font-size:0.68rem; font-weight:700; flex-shrink:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-        .tv-ac-track { flex:1; background:linear-gradient(90deg,#150a2a 50%,#120826 50%); background-size:30px 100%; border-radius:20px; height:24px; position:relative; overflow:hidden; border:1px solid #2a1a4a; }
-        .tv-ac-truck { position:absolute; top:50%; width:52px; height:24px; background:url('https://amher-mx.github.io/catosa-api/camioncaja-int.png') left center/contain no-repeat; transform:translateY(-50%); transition:left 1.2s cubic-bezier(.4,0,.2,1); z-index:3; filter:drop-shadow(0 2px 4px rgba(0,0,0,0.8)); }
-
-        .tv-ac-inc { width:90px; text-align:right; font-size:0.62rem; flex-shrink:0; }
         /* Bottom sucursales */
         .tv-suc-panel { flex:1; padding:10px 20px; display:flex; flex-direction:column; justify-content:center; border-right:1px solid #1a1a1a; }
         .tv-suc-panel:last-child { border-right:none; }
@@ -3033,7 +3099,7 @@ function renderVisitas() {
     }
 
     function cerrarTV() {
-        clearInterval(tvTimer); clearInterval(tvTick);
+        clearInterval(tvTimer); clearInterval(tvTick); clearInterval(tvRubroTimer);
         document.getElementById('tv-overlay').classList.remove('open');
         if (document.fullscreenElement) document.exitFullscreen();
     }
@@ -3041,7 +3107,7 @@ function renderVisitas() {
     async function refreshTV() {
         document.getElementById('tv-updated').textContent =
             '⟳ Actualizado: ' + new Date().toLocaleTimeString('es-MX');
-        await Promise.all([renderTVPodio(), renderTVAceite(), renderTVSucursales()]);
+        await Promise.all([renderTVPodio(), renderTVRubros(), renderTVSucursales()]);
     }
 
     const TV_PODIO_IMG = {
@@ -3060,9 +3126,9 @@ function renderVisitas() {
             const t = TEMAS_PODIO[podioG.mesActual];
             document.getElementById('tv-po-tema').textContent = t ? `${t.emoji} ${t.nombre}` : '';
             document.getElementById('tv-po-mes').textContent = fMesG(podioG.mesActual).toUpperCase();
-            const hero = document.getElementById('tv-hero-banner');
+            const overlay = document.getElementById('tv-overlay');
             const img = TV_PODIO_IMG[podioG.mesActual];
-            hero.style.backgroundImage = img ? `url('${img}')` : 'none';
+            overlay.style.backgroundImage = img ? `url('${img}')` : '';
 
             const filas = (podioG.ranking || []).slice().sort((a,b) => b.total - a.total);
             filas.forEach((f,i) => f.puesto = i+1);
@@ -3090,28 +3156,62 @@ function renderVisitas() {
         }
     }
 
-    async function renderTVAceite() {
-        const container = document.getElementById('tv-ac-rows');
-        try {
-            const data = await apiFetch('/api/aceite-todos');
-            const maxLitros = Math.max(...data.map(v => v.LitrosTotal), 1);
-            document.getElementById('tv-ac-resumen').textContent =
-                `${data.reduce((s,v)=>s+v.LitrosIncrementales,0)} L incrementales del equipo`;
+    // ── RUBROS Ruta al Podio (carrusel: check-in, racha, visitas/encuesta, Fleetrite) ──
+    const TV_RUBROS = [
+        { key:'checkin',   label:'📱 CHECK-IN DIARIO',           unit:'pts' },
+        { key:'racha',     label:'🔥 RACHA ACTUAL',              unit:'días' },
+        { key:'semanal',   label:'📍 VISITAS · ENCUESTA QR',     unit:'pts' },
+        { key:'fleetrite', label:'⭐ NPS FLEETRITE',              unit:'pts' },
+    ];
+    let tvRubroIdx = 0, tvRubroTimer = null, tvRubrosData = [];
 
-            container.innerHTML = data.map(v => {
-                const trackPct = Math.min(92, (v.LitrosTotal / maxLitros) * 90);
-                const inc      = v.LitrosIncrementales;
-                const nombre   = v.Nombre.split(' ').slice(0,2).join(' ');
-                return `<div class="tv-ac-row">
-                    <div class="tv-ac-name">${nombre}</div>
-                    <div class="tv-ac-track">
-                        <span class="tv-ac-truck" style="left:calc(${trackPct}% - 26px)"></span>
-                    </div>
-                    <div class="tv-ac-inc" style="color:${inc>0?'#a855f7':'#444'}">${inc>0?'+'+Math.round((inc/Math.max(v.BasePromedio,1))*100)+'%':'—'}${v.Bloques>0?' <span style="color:#ffd700;font-size:0.75em;margin-left:4px;">🛢 '+v.Bloques+' blq</span>':''}</div>
-                </div>`;
-            }).join('');
+    function calcRubrosTotal() {
+        if (!podioG || !podioG.ranking) return [];
+        return podioG.ranking.map(r => {
+            const a = r.actual || {};
+            const ms = Object.values(r.meses || {});
+            return {
+                Nombre: r.Nombre, Sucursal: r.Sucursal, Canal: r.Canal,
+                checkin:   ms.reduce((s,m) => s + m.checkin, 0),
+                racha:     a.constancia ? a.constancia.rachaActual : 0,
+                semanal:   ms.reduce((s,m) => s + m.visitas + m.encuesta, 0),
+                fleetrite: ms.reduce((s,m) => s + m.fleetrite, 0),
+            };
+        });
+    }
+
+    function renderTVRubroSlide() {
+        const slide = document.getElementById('tv-rubro-slide');
+        const labelEl = document.getElementById('tv-rubro-label');
+        if (!slide) return;
+        const r = TV_RUBROS[tvRubroIdx];
+        labelEl.textContent = r.label;
+        if (!tvRubrosData.length) { slide.innerHTML = '<div style="color:#555;font-size:0.65rem;">Sin datos aún.</div>'; return; }
+        const top = tvRubrosData.slice().sort((a,b) => b[r.key] - a[r.key]).slice(0, 6);
+        slide.innerHTML = top.map((f,i) => `
+            <div class="tv-po-row">
+                <div class="tv-po-pos">${MEDALLAS[i] || (i+1)}</div>
+                <div class="tv-po-name">${f.Nombre.split(' ').slice(0,2).join(' ')}<span class="tv-po-suc">${f.Sucursal} · ${f.Canal}</span></div>
+                <div class="tv-po-pts">${f[r.key]} ${r.unit}</div>
+            </div>`).join('') || '<div style="color:#555;font-size:0.65rem;">Sin participantes</div>';
+        document.querySelectorAll('#tv-rubro-dots span').forEach((d,i) => d.classList.toggle('active', i === tvRubroIdx));
+    }
+
+    async function renderTVRubros() {
+        const slide = document.getElementById('tv-rubro-slide');
+        try {
+            if (!podioG || !podioG.mesActual) { podioG = await apiFetch('/api/podio'); }
+            tvRubrosData = calcRubrosTotal();
+            document.getElementById('tv-rubro-dots').innerHTML = TV_RUBROS.map(() => '<span></span>').join('');
+            tvRubroIdx = 0;
+            renderTVRubroSlide();
+            if (tvRubroTimer) clearInterval(tvRubroTimer);
+            tvRubroTimer = setInterval(() => {
+                tvRubroIdx = (tvRubroIdx + 1) % TV_RUBROS.length;
+                renderTVRubroSlide();
+            }, 9000);
         } catch(e) {
-            container.innerHTML = `<div style="color:#f44;font-size:11px;">${e.message}</div>`;
+            slide.innerHTML = `<div style="color:#f44;font-size:11px;">${e.message}</div>`;
         }
     }
 
@@ -3315,13 +3415,13 @@ function renderVisitas() {
                 <div id="tv-po-podium" class="podium tv-po-podium"></div>
                 <div id="tv-po-rows" style="flex:1;overflow-y:auto;"></div>
             </div>
-            <!-- Panel derecho: Aceite -->
+            <!-- Panel derecho: Rubros Ruta al Podio -->
             <div class="tv-panel">
                 <div class="tv-panel-title">
-                    🚛 CHALLENGE ACEITE MOTOR &nbsp;·&nbsp; <span style="color:#a855f7;">LITROS INCREMENTALES</span>
-                    &nbsp;&nbsp; <span id="tv-ac-resumen" style="color:#444;">—</span>
+                    <span id="tv-rubro-label">🏁 RUTA AL PODIO &nbsp;·&nbsp; POR RUBRO</span>
                 </div>
-                <div id="tv-ac-rows" style="flex:1;overflow-y:auto;"></div>
+                <div id="tv-rubro-slide" class="tv-rubro-slide"></div>
+                <div class="tv-rubro-dots" id="tv-rubro-dots"></div>
             </div>
         </div>
         <!-- Bottom: Metas por sucursal -->
