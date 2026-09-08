@@ -4,6 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Catosa GP — Executive Command Center 2026</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="https://amher-mx.github.io/catosa-api/favicon-32.png">
+    <link rel="icon" type="image/png" sizes="64x64" href="https://amher-mx.github.io/catosa-api/favicon-64.png">
+    <link rel="shortcut icon" href="https://amher-mx.github.io/catosa-api/favicon.ico">
+    <link rel="apple-touch-icon" sizes="180x180" href="https://amher-mx.github.io/catosa-api/apple-touch-icon.png">
+    <link rel="manifest" href="https://amher-mx.github.io/catosa-api/manifest-gerencia.json">
+    <meta name="theme-color" content="#0a0a0c">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Catosa Gerencia">
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;600;700;900&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js">
     // ── RESUMEN MES ANTERIOR GERENCIA ────────────────────────────────────
@@ -262,52 +272,49 @@
     async function refreshTV() {
         document.getElementById('tv-updated').textContent =
             '⟳ Actualizado: ' + new Date().toLocaleTimeString('es-MX');
-        await Promise.all([renderTVTorneo(), renderTVAceite(), renderTVSucursales()]);
+        await Promise.all([renderTVPodio(), renderTVAceite(), renderTVSucursales()]);
     }
 
-    async function renderTVTorneo() {
-        const container = document.getElementById('tv-wc-rows');
+    const TV_PODIO_IMG = {
+        '2026-09': 'https://amher-mx.github.io/catosa-api/ruta-podio-2026-09.jpg',
+        '2026-10': 'https://amher-mx.github.io/catosa-api/ruta-podio-2026-10.jpg',
+        '2026-11': 'https://amher-mx.github.io/catosa-api/ruta-podio-2026-11.jpg',
+    };
+
+    async function renderTVPodio() {
+        const container = document.getElementById('tv-po-rows');
+        const podiumEl  = document.getElementById('tv-po-podium');
         try {
-            // Usar dbV (misma fuente que la pista de carreras) para % del mes actual
-            const seen = new Set();
-            const data = dbV.filter(v => {
-                if (!v.Nombre || parseFloat(v.Meta) <= 0) return false;
-                if (wcNombres.size > 0 && !wcNombres.has(v.Nombre)) return false;
-                if (seen.has(v.Nombre)) return false;
-                seen.add(v.Nombre);
-                return true;
-            }).map(v => {
-                const pct = (parseFloat(v.Ventas)||0) / (parseFloat(v.Meta)||1) * 100;
-                const torneoV = (window.wcTorneoMap||{})[v.Nombre];
-                return { Nombre: v.Nombre, Pct: pct, Clasificado: torneoV ? torneoV.Clasificado : false };
-            }).sort((a,b) => b.Pct - a.Pct);
+            if (!podioG || !podioG.mesActual) { podioG = await apiFetch('/api/podio'); }
+            if (!podioG.mesActual) { container.innerHTML = '<div style="color:#555;font-size:0.65rem;">El concurso inicia el 1 de septiembre.</div>'; return; }
 
-            const clasif = data.filter(v => v.Clasificado).length;
-            document.getElementById('tv-wc-clasif').textContent = clasif;
-            document.getElementById('tv-wc-pend').textContent   = data.length - clasif;
-            document.getElementById('tv-wc-fase').textContent   = '🏆 FASE FINAL — JULIO';
+            const t = TEMAS_PODIO[podioG.mesActual];
+            document.getElementById('tv-po-mes').textContent = `${t?t.emoji:''} ${fMesG(podioG.mesActual).toUpperCase()}`.trim();
+            const hero = document.getElementById('tv-po-hero');
+            const img = TV_PODIO_IMG[podioG.mesActual];
+            hero.style.backgroundImage = img ? `url('${img}')` : 'none';
 
-            container.innerHTML = data.map(v => {
-                const pct      = v.Pct;
-                const trackPct = Math.min(98, (pct / 150) * 98);
-                const esClasif = v.Clasificado;
-                const nombre   = v.Nombre.split(' ').slice(0,2).join(' ');
-                const ballCls  = esClasif ? '' : 'noclasif';
-                let nivel, nColor;
-                if      (pct >= 120) { nivel = '🥇 ORO';    nColor = 'var(--gold)'; }
-                else if (pct >= 110) { nivel = '🥈 PLATA';  nColor = 'var(--silver)'; }
-                else if (pct >= 75)  { nivel = '🥉 BRONCE'; nColor = 'var(--bronze)'; }
-                else                 { nivel = `${Math.round(pct)}% · faltan ${Math.round(120-pct)}%`; nColor = '#555'; }
-                return `<div class="tv-wc-row">
-                    <div class="tv-wc-name">${nombre}</div>
-                    <div class="tv-wc-track ${esClasif?'':'noclaif'}">
-                        <div class="tv-wc-meta" style="left:92%"></div>
-                        <span class="tv-wc-ball ${ballCls}" style="left:calc(${trackPct}% - 24px)"></span>
-                    </div>
-                    <div class="tv-wc-pct" style="color:${pct>=120?'var(--gold)':pct>=110?'var(--silver)':pct>=75?'var(--bronze)':'#666'}">${Math.round(pct)}%</div>
-                    <div class="tv-wc-badge" style="color:${nColor};border-color:${nColor};background:${nColor}22;">${nivel}</div>
-                </div>`;
+            const filas = (podioG.ranking || []).slice().sort((a,b) => b.total - a.total);
+            filas.forEach((f,i) => f.puesto = i+1);
+
+            const orden = [3, 1, 0, 2, 4];
+            podiumEl.innerHTML = orden.map(i => {
+                const r = filas[i];
+                if (!r) return `<div class="pd p${i+1}"><div class="pd-name" style="color:#555">—</div><div class="pd-box"></div></div>`;
+                return `<div class="pd p${i+1}">
+                    <div class="pd-name" title="${r.Nombre}">${r.Nombre.split(' ').slice(0,2).join(' ')}</div>
+                    <div class="pd-sub">${r.Sucursal}</div>
+                    <div class="pd-pts">${r.total} pts</div>
+                    <div class="pd-box">${MEDALLAS[i]}</div></div>`;
             }).join('');
+
+            container.innerHTML = filas.slice(0, 10).map(r => `
+                <div class="tv-po-row">
+                    <div class="tv-po-pos">${MEDALLAS[r.puesto - 1] || r.puesto}</div>
+                    <div class="tv-po-name">${r.Nombre.split(' ').slice(0,2).join(' ')}<span class="tv-po-suc">${r.Sucursal} · ${r.Canal}</span></div>
+                    <div class="tv-po-pts">${r.total} pts</div>
+                    <div class="tv-po-pct" style="color:${r.Pct>=120?'var(--gold)':r.Pct>=100?'var(--success)':'#888'}">${r.Pct}%</div>
+                </div>`).join('') || '<div style="color:#555;font-size:0.65rem;">Sin participantes</div>';
         } catch(e) {
             container.innerHTML = `<div style="color:#f44;font-size:11px;">${e.message}</div>`;
         }
@@ -664,52 +671,49 @@
     async function refreshTV() {
         document.getElementById('tv-updated').textContent =
             '⟳ Actualizado: ' + new Date().toLocaleTimeString('es-MX');
-        await Promise.all([renderTVTorneo(), renderTVAceite(), renderTVSucursales()]);
+        await Promise.all([renderTVPodio(), renderTVAceite(), renderTVSucursales()]);
     }
 
-    async function renderTVTorneo() {
-        const container = document.getElementById('tv-wc-rows');
+    const TV_PODIO_IMG = {
+        '2026-09': 'https://amher-mx.github.io/catosa-api/ruta-podio-2026-09.jpg',
+        '2026-10': 'https://amher-mx.github.io/catosa-api/ruta-podio-2026-10.jpg',
+        '2026-11': 'https://amher-mx.github.io/catosa-api/ruta-podio-2026-11.jpg',
+    };
+
+    async function renderTVPodio() {
+        const container = document.getElementById('tv-po-rows');
+        const podiumEl  = document.getElementById('tv-po-podium');
         try {
-            // Usar dbV (misma fuente que la pista de carreras) para % del mes actual
-            const seen = new Set();
-            const data = dbV.filter(v => {
-                if (!v.Nombre || parseFloat(v.Meta) <= 0) return false;
-                if (wcNombres.size > 0 && !wcNombres.has(v.Nombre)) return false;
-                if (seen.has(v.Nombre)) return false;
-                seen.add(v.Nombre);
-                return true;
-            }).map(v => {
-                const pct = (parseFloat(v.Ventas)||0) / (parseFloat(v.Meta)||1) * 100;
-                const torneoV = (window.wcTorneoMap||{})[v.Nombre];
-                return { Nombre: v.Nombre, Pct: pct, Clasificado: torneoV ? torneoV.Clasificado : false };
-            }).sort((a,b) => b.Pct - a.Pct);
+            if (!podioG || !podioG.mesActual) { podioG = await apiFetch('/api/podio'); }
+            if (!podioG.mesActual) { container.innerHTML = '<div style="color:#555;font-size:0.65rem;">El concurso inicia el 1 de septiembre.</div>'; return; }
 
-            const clasif = data.filter(v => v.Clasificado).length;
-            document.getElementById('tv-wc-clasif').textContent = clasif;
-            document.getElementById('tv-wc-pend').textContent   = data.length - clasif;
-            document.getElementById('tv-wc-fase').textContent   = '🏆 FASE FINAL — JULIO';
+            const t = TEMAS_PODIO[podioG.mesActual];
+            document.getElementById('tv-po-mes').textContent = `${t?t.emoji:''} ${fMesG(podioG.mesActual).toUpperCase()}`.trim();
+            const hero = document.getElementById('tv-po-hero');
+            const img = TV_PODIO_IMG[podioG.mesActual];
+            hero.style.backgroundImage = img ? `url('${img}')` : 'none';
 
-            container.innerHTML = data.map(v => {
-                const pct      = v.Pct;
-                const trackPct = Math.min(98, (pct / 150) * 98);
-                const esClasif = v.Clasificado;
-                const nombre   = v.Nombre.split(' ').slice(0,2).join(' ');
-                const ballCls  = esClasif ? '' : 'noclasif';
-                let nivel, nColor;
-                if      (pct >= 120) { nivel = '🥇 ORO';    nColor = 'var(--gold)'; }
-                else if (pct >= 110) { nivel = '🥈 PLATA';  nColor = 'var(--silver)'; }
-                else if (pct >= 75)  { nivel = '🥉 BRONCE'; nColor = 'var(--bronze)'; }
-                else                 { nivel = `${Math.round(pct)}% · faltan ${Math.round(120-pct)}%`; nColor = '#555'; }
-                return `<div class="tv-wc-row">
-                    <div class="tv-wc-name">${nombre}</div>
-                    <div class="tv-wc-track ${esClasif?'':'noclaif'}">
-                        <div class="tv-wc-meta" style="left:92%"></div>
-                        <span class="tv-wc-ball ${ballCls}" style="left:calc(${trackPct}% - 24px)"></span>
-                    </div>
-                    <div class="tv-wc-pct" style="color:${pct>=120?'var(--gold)':pct>=110?'var(--silver)':pct>=75?'var(--bronze)':'#666'}">${Math.round(pct)}%</div>
-                    <div class="tv-wc-badge" style="color:${nColor};border-color:${nColor};background:${nColor}22;">${nivel}</div>
-                </div>`;
+            const filas = (podioG.ranking || []).slice().sort((a,b) => b.total - a.total);
+            filas.forEach((f,i) => f.puesto = i+1);
+
+            const orden = [3, 1, 0, 2, 4];
+            podiumEl.innerHTML = orden.map(i => {
+                const r = filas[i];
+                if (!r) return `<div class="pd p${i+1}"><div class="pd-name" style="color:#555">—</div><div class="pd-box"></div></div>`;
+                return `<div class="pd p${i+1}">
+                    <div class="pd-name" title="${r.Nombre}">${r.Nombre.split(' ').slice(0,2).join(' ')}</div>
+                    <div class="pd-sub">${r.Sucursal}</div>
+                    <div class="pd-pts">${r.total} pts</div>
+                    <div class="pd-box">${MEDALLAS[i]}</div></div>`;
             }).join('');
+
+            container.innerHTML = filas.slice(0, 10).map(r => `
+                <div class="tv-po-row">
+                    <div class="tv-po-pos">${MEDALLAS[r.puesto - 1] || r.puesto}</div>
+                    <div class="tv-po-name">${r.Nombre.split(' ').slice(0,2).join(' ')}<span class="tv-po-suc">${r.Sucursal} · ${r.Canal}</span></div>
+                    <div class="tv-po-pts">${r.total} pts</div>
+                    <div class="tv-po-pct" style="color:${r.Pct>=120?'var(--gold)':r.Pct>=100?'var(--success)':'#888'}">${r.Pct}%</div>
+                </div>`).join('') || '<div style="color:#555;font-size:0.65rem;">Sin participantes</div>';
         } catch(e) {
             container.innerHTML = `<div style="color:#f44;font-size:11px;">${e.message}</div>`;
         }
@@ -1319,18 +1323,17 @@
         .tv-panel:first-child { border-right:1px solid #1a1a1a; }
         .tv-panel-title { font-size:0.55rem; color:#555; text-transform:none; letter-spacing:2px; margin-bottom:8px; flex-shrink:0; display:flex; align-items:center; gap:8px; }
         .tv-panel-title span { color:var(--gold); }
-        /* Race track World Cup */
-        .tv-wc-row { display:flex; align-items:center; gap:8px; margin-bottom:5px; }
-        .tv-wc-name { width:110px; font-size:0.68rem; font-weight:700; flex-shrink:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-        .tv-wc-track { flex:1; background:linear-gradient(180deg,#2a2a2a 0%,#1a1a1a 40%,#222 60%,#2a2a2a 100%); border-radius:4px; height:28px; position:relative; overflow:hidden; border:1px solid #444; box-shadow:inset 0 2px 4px rgba(0,0,0,0.5); }
-        .tv-wc-track.noclaif { background:linear-gradient(180deg,#2a2a2a 0%,#1a1a1a 40%,#222 60%,#2a2a2a 100%); border:1px solid #444; }
-        .tv-wc-meta { position:absolute; top:0; bottom:0; width:2px; background:rgba(255,215,0,0.5); z-index:2; }
-        .tv-wc-ball { position:absolute; top:50%; transform:translateY(-50%); width:48px; height:22px; background:url('https://amher-mx.github.io/catosa-api/camioncaja-int.png') left center/contain no-repeat; transition:left 1.2s cubic-bezier(.4,0,.2,1); z-index:3; filter:drop-shadow(0 2px 4px rgba(0,0,0,0.8)); }
-        .tv-wc-ball.noclasif { filter:drop-shadow(0 2px 4px rgba(0,0,0,0.8)); opacity:0.9; }
-        .tv-wc-pct { width:42px; text-align:right; font-size:0.68rem; font-weight:700; flex-shrink:0; }
-        .tv-wc-badge { width:80px; text-align:center; font-size:0.55rem; flex-shrink:0; border-radius:20px; padding:2px 4px; }
-        .tv-wc-badge.ok { color:var(--success); background:rgba(0,255,136,0.1); }
-        .tv-wc-badge.no { color:#555; }
+        /* RUTA AL PODIO — panel TV */
+        .tv-po-hero { height:140px; border-radius:12px; background-size:cover; background-position:center 18%; margin-bottom:10px; position:relative; overflow:hidden; flex-shrink:0; border:1px solid rgba(255,255,255,0.1); }
+        .tv-po-hero::after { content:''; position:absolute; inset:0; background:linear-gradient(180deg, rgba(0,0,0,0.1), rgba(8,8,16,0.65)); }
+        .tv-po-podium { margin-bottom:12px; flex-shrink:0; }
+        .tv-po-podium .pd-name, .tv-po-podium .pd-sub { font-size:0.62rem; }
+        .tv-po-row { display:flex; align-items:center; gap:10px; padding:6px 4px; border-bottom:1px solid #1a1a1a; }
+        .tv-po-pos { width:28px; font-size:0.85rem; text-align:center; flex-shrink:0; }
+        .tv-po-name { flex:1; font-size:0.72rem; font-weight:700; color:#fff; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .tv-po-suc { display:block; font-size:0.55rem; font-weight:400; color:#666; }
+        .tv-po-pts { width:70px; text-align:right; font-size:0.75rem; font-weight:800; color:var(--gold); flex-shrink:0; }
+        .tv-po-pct { width:52px; text-align:right; font-size:0.68rem; font-weight:700; flex-shrink:0; }
         /* Race track Aceite */
         .tv-ac-row { display:flex; align-items:center; gap:8px; margin-bottom:5px; }
         .tv-ac-name { width:110px; font-size:0.68rem; font-weight:700; flex-shrink:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
@@ -1360,7 +1363,7 @@
     <div class="login-box">
         <img src="https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/logo-international.png" class="login-logo" alt="International" onerror="this.style.display='none'">
         <div class="login-title">COMMAND CENTER</div>
-        <div class="login-sub">World Cup Catosa 2026</div>
+        <div class="login-sub">Ruta al Podio 2026</div>
         <div id="login-status">Iniciando...</div>
         <input type="text" id="u-user" class="login-input" placeholder="USUARIO">
         <input type="password" id="u-pass" class="login-input" placeholder="CONTRASEÑA">
@@ -3032,52 +3035,49 @@ function renderVisitas() {
     async function refreshTV() {
         document.getElementById('tv-updated').textContent =
             '⟳ Actualizado: ' + new Date().toLocaleTimeString('es-MX');
-        await Promise.all([renderTVTorneo(), renderTVAceite(), renderTVSucursales()]);
+        await Promise.all([renderTVPodio(), renderTVAceite(), renderTVSucursales()]);
     }
 
-    async function renderTVTorneo() {
-        const container = document.getElementById('tv-wc-rows');
+    const TV_PODIO_IMG = {
+        '2026-09': 'https://amher-mx.github.io/catosa-api/ruta-podio-2026-09.jpg',
+        '2026-10': 'https://amher-mx.github.io/catosa-api/ruta-podio-2026-10.jpg',
+        '2026-11': 'https://amher-mx.github.io/catosa-api/ruta-podio-2026-11.jpg',
+    };
+
+    async function renderTVPodio() {
+        const container = document.getElementById('tv-po-rows');
+        const podiumEl  = document.getElementById('tv-po-podium');
         try {
-            // Usar dbV (misma fuente que la pista de carreras) para % del mes actual
-            const seen = new Set();
-            const data = dbV.filter(v => {
-                if (!v.Nombre || parseFloat(v.Meta) <= 0) return false;
-                if (wcNombres.size > 0 && !wcNombres.has(v.Nombre)) return false;
-                if (seen.has(v.Nombre)) return false;
-                seen.add(v.Nombre);
-                return true;
-            }).map(v => {
-                const pct = (parseFloat(v.Ventas)||0) / (parseFloat(v.Meta)||1) * 100;
-                const torneoV = (window.wcTorneoMap||{})[v.Nombre];
-                return { Nombre: v.Nombre, Pct: pct, Clasificado: torneoV ? torneoV.Clasificado : false };
-            }).sort((a,b) => b.Pct - a.Pct);
+            if (!podioG || !podioG.mesActual) { podioG = await apiFetch('/api/podio'); }
+            if (!podioG.mesActual) { container.innerHTML = '<div style="color:#555;font-size:0.65rem;">El concurso inicia el 1 de septiembre.</div>'; return; }
 
-            const clasif = data.filter(v => v.Clasificado).length;
-            document.getElementById('tv-wc-clasif').textContent = clasif;
-            document.getElementById('tv-wc-pend').textContent   = data.length - clasif;
-            document.getElementById('tv-wc-fase').textContent   = '🏆 FASE FINAL — JULIO';
+            const t = TEMAS_PODIO[podioG.mesActual];
+            document.getElementById('tv-po-mes').textContent = `${t?t.emoji:''} ${fMesG(podioG.mesActual).toUpperCase()}`.trim();
+            const hero = document.getElementById('tv-po-hero');
+            const img = TV_PODIO_IMG[podioG.mesActual];
+            hero.style.backgroundImage = img ? `url('${img}')` : 'none';
 
-            container.innerHTML = data.map(v => {
-                const pct      = v.Pct;
-                const trackPct = Math.min(98, (pct / 150) * 98);
-                const esClasif = v.Clasificado;
-                const nombre   = v.Nombre.split(' ').slice(0,2).join(' ');
-                const ballCls  = esClasif ? '' : 'noclasif';
-                let nivel, nColor;
-                if      (pct >= 120) { nivel = '🥇 ORO';    nColor = 'var(--gold)'; }
-                else if (pct >= 110) { nivel = '🥈 PLATA';  nColor = 'var(--silver)'; }
-                else if (pct >= 75)  { nivel = '🥉 BRONCE'; nColor = 'var(--bronze)'; }
-                else                 { nivel = `${Math.round(pct)}% · faltan ${Math.round(120-pct)}%`; nColor = '#555'; }
-                return `<div class="tv-wc-row">
-                    <div class="tv-wc-name">${nombre}</div>
-                    <div class="tv-wc-track ${esClasif?'':'noclaif'}">
-                        <div class="tv-wc-meta" style="left:92%"></div>
-                        <span class="tv-wc-ball ${ballCls}" style="left:calc(${trackPct}% - 24px)"></span>
-                    </div>
-                    <div class="tv-wc-pct" style="color:${pct>=120?'var(--gold)':pct>=110?'var(--silver)':pct>=75?'var(--bronze)':'#666'}">${Math.round(pct)}%</div>
-                    <div class="tv-wc-badge" style="color:${nColor};border-color:${nColor};background:${nColor}22;">${nivel}</div>
-                </div>`;
+            const filas = (podioG.ranking || []).slice().sort((a,b) => b.total - a.total);
+            filas.forEach((f,i) => f.puesto = i+1);
+
+            const orden = [3, 1, 0, 2, 4];
+            podiumEl.innerHTML = orden.map(i => {
+                const r = filas[i];
+                if (!r) return `<div class="pd p${i+1}"><div class="pd-name" style="color:#555">—</div><div class="pd-box"></div></div>`;
+                return `<div class="pd p${i+1}">
+                    <div class="pd-name" title="${r.Nombre}">${r.Nombre.split(' ').slice(0,2).join(' ')}</div>
+                    <div class="pd-sub">${r.Sucursal}</div>
+                    <div class="pd-pts">${r.total} pts</div>
+                    <div class="pd-box">${MEDALLAS[i]}</div></div>`;
             }).join('');
+
+            container.innerHTML = filas.slice(0, 10).map(r => `
+                <div class="tv-po-row">
+                    <div class="tv-po-pos">${MEDALLAS[r.puesto - 1] || r.puesto}</div>
+                    <div class="tv-po-name">${r.Nombre.split(' ').slice(0,2).join(' ')}<span class="tv-po-suc">${r.Sucursal} · ${r.Canal}</span></div>
+                    <div class="tv-po-pts">${r.total} pts</div>
+                    <div class="tv-po-pct" style="color:${r.Pct>=120?'var(--gold)':r.Pct>=100?'var(--success)':'#888'}">${r.Pct}%</div>
+                </div>`).join('') || '<div style="color:#555;font-size:0.65rem;">Sin participantes</div>';
         } catch(e) {
             container.innerHTML = `<div style="color:#f44;font-size:11px;">${e.message}</div>`;
         }
@@ -3273,6 +3273,7 @@ function renderVisitas() {
             <div class="tv-logos">
                 <img src="https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/logo-catosa.png" alt="Catosa">
                 <img src="https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/logo-international.png" alt="International">
+                <img src="https://amher-mx.github.io/catosa-api/ruta-podio-logo.jpg" alt="Ruta al Podio" style="height:40px;border-radius:6px;">
             </div>
             <div class="tv-title">⚡ CATOSA PERFORMANCE 2026</div>
             <div style="display:flex;align-items:center;gap:16px;">
@@ -3293,14 +3294,14 @@ function renderVisitas() {
             </div>
         </div>
         <div class="tv-main">
-            <!-- Panel izquierdo: World Cup -->
+            <!-- Panel izquierdo: Ruta al Podio -->
             <div class="tv-panel">
                 <div class="tv-panel-title">
-                    🚛 DESEMPEÑO VENTAS &nbsp;·&nbsp; <span id="tv-wc-fase">—</span>
-                    &nbsp;&nbsp; 🟢 <span id="tv-wc-clasif" style="color:var(--success);">—</span> clasificados
-                    &nbsp; ⚪ <span id="tv-wc-pend" style="color:#555;">—</span> pendientes
+                    🏁 RUTA AL PODIO &nbsp;·&nbsp; <span id="tv-po-mes">—</span>
                 </div>
-                <div id="tv-wc-rows" style="flex:1;overflow-y:auto;"></div>
+                <div id="tv-po-hero" class="tv-po-hero"></div>
+                <div id="tv-po-podium" class="podium tv-po-podium"></div>
+                <div id="tv-po-rows" style="flex:1;overflow-y:auto;"></div>
             </div>
             <!-- Panel derecho: Aceite -->
             <div class="tv-panel">
