@@ -1,0 +1,2195 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Catosa Performance 2026</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="https://amher-mx.github.io/catosa-api/favicon-32-ventas.png">
+    <link rel="icon" type="image/png" sizes="64x64" href="https://amher-mx.github.io/catosa-api/favicon-64-ventas.png">
+    <link rel="shortcut icon" href="https://amher-mx.github.io/catosa-api/favicon-ventas.ico">
+    <link rel="apple-touch-icon" sizes="180x180" href="https://amher-mx.github.io/catosa-api/apple-touch-icon-ventas.png">
+    <link rel="manifest" href="https://amher-mx.github.io/catosa-api/manifest-ventas.json">
+    <meta name="theme-color" content="#d4a02e">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Catosa Ventas">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js">
+    // ── RESUMEN MES ANTERIOR ──────────────────────────────────────────────
+    const fM2 = n => new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN',minimumFractionDigits:0}).format(n||0);
+
+    async function abrirResumen() {
+        if (!user) return;
+        document.getElementById('resumen-modal').classList.add('open');
+        document.getElementById('r-ventas').innerText = '...';
+        try {
+            const nombre = encodeURIComponent(user.Nombre);
+            const d = await apiFetch(`/api/resumen-mes?vendedor=${nombre}`);
+            const mesCapital = d.mes.charAt(0).toUpperCase() + d.mes.slice(1);
+
+            document.getElementById('r-mes').innerText       = mesCapital;
+            document.getElementById('r-vendedor').innerText  = user.Nombre;
+            document.getElementById('r-ventas').innerText    = fM2(d.ventasAnt);
+            document.getElementById('r-meta').innerText      = fM2(d.meta);
+            document.getElementById('r-dias').innerText      = d.diasTrabajados;
+
+            const kpiMeta = document.getElementById('r-kpi-meta');
+            document.getElementById('r-pct').innerText = d.pct + '%';
+            kpiMeta.className = 'resumen-kpi ' + (d.cumpleMeta ? 'cumple' : 'nocumple');
+
+            // Top productos
+            const tp = document.getElementById('r-productos');
+            tp.innerHTML = d.topProductos.map((p,i) =>
+                `<tr><td>${i+1}. ${(p.Descripcion||p.Parte).substring(0,28)}</td><td>${fM2(p.Monto)}</td></tr>`
+            ).join('') || '<tr><td colspan="2" style="color:var(--text-muted);text-align:center;">Sin datos</td></tr>';
+
+            // Top clientes
+            const tc = document.getElementById('r-clientes');
+            tc.innerHTML = d.topClientes.map((c,i) =>
+                `<tr><td>${i+1}. ${(c.Cliente||c.Codigo).substring(0,28)}</td><td>${fM2(c.Monto)}</td></tr>`
+            ).join('') || '<tr><td colspan="2" style="color:var(--text-muted);text-align:center;">Sin datos</td></tr>';
+
+            // Oportunidades
+            document.getElementById('r-oportunidades').innerHTML =
+                d.oportunidades.map(o => `<div class="oportu-item">💡 ${o}</div>`).join('');
+
+        } catch(e) {
+            document.getElementById('r-ventas').innerText = 'Error';
+        }
+    }
+
+    function cerrarResumen() {
+        document.getElementById('resumen-modal').classList.remove('open');
+    }
+
+    async function exportarResumenPDF() {
+        window.print();
+    }
+
+    async function exportarResumenPNG() {
+        const el = document.getElementById('resumen-content');
+        if (typeof html2canvas === 'undefined') {
+            const s = document.createElement('script');
+            s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+            document.head.appendChild(s);
+            await new Promise(r => s.onload = r);
+        }
+        const canvas = await html2canvas(el, { backgroundColor:'var(--surface)', scale:2 });
+        const a = document.createElement('a');
+        a.href = canvas.toDataURL('image/png');
+        const mes = document.getElementById('r-mes').innerText.replace(/ /g,'_');
+        a.download = `Resumen_${mes}_${user?.Nombre?.split(' ')[0]||'asesor'}.png`;
+        a.click();
+    }
+
+    
+    // ── DETALLE CLIENTE ───────────────────────────────────────────────────
+    async function abrirDetalleCliente(codigoCod, nombre, nombreCompletoCod, ventaMes, promedio, dias) {
+        const codigo        = decodeURIComponent(codigoCod);
+        const nombreCompleto = decodeURIComponent(nombreCompletoCod);
+
+        // Fill static data immediately
+        document.getElementById('cli-nombre').textContent  = nombre || codigo;
+        document.getElementById('cli-codigo').textContent  = nombreCompleto && nombreCompleto !== nombre ? nombreCompleto + ' · ' + codigo : codigo;
+        document.getElementById('cli-mes-val').textContent  = fM(ventaMes);
+        document.getElementById('cli-prom-val').textContent = fM(promedio);
+        document.getElementById('cli-dias-val').textContent = dias + 'd';
+
+        // Color días
+        const kpiDias = document.getElementById('cli-kpi-dias');
+        kpiDias.className = 'cli-kpi ' + (dias <= 7 ? 'arriba' : dias <= 21 ? 'igual' : 'abajo');
+
+        // Color vs promedio
+        const kpiMes = document.getElementById('cli-kpi-mes');
+        if (promedio > 0) {
+            const pct = ventaMes / promedio;
+            kpiMes.className = 'cli-kpi ' + (pct >= 0.9 ? 'arriba' : pct >= 0.5 ? 'igual' : 'abajo');
+        }
+
+        document.getElementById('cli-modal').classList.add('open');
+
+        // Load detail from server
+        try {
+            const d = await apiFetch(`/api/cliente-detalle?cliente=${encodeURIComponent(codigo)}&vendedor=${encodeURIComponent(user?.Nombre||'')}`);
+
+            // ── Barras últimos 6 meses ────────────────────────────────────
+            const barsEl = document.getElementById('cli-bars');
+            if (d.meses && d.meses.length) {
+                const maxV = Math.max(...d.meses.map(m => parseFloat(m.Venta)||0), 1);
+                barsEl.innerHTML = d.meses.map(m => {
+                    const v   = parseFloat(m.Venta) || 0;
+                    const pct = Math.max(2, (v / maxV) * 100);
+                    const mes = m.Mes ? m.Mes.substring(5) + '/' + m.Mes.substring(2,4) : '—';
+                    const fmtK = v >= 1000 ? (v/1000).toFixed(0)+'k' : v.toFixed(0);
+                    return `<div class="cli-bar-row">
+                        <div class="cli-bar-lbl">${mes}</div>
+                        <div class="cli-bar-track">
+                            <div class="cli-bar-fill" style="width:${pct}%"></div>
+                            <div class="cli-bar-val">$${fmtK}</div>
+                        </div>
+                    </div>`;
+                }).join('');
+            } else {
+                barsEl.innerHTML = '<div style="color:var(--text-subtle);font-size:0.72rem;">Sin historial</div>';
+            }
+
+            // ── Top productos ─────────────────────────────────────────────
+            const prodEl = document.getElementById('cli-productos');
+            if (d.topProductos && d.topProductos.length) {
+                prodEl.innerHTML = d.topProductos.map((p, i) =>
+                    `<tr><td>${i+1}. ${(p.Descripcion||p.Parte||'').substring(0,30)}</td><td>${fM(p.Monto)}</td></tr>`
+                ).join('');
+            } else {
+                prodEl.innerHTML = '<tr><td colspan="2" style="color:var(--text-subtle);">Sin datos</td></tr>';
+            }
+
+            // ── Última compra ─────────────────────────────────────────────
+            if (d.ultimaCompra) {
+                const u = d.ultimaCompra;
+                const fecha = u.Fecha ? new Date(u.Fecha).toLocaleDateString('es-MX') : '—';
+                document.getElementById('cli-ultima').innerHTML =
+                    `📅 <b>${fecha}</b><br>
+                     🛒 ${(u.Producto||'').substring(0,35)}<br>
+                     💰 ${fM(u.Monto)}`;
+            }
+
+        } catch(e) {
+            document.getElementById('cli-bars').innerHTML = `<div style="color:#f44;font-size:0.72rem;">Error: ${e.message}</div>`;
+        }
+    }
+
+    function cerrarDetalleCliente() {
+        document.getElementById('cli-modal').classList.remove('open');
+    }
+
+    
+    // ── DETALLE DÍA ───────────────────────────────────────────────────────
+    async function abrirDetalleDia(dia) {
+        const hoy = new Date().getDate();
+        if (dia > hoy) return; // día futuro
+
+        const venta = parseFloat(document.getElementById('in_day_' + dia)?.innerText?.replace(/[$k,]/g,'')) || 0;
+        if (venta === 0 && dia < hoy) {
+            // día sin ventas — no abrir
+            return;
+        }
+
+        const hoyDate = new Date();
+        const mes   = String(hoyDate.getMonth()+1).padStart(2,'0');
+        const anio  = hoyDate.getFullYear();
+        const diaStr = String(dia).padStart(2,'0');
+        const fecha = `${anio}-${mes}-${diaStr}`;
+        const fechaLabel = `${dia} de ${hoyDate.toLocaleString('es-MX',{month:'long'})} ${anio}`;
+
+        document.getElementById('day-fecha').textContent  = '📅 ' + fechaLabel;
+        document.getElementById('day-total').textContent  = document.getElementById('in_day_' + dia)?.innerText || '—';
+        document.getElementById('day-rows').innerHTML     = '<tr><td colspan="3" style="color:var(--text-subtle);text-align:center;">Cargando...</td></tr>';
+        document.getElementById('day-modal').classList.add('open');
+
+        try {
+            const nombre = encodeURIComponent(user.Nombre);
+            const d = await apiFetch(`/api/ventas-dia?vendedor=${nombre}&fecha=${fecha}`);
+
+            if (!d.ventas || !d.ventas.length) {
+                document.getElementById('day-rows').innerHTML =
+                    '<tr><td colspan="3" style="color:var(--text-subtle);text-align:center;">Sin ventas registradas</td></tr>';
+                return;
+            }
+
+            document.getElementById('day-total').textContent = fM(d.total);
+            document.getElementById('day-rows').innerHTML = d.ventas.map(v => `
+                <tr>
+                    <td style="max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${v.Cliente}">${(v.Cliente||'').substring(0,18)}</td>
+                    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${v.Producto}">${(v.Producto||'').substring(0,22)}</td>
+                    <td>${fM(v.Monto)}</td>
+                </tr>
+            `).join('');
+        } catch(e) {
+            document.getElementById('day-rows').innerHTML =
+                `<tr><td colspan="3" style="color:#f44;text-align:center;">${e.message}</td></tr>`;
+        }
+    }
+
+    function cerrarDetalleDia() {
+        document.getElementById('day-modal').classList.remove('open');
+    }
+
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* ── DESIGN TOKENS ──────────────────────────────────────── */
+        :root {
+            --bg:          #0f172a;
+            --surface:     #1e293b;
+            --surface-2:   #263348;
+            --border:      #334155;
+            --border-light:#2a3a50;
+            --text:        #f1f5f9;
+            --text-muted:  #94a3b8;
+            --text-subtle: #64748b;
+            --accent:      #3b82f6;
+            --accent-dim:  rgba(59,130,246,0.12);
+            --success:     #22c55e;
+            --success-dim: rgba(34,197,94,0.12);
+            --warning:     #f59e0b;
+            --warning-dim: rgba(245,158,11,0.12);
+            --danger:      #ef4444;
+            --danger-dim:  rgba(239,68,68,0.12);
+            --gold:        #f59e0b;
+            --silver:      #94a3b8;
+            --bronze:      #b45309;
+            --radius:      12px;
+            --radius-sm:   8px;
+            --radius-pill: 999px;
+        }
+
+        /* ── BASE ────────────────────────────────────────────────── */
+        *, *::before, *::after { box-sizing: border-box; }
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 12px;
+            overflow-x: hidden;
+            font-size: 14px;
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ── SCROLLBAR ───────────────────────────────────────────── */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+        /* ── LOGIN ───────────────────────────────────────────────── */
+        #login-screen {
+            position: fixed; inset: 0;
+            background: #060e1f url('https://amher-mx.github.io/catosa-api/SERIE_LT_navigation.jpg') center/cover no-repeat;
+            z-index: 1000; display: flex; align-items: center; justify-content: center;
+        }
+        #login-screen::before {
+            content: ''; position: absolute; inset: 0;
+            background: linear-gradient(135deg, rgba(6,14,31,0.92) 0%, rgba(15,23,42,0.88) 100%);
+        }
+        .login-box {
+            position: relative; z-index: 1;
+            background: var(--surface);
+            padding: 36px 32px;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            width: 320px;
+            box-shadow: 0 24px 48px rgba(0,0,0,0.5);
+        }
+        .login-box h2 {
+            font-size: 0.7rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            letter-spacing: 0.05em;
+            margin: 0 0 24px;
+            text-align: center;
+            border: none;
+            padding: 0;
+            text-transform: none;
+        }
+        .logo-login { height: 48px; margin-bottom: 20px; display: block; margin-left: auto; margin-right: auto; }
+        .logo-top   { height: 28px; }
+
+        /* ── LAYOUT ──────────────────────────────────────────────── */
+        #main-app { display: none; max-width: 480px; margin: 0 auto; }
+
+        /* ── TOP BAR ─────────────────────────────────────────────── */
+        .top-bar {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 12px 16px;
+            background: var(--surface);
+            border-radius: var(--radius);
+            margin-bottom: 12px;
+            border: 1px solid var(--border);
+        }
+        .header-info b {
+            font-size: 0.95rem; font-weight: 600;
+            color: var(--text); display: block;
+        }
+        .header-info small {
+            font-size: 0.7rem; color: var(--text-muted); font-weight: 400;
+        }
+        .btn-salir {
+            background: none;
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            padding: 6px 14px;
+            border-radius: var(--radius-pill);
+            cursor: pointer;
+            font-size: 0.72rem;
+            font-weight: 500;
+            transition: border-color 0.15s, color 0.15s;
+        }
+        .btn-salir:hover { border-color: var(--danger); color: var(--danger); }
+
+        /* ── RUTA AL PODIO ───────────────────────────────────────── */
+        .podio-card {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: var(--radius); margin-bottom: 12px; overflow: hidden;
+            --tema-a: #16a34a; --tema-b: #dc2626; --tema-c: #f8fafc;   /* Viva México por defecto */
+        }
+        .podio-head {
+            padding: 12px 14px 10px; position: relative;
+            background: linear-gradient(135deg, rgba(255,255,255,0.03), rgba(255,255,255,0));
+            border-bottom: 1px solid var(--border);
+        }
+        .podio-head::before {       /* franja temática del mes */
+            content: ''; position: absolute; left: 0; right: 0; top: 0; height: 3px;
+            background: linear-gradient(90deg, var(--tema-a) 0 33%, var(--tema-c) 33% 66%, var(--tema-b) 66%);
+        }
+        .podio-title { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+        .podio-title b { font-size: 0.85rem; font-weight: 700; letter-spacing: 0.02em; }
+        .podio-tema {
+            font-size: 0.62rem; font-weight: 600; padding: 3px 9px; border-radius: var(--radius-pill);
+            background: rgba(255,255,255,0.06); border: 1px solid var(--border); color: var(--text); white-space: nowrap;
+        }
+        .podio-sub { font-size: 0.62rem; color: var(--text-muted); margin-top: 3px; }
+        .podio-hero { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; padding: 12px 14px; }
+        .podio-pos { text-align: center; min-width: 64px; }
+        .podio-pos b { display: block; font-size: 1.9rem; font-weight: 800; line-height: 1; }
+        .podio-pos small { font-size: 0.6rem; color: var(--text-muted); font-weight: 600; letter-spacing: 0.04em; }
+        .podio-pts b { display: block; font-size: 1.35rem; font-weight: 800; color: var(--text); line-height: 1.1; }
+        .podio-pts small { font-size: 0.62rem; color: var(--text-muted); }
+        .podio-racha {
+            text-align: center; padding: 8px 10px; border-radius: var(--radius-sm);
+            background: var(--warning-dim); border: 1px solid rgba(245,158,11,0.35); color: var(--warning); min-width: 66px;
+        }
+        .podio-racha b { display: block; font-size: 1.1rem; font-weight: 800; line-height: 1; }
+        .podio-racha small { font-size: 0.55rem; font-weight: 600; }
+        .podio-racha.off { background: rgba(255,255,255,0.03); border-color: var(--border); color: var(--text-subtle); }
+        .podio-retos { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 0 14px 12px; }
+        .reto {
+            background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px;
+            display: flex; flex-direction: column; gap: 3px;
+        }
+        .reto .r-top { display: flex; justify-content: space-between; align-items: center; font-size: 0.62rem; color: var(--text-muted); font-weight: 600; }
+        .reto .r-pts { color: var(--success); font-weight: 800; font-size: 0.68rem; }
+        .reto .r-val { font-size: 0.95rem; font-weight: 800; color: var(--text); }
+        .reto .r-sub { font-size: 0.58rem; color: var(--text-subtle); }
+        .reto .r-bar { height: 4px; border-radius: 2px; background: rgba(255,255,255,0.06); overflow: hidden; margin-top: 4px; }
+        .reto .r-bar i { display: block; height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.8s ease; }
+        .reto.ok { border-color: rgba(34,197,94,0.4); }
+        .reto.ok .r-bar i { background: var(--success); }
+        .podio-top { padding: 0 14px 12px; }
+        .podio-top .t-title { font-size: 0.62rem; color: var(--text-muted); font-weight: 600; margin-bottom: 6px; display: flex; justify-content: space-between; }
+        .podio-row {
+            display: grid; grid-template-columns: 28px 1fr auto; gap: 8px; align-items: center;
+            padding: 7px 8px; border-radius: var(--radius-sm); font-size: 0.72rem;
+        }
+        .podio-row + .podio-row { margin-top: 3px; }
+        .podio-row.yo { background: var(--accent-dim); border: 1px solid rgba(59,130,246,0.35); }
+        .podio-row .m { font-size: 0.95rem; text-align: center; }
+        .podio-row .n { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .podio-row .n small { display: block; font-weight: 400; color: var(--text-subtle); font-size: 0.58rem; }
+        .podio-row .p { font-weight: 800; }
+        .podio-reglas { padding: 0 14px 12px; }
+        .podio-reglas summary { font-size: 0.62rem; color: var(--text-muted); cursor: pointer; font-weight: 600; }
+        .podio-reglas ul { margin: 6px 0 0; padding-left: 16px; font-size: 0.62rem; color: var(--text-muted); line-height: 1.6; }
+
+        /* ── TIME PANEL ──────────────────────────────────────────── */
+        .time-panel {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+            margin-bottom: 12px;
+        }
+        .time-item {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 12px;
+            text-align: center;
+        }
+        .time-label {
+            font-size: 0.65rem; color: var(--text-muted);
+            display: block; margin-bottom: 4px; font-weight: 500;
+        }
+        .time-value {
+            font-size: 0.9rem; font-weight: 700;
+            color: var(--text);
+        }
+
+        /* ── KPI CARDS ───────────────────────────────────────────── */
+        .top-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 12px; }
+        .top-card {
+            background: var(--surface);
+            padding: 14px;
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+        }
+        .top-card span {
+            font-size: 0.65rem; color: var(--text-muted);
+            display: block; margin-bottom: 6px; font-weight: 500;
+        }
+        .top-card b { font-size: 1rem; color: var(--text); font-weight: 600; }
+
+        /* ── SECTION LABEL ───────────────────────────────────────── */
+        .race-label {
+            font-size: 0.7rem; color: var(--text-muted);
+            font-weight: 600; margin: 16px 0 6px 2px; display: block;
+        }
+
+        /* ── RACE TRACK ──────────────────────────────────────────── */
+        .race-track {
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            height: 40px; position: relative; overflow: hidden; margin-bottom: 8px;
+        }
+        .porteria {
+            position: absolute; right: 0; top: 0; bottom: 0; width: 28px;
+            background: rgba(59,130,246,0.08);
+            border-left: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.9rem;
+        }
+        .line-meta {
+            position: absolute; top: 0; bottom: 0; width: 1px; opacity: 0.4; z-index: 1;
+        }
+        .l-75  { left: 62.5%; border-left: 1px dashed var(--warning); }
+        .l-110 { left: 91.6%; border-left: 1px dashed var(--silver); }
+        .truck {
+            position: absolute; bottom: 2px; width: 52px; height: 24px;
+            background: url('https://amher-mx.github.io/catosa-api/camioncaja-int.png') left center/contain no-repeat;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8));
+            transition: 3s cubic-bezier(0.2,0,0.2,1); z-index: 10;
+        }
+        .truck.oro { filter: drop-shadow(0 0 8px rgba(245,158,11,0.6)); }
+
+        /* ── SEMÁFORO DOTS ───────────────────────────────────────── */
+        .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; vertical-align: middle; }
+        .dot.verde { background: var(--success); }
+        .dot.ambar { background: var(--warning); }
+        .dot.rojo  { background: var(--danger); }
+
+        /* ── INPUTS ──────────────────────────────────────────────── */
+        input, select {
+            width: 100%;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            padding: 10px 12px;
+            border-radius: var(--radius-sm);
+            color: var(--text);
+            margin-bottom: 10px;
+            box-sizing: border-box;
+            font-family: inherit;
+            font-size: 0.85rem;
+            transition: border-color 0.15s;
+        }
+        input:focus, select:focus {
+            outline: none; border-color: var(--accent);
+        }
+        input::placeholder { color: var(--text-subtle); }
+
+        /* ── BUTTONS ─────────────────────────────────────────────── */
+        .btn {
+            padding: 12px 20px;
+            border-radius: var(--radius-sm);
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            color: #fff;
+            background: var(--accent);
+            width: 100%;
+            font-family: inherit;
+            font-size: 0.85rem;
+            transition: opacity 0.15s;
+        }
+        .btn:active { opacity: 0.85; }
+        .btn-forms {
+            background: var(--accent);
+            color: #fff;
+            border-radius: var(--radius-pill);
+            border: none;
+            padding: 13px;
+            font-weight: 600;
+            width: 100%;
+            cursor: pointer;
+            font-size: 0.82rem;
+            margin-bottom: 10px;
+            font-family: inherit;
+        }
+        .btn-forms:hover { opacity: 0.9; }
+        .btn-registrar {
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            border-radius: var(--radius-pill);
+            padding: 13px;
+            font-weight: 600;
+            width: 100%;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-family: inherit;
+        }
+        .btn-registrar:disabled { background: var(--surface-2); color: var(--text-subtle); cursor: not-allowed; }
+        .btn-salir-login {
+            background: none;
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            border-radius: var(--radius-pill);
+            padding: 10px;
+            width: 100%;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-family: inherit;
+            margin-top: 8px;
+        }
+
+        /* ── BADGES / PILLS ──────────────────────────────────────── */
+        .wc-fase-badge {
+            display: inline-block; padding: 3px 10px;
+            border-radius: var(--radius-pill);
+            font-size: 0.65rem; font-weight: 600;
+        }
+        .wc-clasificado { background: var(--success-dim); color: var(--success); border: 1px solid rgba(34,197,94,0.3); }
+        .wc-pendiente   { background: var(--warning-dim); color: var(--warning); border: 1px solid rgba(245,158,11,0.3); }
+        .wc-fuera       { background: var(--danger-dim);  color: var(--danger);  border: 1px solid rgba(239,68,68,0.3); }
+
+        .btn-filtro {
+            flex: 1; padding: 7px 10px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text-muted);
+            font-size: 0.7rem; font-weight: 500;
+            cursor: pointer; font-family: inherit;
+            transition: all 0.15s;
+        }
+        .btn-filtro.activo {
+            background: var(--accent-dim);
+            color: var(--accent);
+            border-color: rgba(59,130,246,0.4);
+        }
+
+        /* ── SEMÁFORO POTENCIAL ──────────────────────────────────── */
+        .semaforo-potencial {
+            display: inline-block; padding: 2px 10px;
+            border-radius: var(--radius-pill);
+            font-size: 0.65rem; font-weight: 600; margin-left: 6px;
+        }
+        .sem-verde { background: var(--success-dim); color: var(--success); }
+        .sem-ambar { background: var(--warning-dim); color: var(--warning); }
+        .sem-rojo  { background: var(--danger-dim);  color: var(--danger);  }
+
+        /* ── CARTERA MAPA ────────────────────────────────────────── */
+        .mapa-item {
+            background: var(--surface-2);
+            border-radius: var(--radius-sm);
+            padding: 12px; margin-bottom: 8px;
+            border-left: 3px solid var(--border);
+        }
+        .mapa-item.verde { border-left-color: var(--success); }
+        .mapa-item.ambar { border-left-color: var(--warning); }
+        .mapa-item.rojo  { border-left-color: var(--danger); }
+        .mapa-btns { display: flex; gap: 6px; margin-top: 8px; }
+        .btn-maps {
+            flex: 1; padding: 7px;
+            border-radius: var(--radius-sm);
+            border: none; font-size: 0.65rem;
+            font-weight: 600; cursor: pointer;
+        }
+        .btn-maps.google { background: #1a73e8; color: #fff; }
+        .btn-maps.waze   { background: #33ccff; color: #000; }
+        .btn-maps.wa     { background: #25d366; color: #fff; }
+
+        /* ── VISITAS ─────────────────────────────────────────────── */
+        .visita-form {
+            background: var(--surface);
+            border-radius: var(--radius);
+            padding: 16px;
+            border: 1px solid var(--border);
+            margin-bottom: 12px;
+        }
+        .visita-hist-item {
+            padding: 10px 12px;
+            background: var(--surface-2);
+            border-radius: var(--radius-sm);
+            margin-bottom: 6px;
+            border-left: 3px solid var(--accent);
+        }
+
+        /* ── CORES ───────────────────────────────────────────────── */
+        .cores-table { width: 100%; border-collapse: collapse; font-size: 0.75rem; }
+        .cores-table th {
+            color: var(--text-muted);
+            font-size: 0.65rem; font-weight: 500;
+            padding: 6px 4px; border-bottom: 1px solid var(--border);
+            text-align: left; white-space: nowrap;
+        }
+        .cores-table td { padding: 8px 4px; border-bottom: 1px solid var(--border-light); vertical-align: middle; }
+        .cores-table tr:last-child td { border-bottom: none; }
+        .dias-badge {
+            display: inline-block; padding: 2px 8px;
+            border-radius: var(--radius-pill);
+            font-weight: 600; font-size: 0.7rem;
+        }
+        .dias-verde { background: var(--success-dim); color: var(--success); }
+        .dias-ambar { background: var(--warning-dim); color: var(--warning); }
+        .dias-rojo  { background: var(--danger-dim);  color: var(--danger);  }
+        .cores-kpis { display: flex; gap: 8px; margin-bottom: 12px; }
+        .cores-kpi {
+            flex: 1; background: var(--surface-2);
+            border-radius: var(--radius-sm);
+            padding: 10px; text-align: center;
+            border: 1px solid var(--border-light);
+        }
+        .cores-kpi span { font-size: 0.6rem; color: var(--text-muted); display: block; margin-bottom: 3px; }
+        .cores-kpi b { font-size: 0.95rem; font-weight: 600; }
+
+        /* ── CARD / GRID ─────────────────────────────────────────── */
+        .grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+        .card {
+            background: var(--surface);
+            border-radius: var(--radius);
+            padding: 18px;
+            border: 1px solid var(--border);
+        }
+        h2 {
+            font-size: 0.8rem; font-weight: 600;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 10px; margin-bottom: 16px;
+            color: var(--text); margin-top: 0;
+        }
+        .client-item {
+            display: flex; align-items: center;
+            padding: 11px 0; border-bottom: 1px solid var(--border-light);
+            justify-content: space-between; font-size: 0.82rem;
+        }
+
+        /* ── CALCULADORA ─────────────────────────────────────────── */
+        .cal-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; overflow-y: auto; flex: 1; }
+        .day-box {
+            background: var(--surface-2);
+            border: 1px solid var(--border-light);
+            border-radius: 6px; padding: 5px; text-align: center;
+            transition: border-color 0.15s;
+        }
+        .day-in { color: var(--text-subtle); font-size: 0.72rem; text-align: center; font-weight: 500; min-height: 18px; }
+
+        /* ── MODALES ─────────────────────────────────────────────── */
+        #resumen-modal {
+            display: none; position: fixed; inset: 0; z-index: 9999;
+            background: rgba(0,0,0,0.7); overflow-y: auto; padding: 16px;
+        }
+        #resumen-modal.open { display: flex; align-items: flex-start; justify-content: center; }
+        .resumen-card {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 16px; width: 100%; max-width: 500px;
+            padding: 24px; margin: auto;
+        }
+        .resumen-header { text-align: center; margin-bottom: 20px; }
+        .resumen-header h2 { color: var(--text); font-size: 1rem; margin: 0 0 4px; border: none; padding: 0; }
+        .resumen-header p  { color: var(--text-muted); font-size: 0.75rem; margin: 0; }
+        .resumen-kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+        .resumen-kpi  { background: var(--surface-2); border-radius: var(--radius-sm); padding: 12px; text-align: center; border: 1px solid var(--border); }
+        .resumen-kpi .rk-val { font-size: 1.2rem; font-weight: 700; color: var(--text); }
+        .resumen-kpi .rk-lbl { font-size: 0.65rem; color: var(--text-muted); margin-top: 3px; }
+        .resumen-kpi.cumple .rk-val   { color: var(--success); }
+        .resumen-kpi.nocumple .rk-val { color: var(--danger); }
+        .resumen-section { margin-bottom: 16px; }
+        .resumen-section h3 { font-size: 0.7rem; color: var(--text-muted); font-weight: 500; letter-spacing: 0.04em; margin: 0 0 8px; }
+        .resumen-table { width: 100%; border-collapse: collapse; font-size: 0.75rem; }
+        .resumen-table td { padding: 6px 4px; border-bottom: 1px solid var(--border-light); }
+        .resumen-table td:last-child { text-align: right; color: var(--accent); }
+        .oportu-item {
+            background: var(--surface-2); border-left: 3px solid var(--accent);
+            border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+            padding: 8px 12px; margin-bottom: 8px; font-size: 0.78rem; line-height: 1.5;
+            color: var(--text-muted);
+        }
+        .resumen-btns { display: flex; gap: 8px; margin-top: 20px; }
+        .resumen-btns button {
+            flex: 1; padding: 11px; border-radius: var(--radius-sm);
+            font-size: 0.8rem; font-weight: 600; cursor: pointer; border: none;
+            font-family: inherit;
+        }
+        .btn-pdf  { background: var(--accent); color: #fff; }
+        .btn-png  { background: var(--surface-2); color: var(--text-muted); border: 1px solid var(--border) !important; }
+        .btn-close-resumen { background: var(--surface-2); color: var(--text-muted); border: 1px solid var(--border) !important; }
+        @media print {
+            body > *:not(#resumen-modal) { display: none !important; }
+            #resumen-modal { display: flex !important; position: static; background: white; padding: 0; }
+            .resumen-btns { display: none; }
+            .resumen-card { border: none; }
+        }
+
+        /* ── DETALLE CLIENTE MODAL ───────────────────────────────── */
+        #cli-modal {
+            display: none; position: fixed; inset: 0; z-index: 9999;
+            background: rgba(0,0,0,0.7); overflow-y: auto; padding: 16px;
+        }
+        #cli-modal.open { display: flex; align-items: flex-start; justify-content: center; }
+        .cli-card {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 16px; width: 100%; max-width: 480px;
+            padding: 22px; margin: auto;
+        }
+        .cli-header { margin-bottom: 16px; padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+        .cli-nombre { font-size: 1rem; font-weight: 700; color: var(--text); }
+
+        
+        /* ── DETALLE CLIENTE MODAL ───────────────────────── */
+        #cli-modal { display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.88); overflow-y:auto; padding:16px; }
+        #cli-modal.open { display:flex; align-items:flex-start; justify-content:center; }
+        .cli-card { background:var(--surface); border:1px solid #2a2a2a; border-radius:20px; width:100%; max-width:480px; padding:22px; margin:auto; }
+        .cli-header { margin-bottom:16px; padding-bottom:14px; border-bottom:1px solid #1e1e1e; }
+        .cli-nombre { font-size:1rem; font-weight:800; font-family:'Syne',sans-serif; color:var(--gold); }
+        .cli-codigo { font-size:0.7rem; color:var(--text-subtle); margin-top:2px; }
+        .cli-kpis { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:16px; }
+        .cli-kpi { background:#1a1a1a; border-radius:12px; padding:10px; text-align:center; }
+        .cli-kpi .ck-val { font-size:1rem; font-weight:700; }
+        .cli-kpi .ck-lbl { font-size:0.6rem; color:var(--text-muted); margin-top:2px; }
+        .cli-kpi.arriba .ck-val { color:var(--success); }
+        .cli-kpi.abajo  .ck-val { color:#ff4444; }
+        .cli-kpi.igual  .ck-val { color:var(--gold); }
+        .cli-section { margin-bottom:14px; }
+        .cli-section h3 { font-size:0.65rem; color:#666; text-transform:none; letter-spacing:1px; margin:0 0 8px; }
+        .cli-table { width:100%; border-collapse:collapse; font-size:0.72rem; }
+        .cli-table td { padding:5px 3px; border-bottom:1px solid #1a1a1a; }
+        .cli-table td:last-child { text-align:right; color:var(--gold); }
+        .cli-bars { display:flex; flex-direction:column; gap:5px; }
+        .cli-bar-row { display:flex; align-items:center; gap:8px; font-size:0.68rem; }
+        .cli-bar-lbl { width:42px; color:var(--text-muted); text-align:right; flex-shrink:0; }
+        .cli-bar-track { flex:1; background:#1a1a1a; border-radius:4px; height:16px; position:relative; overflow:hidden; }
+        .cli-bar-fill { height:100%; border-radius:4px; background:rgba(200,168,75,0.7); transition:width .4s; }
+        .cli-bar-val { position:absolute; right:6px; top:50%; transform:translateY(-50%); font-size:0.62rem; color:#fff; }
+        .cli-ult { font-size:0.72rem; color:var(--text-muted); background:#1a1a1a; border-radius:10px; padding:10px 12px; line-height:1.6; }
+        .cli-close { width:100%; padding:12px; margin-top:16px; background:#1a1a1a; border:none; border-radius:12px; color:var(--text-muted); font-size:0.8rem; cursor:pointer; }
+
+        
+        /* ── DETALLE DÍA MODAL ───────────────────────────── */
+        #day-modal { display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.88); overflow-y:auto; padding:16px; }
+        #day-modal.open { display:flex; align-items:flex-start; justify-content:center; }
+        .day-card { background:var(--surface); border:1px solid var(--success); border-radius:20px; width:100%; max-width:480px; padding:22px; margin:auto; }
+        .day-header { margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid #1e1e1e; display:flex; justify-content:space-between; align-items:center; }
+        .day-header h2 { color:var(--success); font-size:1rem; font-family:'Syne',sans-serif; margin:0; }
+        .day-total { font-size:1.3rem; font-weight:800; color:var(--success); }
+        .day-table { width:100%; border-collapse:collapse; font-size:0.72rem; }
+        .day-table th { color:var(--text-subtle); font-size:0.6rem; text-transform:none; padding:5px 4px; border-bottom:1px solid #222; text-align:left; }
+        .day-table td { padding:6px 4px; border-bottom:1px solid #1a1a1a; }
+        .day-table td:last-child { text-align:right; color:var(--success); }
+        .day-close { width:100%; padding:12px; margin-top:16px; background:#1a1a1a; border:none; border-radius:12px; color:var(--text-muted); font-size:0.8rem; cursor:pointer; }
+        .day-box { cursor:pointer; transition:transform .15s; }
+        .day-box:hover { transform:scale(1.05); }
+
+        </style>
+</head>
+<body>
+
+<div id="login-screen">
+    <div class="login-box">
+        <img src="https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/logo-international.png" class="logo-login" alt="International" onerror="this.style.display='none'">
+        <h3 style="color:var(--gold); margin-top:0;">CATOSA PERFORMANCE 2026</h3>
+        <div id="login-status" style="font-size:0.7rem; color:var(--text-subtle); margin-bottom:10px;">Cargando datos...</div>
+        <input type="text" id="u-name" placeholder="NOMBRE ASESOR">
+        <input type="password" id="u-pass" placeholder="CONTRASEÑA">
+        <button class="btn" id="btn-login" onclick="login()" disabled>CARGANDO...</button>
+    </div>
+</div>
+
+<div id="main-app">
+    <div class="top-bar">
+        <img src="https://raw.githubusercontent.com/AMHER-MX/catosa-api/main/logo-catosa.png" class="logo-top" alt="Catosa" onerror="this.style.display='none'">
+        <div class="header-info"><b id="u-disp">--</b><small id="s-disp">--</small></div>
+        <button class="btn-salir" onclick="location.reload()">SALIR</button>
+    </div>
+
+    <div class="time-panel">
+        <div class="time-item"><span class="time-label">HOY</span><span class="time-value" id="val-hoy">--</span></div>
+        <div class="time-item" style="border-left:1px solid #333; border-right:1px solid #333;"><span class="time-label">DÍAS RESTANTES</span><span class="time-value" id="val-dias" style="color:var(--red);">--</span></div>
+        <div class="time-item"><span class="time-label">FALTA P/ ORO</span><span class="time-value" id="val-falta-oro" style="color:var(--gold);">$0</span></div>
+    </div>
+
+    <div class="top-stats">
+        <div class="top-card"><span>Venta al momento</span><b id="k-v">$0.00</b></div>
+        <div class="top-card"><span>Litros Aceite Mes</span><b id="k-f-prov">-- L</b></div>
+        <div class="top-card"><span>Avance Ind.</span><b id="k-pp">0%</b></div>
+        <div class="top-card"><span>Avance Sede</span><b id="k-po">0%</b></div>
+    </div>
+
+    <!-- ══ RUTA AL PODIO ═══════════════════════════════════════════════════ -->
+    <div class="podio-card" id="podio-card">
+        <div class="podio-head">
+            <div class="podio-title">
+                <b>🏁 RUTA AL PODIO</b>
+                <span class="podio-tema" id="podio-tema">🇲🇽 Viva México</span>
+            </div>
+            <div class="podio-sub" id="podio-sub">1 sep – 30 nov 2026 · Cargando...</div>
+        </div>
+        <div class="podio-hero">
+            <div class="podio-pos"><b id="podio-pos" style="color:var(--gold);">—</b><small id="podio-medalla">POSICIÓN</small></div>
+            <div class="podio-pts"><b id="podio-total">— pts</b><small id="podio-mes-pts">acumulado del concurso</small></div>
+            <div class="podio-racha off" id="podio-racha"><b>0</b><small>🔥 RACHA</small></div>
+        </div>
+        <div class="podio-retos" id="podio-retos"></div>
+        <div class="podio-top">
+            <div class="t-title"><span>🏆 Podio del concurso</span><span id="podio-top-n"></span></div>
+            <div id="podio-top"><div class="loading">Cargando...</div></div>
+        </div>
+        <details class="podio-reglas">
+            <summary>¿Cómo sumo puntos?</summary>
+            <ul id="podio-reglas"></ul>
+        </details>
+    </div>
+
+    <span class="race-label">Mi desempeño individual (120%)</span>
+    <div class="race-track">
+        <div class="porteria">🏁</div>
+        <div class="line-meta l-75"></div><div class="line-meta l-110"></div>
+        <div id="truck-ind" class="truck"></div>
+    </div>
+    <div style="display:flex; justify-content:space-between; padding:0 4px; margin-bottom:4px;">
+        <span style="font-size:0.6rem; color:var(--text-subtle);">Meta mensual: <b id="label-meta-ind" style="color:var(--gold);">—</b></span>
+        <span style="font-size:0.6rem; color:var(--text-subtle);">Falta para ORO: <b id="label-falta-ind" style="color:var(--red);">—</b></span>
+    </div>
+
+    <span class="race-label" id="suc-label">Desempeño sucursal</span>
+    <div class="race-track">
+        <div class="porteria">🏁</div>
+        <div class="line-meta l-75"></div><div class="line-meta l-110"></div>
+        <div id="truck-grp" class="truck"></div>
+    </div>
+    <div style="display:flex; justify-content:space-between; padding:0 4px; margin-bottom:4px;">
+        <span style="font-size:0.6rem; color:var(--text-subtle);">Meta sucursal: <b id="label-meta-grp" style="color:var(--accent);">—</b></span>
+        <span style="font-size:0.6rem; color:var(--text-subtle);">Avance: <b id="label-pct-grp" style="color:var(--accent);">—</b></span>
+    </div>
+
+    <span class="race-label" id="prov-label">Challenge Aceite Motor</span>
+    <div class="race-track" style="background:var(--surface-2); border-color:var(--border);">
+        <div class="porteria" style="border-left-color:var(--accent);">🏆</div>
+        <div class="line-meta" style="left:50%; border-left:1px dashed var(--accent);"></div>
+        <div id="truck-prov" class="truck"></div>
+    </div>
+    <div style="display:flex; justify-content:space-between; padding:0 4px; margin-bottom:4px;">
+        <span style="font-size:0.6rem; color:var(--text-subtle);">Promedio 2025: <b id="label-base-aceite" style="color:var(--accent);">—</b></span>
+        <span style="font-size:0.6rem; color:var(--text-subtle);">Este mes: <b id="label-litros-mes" style="color:var(--accent);">—</b></span>
+    </div>
+
+    <button onclick="abrirResumen()" style="width:100%;padding:14px;background:linear-gradient(135deg,#1a1600,#3a2e00);border:1px solid var(--gold);border-radius:14px;color:var(--gold);font-size:0.85rem;font-weight:700;cursor:pointer;margin-bottom:12px;">
+            📊 Resumen del mes anterior
+        </button>
+        <button class="btn-forms" onclick="window.open('https://docs.google.com/forms/d/e/1FAIpQLSfWF2AutcLCDhfBL6hoABmWVv4OKDvorCNB2CJTgY5QlrPrwA/viewform?usp=dialog','_blank')" style="background:transparent;border:1px solid var(--border);color:var(--text-muted);font-weight:500;">
+        Registrar cliente en base de datos
+    </button>
+
+    <!-- CHECK-IN -->
+    <div id="checkin-card" style="background:#0d0d0d;border:1px solid #4a9eff44;border-radius:14px;padding:14px;margin-bottom:14px;text-align:center;">
+        <div style="font-size:0.75rem;font-weight:600;color:var(--text);margin-bottom:6px;">Check-in diario</div>
+        <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:10px;">Registra tu entrada y suma 10 pts a tu Ruta al Podio.</div>
+        <button id="checkin-btn" onclick="registrarCheckIn()" style="background:linear-gradient(135deg,#1a3a6b,#2a5aa0);border:1px solid #4a9eff;color:#fff;border-radius:10px;padding:10px 24px;font-size:0.7rem;font-weight:800;cursor:pointer;width:100%;">
+            Registrar check-in
+        </button>
+        <div id="checkin-msg" style="margin-top:8px;font-size:0.55rem;"></div>
+    </div>
+
+    <!-- ══ REGISTRO DE VISITA ══════════════════════════════════════════════ -->
+    <div class="visita-form">
+        <h2 style="font-size:0.8rem; border-bottom:1px solid var(--accent); padding-bottom:10px; margin-bottom:14px; color:var(--accent); text-transform:none;">📋 REGISTRAR VISITA</h2>
+
+        <!-- Cliente -->
+        <label style="font-size:0.6rem; color:var(--text-muted); text-transform:none; display:block; margin-bottom:4px;">Cliente</label>
+        <select id="vis-cliente" onchange="onVisClienteChange()">
+            <option value="">— Selecciona cliente —</option>
+        </select>
+        <div id="vis-cliente-otro-wrap" style="display:none;">
+            <input type="text" id="vis-cliente-otro" placeholder="Nombre del cliente...">
+        </div>
+
+        <!-- Info del cliente -->
+        <div id="vis-cliente-info" style="display:none; background:rgba(0,0,0,0.3); border-radius:8px; padding:10px; margin-bottom:10px; font-size:0.7rem;">
+            <span id="vis-info-txt" style="color:var(--text-muted);"></span>
+        </div>
+
+        <!-- Motivo -->
+        <label style="font-size:0.6rem; color:var(--text-muted); text-transform:none; display:block; margin-bottom:4px;">Motivo de visita</label>
+        <select id="vis-motivo">
+            <option value="">— Selecciona motivo —</option>
+            <option value="Visita">📍 Visita</option>
+            <option value="Cobro">💰 Cobro</option>
+            <option value="Seguimiento de pedido">📦 Seguimiento de pedido</option>
+            <option value="Reactivación">🔄 Reactivación</option>
+            <option value="Prospección">🎯 Prospección</option>
+            <option value="Presentación de producto">🛠️ Presentación de producto</option>
+            <option value="Queja / Reclamación">⚠️ Queja / Reclamación</option>
+            <option value="Crédito">🏦 Crédito</option>
+            <option value="Otro">✏️ Otro</option>
+        </select>
+
+        <!-- Monto potencial -->
+        <label style="font-size:0.6rem; color:var(--text-muted); text-transform:none; display:block; margin-bottom:4px;">
+            Monto potencial del mes
+            <span id="vis-semaforo" class="semaforo-potencial" style="display:none;"></span>
+        </label>
+        <div style="position:relative;">
+            <span style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--text-muted); font-size:0.8rem;">$</span>
+            <input type="number" id="vis-monto" placeholder="0.00" oninput="onVisMonto()" style="padding-left:24px;">
+        </div>
+        <div id="vis-promedio-txt" style="font-size:0.6rem; color:var(--text-subtle); margin-top:-6px; margin-bottom:10px;"></div>
+
+        <!-- Notas -->
+        <label style="font-size:0.6rem; color:var(--text-muted); text-transform:none; display:block; margin-bottom:4px;">Notas (opcional)</label>
+        <input type="text" id="vis-notas" placeholder="Comentarios adicionales...">
+
+        <button class="btn-registrar" id="btn-registrar-visita" onclick="registrarVisita()">
+            ✅ REGISTRAR VISITA
+        </button>
+        <div id="vis-msg" style="text-align:center; font-size:0.7rem; margin-top:8px;"></div>
+    </div>
+
+    <div style="background:var(--card); border-radius:20px; padding:20px; border:1px solid var(--border); margin-bottom:15px;">
+        <h2 style="font-size:0.8rem; border-bottom:1px solid var(--red); padding-bottom:10px; margin-bottom:12px; color:var(--red); text-transform:none;">⚠️ CORES</h2>
+        <div style="display:flex; gap:6px; margin-bottom:14px;">
+            <button onclick="setCoresFiltro('devueltos')" id="cores-f-dev" class="btn-filtro activo" style="border-color:var(--red); color:var(--red);">📤 Devueltos</button>
+            <button onclick="setCoresFiltro('pendientes')" id="cores-f-pen" class="btn-filtro" style="border-color:var(--gold); color:var(--gold);">⏳ Sin Pagar</button>
+        </div>
+        <div class="cores-kpis">
+            <div class="cores-kpi"><span id="cores-kpi-lbl1">Total Devoluciones</span><b id="cores-total">—</b></div>
+            <div class="cores-kpi"><span id="cores-kpi-lbl2">Monto Devuelto</span><b id="cores-monto" style="color:var(--red);">—</b></div>
+            <div class="cores-kpi"><span id="cores-kpi-lbl3">Más Reciente</span><b id="cores-maxdias" style="color:var(--gold);">—</b></div>
+        </div>
+        <div style="overflow-x:auto; overflow-y:auto; max-height:420px;">
+            <table class="cores-table">
+                <thead><tr id="cores-thead">
+                    <th>Referencia</th>
+                    <th>Cliente</th>
+                    <th>Artículo</th>
+                    <th>Tipo</th>
+                    <th>Fecha</th>
+                    <th>Cantidad</th>
+                    <th>Monto</th>
+                    <th>Días</th>
+                </tr></thead>
+                <tbody id="cores-tbody">
+                    <tr><td colspan="8" class="loading">Cargando...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="grid">
+        <div class="card" style="min-height:auto;">
+            <h2 style="margin-bottom:12px;">💰 PROYECCIÓN DE PREMIOS</h2>
+
+            <!-- Nivel actual grande -->
+            <div id="premio-nivel" style="text-align:center; padding:16px; border-radius:14px; background:var(--surface); margin-bottom:12px; border:2px solid #333; transition: all 0.5s;">
+                <div id="premio-emoji" style="font-size:2.5rem;">⏳</div>
+                <div id="premio-titulo" style="font-size:1.1rem; font-weight:900; letter-spacing:2px; margin:4px 0;">CARGANDO...</div>
+                <div id="premio-monto" style="font-size:1.8rem; font-weight:900; color:var(--success);">$0</div>
+                <div id="premio-sub" style="font-size:0.65rem; color:var(--text-muted); margin-top:4px;">-- de venta acumulada</div>
+            </div>
+
+            <!-- Barra de niveles -->
+            <div style="position:relative; height:28px; border-radius:10px; background:var(--surface); overflow:hidden; margin-bottom:8px; border:1px solid var(--border);">
+                <div id="premio-barra" style="height:100%; width:0%; border-radius:10px; transition:width 1s ease; background:linear-gradient(90deg, var(--bronze), var(--silver), var(--gold));"></div>
+                <!-- Marcadores -->
+                <div style="position:absolute; top:0; bottom:0; left:62.5%; width:1px; background:var(--bronze); opacity:0.7;"></div>
+                <div style="position:absolute; top:0; bottom:0; left:91.6%; width:1px; background:var(--silver); opacity:0.7;"></div>
+                <div style="position:absolute; top:50%; left:10px; transform:translateY(-50%); font-size:0.5rem; color:var(--text-muted); font-weight:bold;">FUERA</div>
+                <div style="position:absolute; top:50%; left:64%; transform:translateY(-50%); font-size:0.5rem; color:var(--bronze); font-weight:bold;">BRONCE</div>
+                <div style="position:absolute; top:50%; left:93%; transform:translateY(-50%); font-size:0.5rem; color:var(--silver); font-weight:bold;">PLATA</div>
+            </div>
+            <div style="display:flex; justify-content:space-between; font-size:0.55rem; color:var(--text-subtle); margin-bottom:14px; padding:0 2px;">
+                <span>0%</span><span style="color:var(--bronze);">75%</span><span style="color:var(--silver);">110%</span><span style="color:var(--gold);">120% ORO</span>
+            </div>
+
+            <!-- Grid de días -->
+            <div style="font-size:0.6rem; color:var(--text-muted); margin-bottom:6px; text-transform:none;">Venta diaria del mes</div>
+            <div class="cal-grid" id="cal-grid" style="flex:1; overflow-y:auto;"></div>
+        </div>
+
+
+        <div id="lista-cli" style="display:none;"></div>
+
+        <div class="card">
+            <h2>🔥 TOP 10 PRODUCTOS</h2>
+            <div style="display:flex; gap:6px; margin-bottom:10px;">
+                <button onclick="setTopFiltro('unidades')" id="top-f-uni" class="btn-filtro activo">📦 Unidades</button>
+                <button onclick="setTopFiltro('monto')"    id="top-f-mon" class="btn-filtro">💰 Monto</button>
+            </div>
+            <div id="v-top-list" style="flex:1; overflow-y:auto;"><div class="loading">Cargando...</div></div>
+        </div>
+
+        <div class="card">
+            <h2>📍 CARTERA DE CLIENTES</h2>
+            <input type="text" id="mapa-buscar" placeholder="🔍 BUSCAR CLIENTE..." oninput="filtrarMapa()" style="margin-bottom:8px;">
+            <div style="display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap;">
+                <button onclick="filtroMapa('todos')" id="f-todos" class="btn-filtro activo">TODOS</button>
+                <button onclick="filtroMapa('verde')" id="f-verde" class="btn-filtro" style="border-color:#0f0; color:#0f0;">🟢 ≤7 días</button>
+                <button onclick="filtroMapa('ambar')" id="f-ambar" class="btn-filtro" style="border-color:#ff0; color:#ff0;">🟡 8-21 días</button>
+                <button onclick="filtroMapa('rojo')"  id="f-rojo"  class="btn-filtro" style="border-color:#f00; color:#f00;">🔴 +21 días</button>
+            </div>
+            <div id="mapa-lista" style="flex:1; overflow-y:auto;"><div class="loading">Cargando cartera...</div></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ─── CONFIGURACIÓN ──────────────────────────────────────────────────────
+    // ⚠️  CAMBIA ESTA URL POR LA DE TU SERVIDOR (Railway, etc.)
+    const API = 'https://api.catosaapps.lat';
+
+    // ─── ESTADO GLOBAL ──────────────────────────────────────────────────────
+    let dbV = [], dbT = [], user = null, cotList = [], cnf = false;
+
+    // ─── UTILIDADES ─────────────────────────────────────────────────────────
+    const fM = n => new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', minimumFractionDigits: 0 }).format(n || 0);
+
+    async function apiFetch(endpoint) {
+        const res = await fetch(API + endpoint);
+        if (!res.ok) throw new Error(`Error ${res.status} en ${endpoint}`);
+        return res.json();
+    }
+
+    // ─── CARGA INICIAL ──────────────────────────────────────────────────────
+    window.onload = async () => {
+        // Construir grid de días (solo visual, datos vienen del servidor)
+        const cg = document.getElementById('cal-grid');
+        const diasMes = new Date(new Date().getFullYear(), new Date().getMonth()+1, 0).getDate();
+        for (let i = 1; i <= diasMes; i++) {
+            cg.innerHTML += `<div class="day-box" id="dbox_${i}" onclick="abrirDetalleDia(${i})">
+                <span style="font-size:0.5rem;color:var(--text-subtle);">${i}</span>
+                <div class="day-in" id="in_day_${i}" style="color:#333;">—</div>
+            </div>`;
+        }
+
+        // Cargar vendedores desde la API
+        try {
+            document.getElementById('login-status').textContent = 'Conectando con servidor...';
+            dbV = await apiFetch('/api/ventas');
+            try { dbT = await apiFetch('/api/torneo'); } catch(e) { dbT = []; }
+            document.getElementById('login-status').textContent = `✅ ${dbV.length} asesores cargados`;
+            document.getElementById('btn-login').disabled = false;
+            document.getElementById('btn-login').textContent = 'INICIAR';
+        } catch (err) {
+            document.getElementById('login-status').innerHTML = `<span style="color:var(--red)">❌ Sin conexión al servidor<br><small>${err.message}</small></span>`;
+            document.getElementById('btn-login').textContent = 'REINTENTAR';
+            document.getElementById('btn-login').disabled = false;
+            document.getElementById('btn-login').onclick = () => location.reload();
+        }
+    };
+
+    // ─── LOGIN ───────────────────────────────────────────────────────────────
+    function login() {
+        const n = document.getElementById('u-name').value.toUpperCase().trim();
+        const p = document.getElementById('u-pass').value.toUpperCase().trim();
+
+        // Buscar vendedor por nombre
+        const f = dbV.find(v => (v.Nombre || '').toUpperCase().includes(n) && n !== '');
+        if (!f) { alert('JUGADOR NO ENCONTRADO'); return; }
+
+        const ape = f.Nombre.trim().split(' ').pop().toUpperCase();
+        if (p !== ape + '123' && p !== 'CATOSA2026') { alert('CONTRASEÑA INCORRECTA'); return; }
+
+        user = f;
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('main-app').style.display = 'block';
+        document.getElementById('u-disp').innerText = user.Nombre;
+        document.getElementById('s-disp').innerText = 'SEDE: ' + user.Sucursal;
+
+        renderApp();
+        loadPodio();
+        loadClientes();
+        loadTopProductos();
+        loadVentasDiarias();
+        loadCores();
+    }
+
+    // ─── RUTA AL PODIO ───────────────────────────────────────────────────────
+    const TEMAS_PODIO = {
+        '2026-09': { nombre: 'Viva México',              emoji: '🇲🇽', a: '#16a34a', b: '#dc2626', c: '#f8fafc' },
+        '2026-10': { nombre: 'Halloween',                emoji: '🎃', a: '#f97316', b: '#7c3aed', c: '#111827' },
+        '2026-11': { nombre: 'Día de Muertos + Navidad', emoji: '💀🎄', a: '#d946ef', b: '#dc2626', c: '#16a34a' },
+    };
+    const MEDALLAS = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
+    const fMes = m => { const [y, mm] = m.split('-'); return new Date(y, mm - 1, 1).toLocaleDateString('es-MX', { month: 'long' }); };
+    let podioData = null;
+
+    function aplicarTemaPodio(mes) {
+        const t = TEMAS_PODIO[mes] || TEMAS_PODIO['2026-09'];
+        const card = document.getElementById('podio-card');
+        card.style.setProperty('--tema-a', t.a); card.style.setProperty('--tema-b', t.b); card.style.setProperty('--tema-c', t.c);
+        document.getElementById('podio-tema').textContent = `${t.emoji} ${t.nombre}`;
+    }
+
+    async function loadPodio() {
+        try {
+            podioData = await apiFetch('/api/podio');
+            renderPodio();
+        } catch (e) {
+            document.getElementById('podio-sub').innerHTML = `<span style="color:var(--danger)">❌ No se pudo cargar el concurso · ${e.message}</span>`;
+            document.getElementById('podio-top').innerHTML = '';
+        }
+    }
+
+    function renderPodio() {
+        const d = podioData;
+        if (!d || !d.mesActual) {
+            document.getElementById('podio-sub').textContent = '1 sep – 30 nov 2026 · El concurso inicia el 1 de septiembre';
+            document.getElementById('podio-top').innerHTML = '';
+            return;
+        }
+        aplicarTemaPodio(d.mesActual);
+        const nMes = d.meses.indexOf(d.mesActual) + 1;
+        document.getElementById('podio-sub').textContent =
+            `1 sep – 30 nov 2026 · Mes ${nMes} de 3 (${fMes(d.mesActual)}) · corte ${d.hoy.slice(8)}/${d.hoy.slice(5,7)}`;
+
+        const yo = d.ranking.find(r => r.Nombre === user.Nombre);
+        const soyParticipante = !!yo;
+        const posEl = document.getElementById('podio-pos');
+        const medEl = document.getElementById('podio-medalla');
+        if (soyParticipante) {
+            posEl.textContent = '#' + yo.puesto;
+            posEl.style.color = yo.puesto === 1 ? 'var(--gold)' : yo.puesto === 2 ? 'var(--silver)' : yo.puesto === 3 ? 'var(--bronze)' : 'var(--text)';
+            medEl.textContent = yo.medalla ? yo.medalla.toUpperCase() + (yo.puesto <= 3 ? ' · EN EL PODIO' : ' LUGAR') : `DE ${d.ranking.length}`;
+            document.getElementById('podio-total').textContent = `${yo.total} pts`;
+            const mesPts = (yo.meses[d.mesActual] || {}).total || 0;
+            document.getElementById('podio-mes-pts').textContent = `acumulado · ${fMes(d.mesActual).slice(0, 3)}: ${mesPts} pts`;
+            const racha = yo.actual ? yo.actual.constancia.rachaActual : 0;
+            const rEl = document.getElementById('podio-racha');
+            rEl.className = 'podio-racha' + (racha > 0 ? '' : ' off');
+            rEl.innerHTML = `<b>${racha}</b><small>🔥 RACHA ${racha === 1 ? 'DÍA' : 'DÍAS'}</small>`;
+            renderRetos(yo.actual, d);
+        } else {
+            posEl.textContent = '—'; posEl.style.color = 'var(--text-subtle)';
+            medEl.textContent = 'SIN PARTICIPAR';
+            document.getElementById('podio-total').textContent = 'Solo CALLE y MOSTRADOR';
+            document.getElementById('podio-mes-pts').textContent = 'Tu canal no participa en este concurso';
+            document.getElementById('podio-retos').innerHTML = '';
+        }
+
+        // Top 5 (+ mi fila si estoy fuera del top)
+        const top = d.ranking.slice(0, 5);
+        if (yo && yo.puesto > 5) top.push(yo);
+        document.getElementById('podio-top-n').textContent = `${d.ranking.length} participantes`;
+        document.getElementById('podio-top').innerHTML = top.map(r => `
+            <div class="podio-row ${r.Nombre === user.Nombre ? 'yo' : ''}">
+                <span class="m">${MEDALLAS[r.puesto - 1] || '#' + r.puesto}</span>
+                <span class="n">${r.Nombre.split(' ').slice(0, 2).join(' ')}<small>${r.Sucursal} · ${r.Canal}</small></span>
+                <span class="p">${r.total} pts</span>
+            </div>`).join('') || '<div class="loading">Sin participantes</div>';
+
+        // Reglas
+        const R = d.reglas;
+        document.getElementById('podio-reglas').innerHTML = `
+            <li><b>Check-in diario</b>: ${R.CHECKIN_DIA} pts por día.</li>
+            <li><b>Constancia</b>: ${R.CONSTANCIA_DIA} pts por cada día que superes tu promedio diario de meta; +${R.RACHA_DIA_EXTRA} pts extra por cada día consecutivo (lun–sáb, el domingo no rompe la racha).</li>
+            <li><b>Visitas</b> (CALLE): ${R.VISITAS_SEMANA} pts por semana con ${R.VISITAS_MIN}+ visitas registradas.</li>
+            <li><b>Encuesta QR</b> (MOSTRADOR): ${R.ENCUESTA_SEMANA} pts por semana con ${R.ENCUESTA_MIN}+ escaneos.</li>
+            <li><b>Fleetrite</b>: números de parte distintos vendidos en el mes → ${R.FLEETRITE.slice().reverse().map(t => `${t.min}+ NPs = ${t.pts} pts`).join(' · ')}.</li>
+            <li>Podio final al 30 de noviembre con los puntos acumulados de los 3 meses: Oro, Plata, Bronce, 4to y 5to lugar.</li>`;
+
+        marcarCheckinHoy(yo);
+    }
+
+    function renderRetos(a, d) {
+        if (!a) { document.getElementById('podio-retos').innerHTML = ''; return; }
+        const R = d.reglas;
+        const c = a.constancia, ck = a.checkin, f = a.fleetrite;
+        const sem = a.visitas || a.encuesta;
+        const semActual = sem && sem.semanas.length ? sem.semanas[sem.semanas.length - 1] : null;
+        const esCalle = a.Canal === 'CALLE';
+        const bar = (v, max) => `<div class="r-bar"><i style="width:${Math.min(100, max > 0 ? v / max * 100 : 0)}%"></i></div>`;
+        const diasHabilesHastaHoy = c.dias.length;
+        let semanaHTML;
+        if (!esCalle && !d.encuestaConfigurada) {
+            semanaHTML = `<div class="reto"><div class="r-top"><span>📱 Encuesta QR</span><span class="r-pts">+0</span></div>
+                <div class="r-val">Próximamente</div><div class="r-sub">${R.ENCUESTA_MIN} escaneos/semana = ${R.ENCUESTA_SEMANA} pts</div>${bar(0, 1)}</div>`;
+        } else {
+            const n = semActual ? semActual.total : 0, meta = sem ? sem.meta : 15;
+            semanaHTML = `<div class="reto ${semActual && semActual.cumple ? 'ok' : ''}">
+                <div class="r-top"><span>${esCalle ? '📋 Visitas' : '📱 Encuesta QR'} · semana</span><span class="r-pts">+${sem ? sem.pts : 0}</span></div>
+                <div class="r-val">${n} / ${meta}</div>
+                <div class="r-sub">${sem ? sem.cumplidas : 0} semana${sem && sem.cumplidas === 1 ? '' : 's'} cumplida${sem && sem.cumplidas === 1 ? '' : 's'} · ${esCalle ? R.VISITAS_SEMANA : R.ENCUESTA_SEMANA} pts c/u</div>${bar(n, meta)}</div>`;
+        }
+        document.getElementById('podio-retos').innerHTML = `
+            <div class="reto ${ck.dias >= diasHabilesHastaHoy && ck.dias > 0 ? 'ok' : ''}">
+                <div class="r-top"><span>📍 Check-in</span><span class="r-pts">+${ck.pts}</span></div>
+                <div class="r-val">${ck.dias} / ${diasHabilesHastaHoy} días</div>
+                <div class="r-sub">${R.CHECKIN_DIA} pts por día · ${ck.fechas.includes(d.hoy) ? 'hoy ✅' : 'hoy pendiente'}</div>${bar(ck.dias, diasHabilesHastaHoy)}</div>
+            <div class="reto ${c.rachaActual >= 2 ? 'ok' : ''}">
+                <div class="r-top"><span>📈 Constancia</span><span class="r-pts">+${c.pts}</span></div>
+                <div class="r-val">${c.diasSuperados} / ${diasHabilesHastaHoy} días</div>
+                <div class="r-sub">Meta diaria ${fM(c.metaDiaria)} · racha máx. ${c.rachaMax}</div>${bar(c.diasSuperados, diasHabilesHastaHoy)}</div>
+            ${semanaHTML}
+            <div class="reto ${f.pts > 0 ? 'ok' : ''}">
+                <div class="r-top"><span>🔧 Fleetrite NPs</span><span class="r-pts">+${f.pts}</span></div>
+                <div class="r-val">${f.nps} NPs</div>
+                <div class="r-sub">${f.siguiente ? `Faltan ${f.faltan} para ${f.siguiente} NPs` : '¡Nivel máximo!'}</div>${bar(f.nps, f.siguiente || 50)}</div>`;
+    }
+
+    function marcarCheckinHoy(yo) {
+        if (!yo || !yo.actual || !podioData) return;
+        if (yo.actual.checkin.fechas.includes(podioData.hoy)) {
+            const btn = document.getElementById('checkin-btn');
+            btn.disabled = true; btn.textContent = 'Check-in de hoy registrado ✅';
+            btn.style.background = 'var(--success-dim)'; btn.style.borderColor = 'var(--success)';
+        }
+    }
+
+    // ─── RENDER PRINCIPAL ────────────────────────────────────────────────────
+    function renderApp() {
+        const vr = parseFloat(user.Ventas) || 0;
+        const vm = parseFloat(user.Meta) || 1;
+        const pctInd = (vr / vm) * 100;
+        const sucData = dbV.filter(v => v.Sucursal === user.Sucursal);
+        let sV = 0;
+        sucData.filter(v => parseFloat(v.Meta) > 0).forEach(v => { sV += parseFloat(v.Ventas) || 0; });
+        const sM = parseFloat(user.MetaSucursal) || sucData.reduce((s,v) => s + (parseFloat(v.Meta)||0), 0);
+        const pctGrp = sM > 0 ? (sV / sM) * 100 : 0;
+
+        const hoy = new Date();
+        const uDia = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0).getDate();
+        document.getElementById('val-hoy').innerText = hoy.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' }).toUpperCase();
+        document.getElementById('val-dias').innerText = (uDia - hoy.getDate() + 1) + ' DÍAS';
+        document.getElementById('val-falta-oro').innerText = fM(Math.max(0, (vm * 1.20) - vr));
+
+        document.getElementById('k-v').innerText = fM(vr);
+        document.getElementById('k-pp').innerText = pctInd.toFixed(1) + '%';
+        document.getElementById('k-po').innerText = pctGrp.toFixed(1) + '%';
+
+        document.getElementById('truck-ind').style.left = `calc(${Math.min(100, (pctInd / 120) * 100)}% - 32px)`;
+        document.getElementById('truck-ind').className = 'truck ' + (pctInd >= 120 ? 'oro' : '');
+        document.getElementById('truck-grp').style.left = `calc(${Math.min(100, (pctGrp / 120) * 100)}% - 32px)`;
+        document.getElementById('truck-grp').className = 'truck ' + (pctGrp >= 120 ? 'oro' : '');
+
+        document.getElementById('label-meta-ind').innerText  = fM(vm);
+        document.getElementById('label-falta-ind').innerText = fM(Math.max(0, (vm * 1.20) - vr));
+        document.getElementById('label-meta-grp').innerText  = fM(sM);
+        document.getElementById('label-pct-grp').innerText   = pctGrp.toFixed(1) + '%';
+
+        // Carga reto de aceite
+        loadAceite();
+    }
+
+    async function loadAceite() {
+        try {
+            const nombre = encodeURIComponent(user.Nombre);
+            const a = await apiFetch(`/api/aceite?vendedor=${nombre}`);
+
+            document.getElementById('k-f-prov').innerText = a.litrosTotal + ' L';
+            document.getElementById('truck-prov').style.left = `calc(${Math.min(100, a.pctBarra)}% - 32px)`;
+            document.getElementById('label-base-aceite').innerText = (a.basePromedio || 0) + ' L / mes';
+            document.getElementById('label-litros-mes').innerText  = a.litrosTotal + ' L (' + (a.litrosIncrementales > 0 ? '+' + a.litrosIncrementales + 'L inc.' : 'sin incremento') + ')';
+
+            // Info detallada en el label de challenge proveedor
+            const premio = a.premioTotal > 0 ? ` | 💰 $${a.premioTotal} ganados` : '';
+            const intlPct = parseFloat(a.pctIntl) >= 30 ? ' ✅ +30% Intl' : ` (${a.pctIntl}% Intl)`;
+            document.getElementById('prov-label').innerHTML =
+                `Challenge Aceite Motor &nbsp;|&nbsp; ${a.litrosIncrementales}L incrementales` +
+                `${intlPct} &nbsp;|&nbsp; Bloque ${a.bloques}/∞ × $${a.premioPorBloque}${premio}`;
+        } catch(e) {
+            document.getElementById('prov-label').innerText = 'Challenge Aceite Motor';
+        }
+    }
+
+    // ─── CLIENTES ────────────────────────────────────────────────────────────
+    let todosClientes = [];
+
+    async function loadClientes() {
+        const lc = document.getElementById('lista-cli');
+        const ml = document.getElementById('mapa-lista');
+        try {
+            const nombre = encodeURIComponent(user.Nombre);
+            const clientes = await apiFetch(`/api/clientes?vendedor=${nombre}`);
+            todosClientes = clientes;
+
+            // ── Tabla alineación ──
+            lc.innerHTML = '';
+            clientes.forEach(c => {
+                const d   = parseInt(c.Dias) || 0;
+                const col = d > 60 ? 'rojo' : (d > 14 ? 'ambar' : 'verde');
+                const nom = c.Cliente || c.NombreCompleto || c.Codigo || '—';
+                lc.innerHTML += `
+                    <div class="client-item">
+                        <div>
+                            <span class="dot ${col}"></span>
+                            <b>${nom}</b><br>
+                            <small>${d} días inactivo</small>
+                        </div>
+                        <b style="color:var(--success)">${fM(c.Venta_Mes)}</b>
+                    </div>`;
+            });
+            if (clientes.length === 0) lc.innerHTML = '<div class="loading">Sin clientes registrados</div>';
+
+            // ── Mapa cartera ──
+            renderMapa(clientes);
+            llenarSelectorClientes(clientes);
+        } catch (err) {
+            lc.innerHTML = `<div class="error-msg">❌ Error cargando clientes<br><small>${err.message}</small></div>`;
+            document.getElementById('mapa-lista').innerHTML = `<div class="error-msg">❌ ${err.message}</div>`;
+        }
+    }
+
+    function colorSemaforo(dias) {
+        if (dias <= 7)  return 'verde';
+        if (dias <= 21) return 'ambar';
+        return 'rojo';
+    }
+
+    function renderMapa(lista) {
+        const ml = document.getElementById('mapa-lista');
+        if (!lista.length) { ml.innerHTML = '<div class="loading">Sin clientes</div>'; return; }
+        ml.innerHTML = '';
+        lista.forEach(c => {
+            const d   = parseInt(c.Dias) || 0;
+            const col = colorSemaforo(d);
+            const nom = c.Cliente || c.Codigo || '—';
+            const dir    = (c.Direccion || '').trim();
+            const dirEnc = dir ? encodeURIComponent(dir) : '';
+            const badgeHTML = c.EsCartera
+                ? `<span style="display:inline-block;font-size:0.5rem;font-weight:900;padding:1px 6px;border-radius:10px;margin-left:6px;background:rgba(0,212,255,0.15);color:var(--accent);border:1px solid rgba(0,212,255,0.3);">⭐ CARTERA</span>`
+                : `<span style="display:inline-block;font-size:0.5rem;font-weight:900;padding:1px 6px;border-radius:10px;margin-left:6px;background:rgba(255,255,255,0.06);color:#666;border:1px solid var(--border);">VISITADO</span>`;
+            ml.innerHTML += `
+                <div class="mapa-item ${col}" onclick="abrirDetalleCliente('${encodeURIComponent(c.Codigo||'')}','${(c.Cliente||c.Codigo||'').replace(/'/g,"\\'")}','${encodeURIComponent(c.NombreCompleto||'')}',${c.Venta_Mes||0},${c.PromedioMensual||0},${parseInt(c.Dias)||0})" style="cursor:pointer;">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                        <div style="flex:1; min-width:0;">
+                            <b style="font-size:0.85rem;">${nom}</b>${badgeHTML}<br>
+                            ${c.NombreCompleto && c.NombreCompleto !== nom ? `<small style="color:var(--text-muted);">${c.NombreCompleto}</small><br>` : ''}
+                            <small style="color:var(--text-subtle);">${dir || 'Sin dirección registrada'}</small>
+                        </div>
+                        <div style="text-align:right; white-space:nowrap; margin-left:8px;">
+                            <b style="color:var(--success); font-size:0.8rem;">${fM(c.Venta_Mes)}</b><br>
+                            <small style="color:var(--text-muted);">${d} días</small>
+                        </div>
+                    </div>
+                    ${dirEnc ? `
+                    <div class="mapa-btns">
+                        <button class="btn-maps google" onclick="window.open('https://www.google.com/maps/search/?api=1&query=${dirEnc}','_blank')">📍 Maps</button>
+                        <button class="btn-maps wa" onclick="enviarWA('${encodeURIComponent(c.Cliente || c.Codigo || '')}')">💬 WhatsApp</button>
+                    </div>` : ''}
+                </div>`;
+        });
+    }
+
+    // ─── WORLD CUP TORNEO ────────────────────────────────────────────────────
+    function updatePremios(pct) {
+        const hoy  = new Date();
+        const mes  = hoy.getMonth() + 1;
+        const dia  = hoy.getDate();
+        const anio = hoy.getFullYear();
+        const enGrupos  = (mes === 5 && dia >= 18) || mes === 6;
+        const enFinal   = mes === 7 && dia >= 1 && dia <= 17;
+        const terminado = (mes === 7 && dia >= 18) || mes > 7;
+        // Usar datos del servidor en lugar de localStorage para evitar clasificaciones incorrectas
+        const miTorneo = (dbT || []).find(v => v.Nombre === user.Nombre);
+        const clasificado = miTorneo ? (miTorneo.ClasifMayo || miTorneo.ClasifJunio) : false;
+        const badge = document.getElementById('wc-badge');
+        const texto = document.getElementById('wc-estado-txt');
+        if (!badge || !texto) return;
+        if (terminado) {
+            badge.className = clasificado ? 'wc-fase-badge wc-clasificado' : 'wc-fase-badge wc-fuera';
+            badge.innerText = clasificado ? '🏆 CLASIFICADO' : '❌ NO CLASIFICADO';
+            texto.innerHTML = clasificado ? `Revisa tu posición con tu gerente. ¡Gracias por competir! 🎉` : `No alcanzaste el ORO en Mayo/Junio.`;
+        } else if (enFinal) {
+            if (!clasificado) {
+                badge.className = 'wc-fase-badge wc-fuera';
+                badge.innerText = '❌ NO CLASIFICADO';
+                texto.innerHTML = `No llegaste al ORO en Fase de Grupos.`;
+            } else {
+                const ranking  = dbV.filter(v => parseFloat(v.Meta) > 0)
+                    .map(v => ({ nombre: v.Nombre, pct: (parseFloat(v.Ventas) / parseFloat(v.Meta)) * 100 }))
+                    .sort((a, b) => b.pct - a.pct);
+                const posicion = ranking.findIndex(v => v.nombre === user.Nombre) + 1;
+                const premios  = ['', '📺 Smart TV', '🎽 Jersey', '❄️ Hielera', '⚽ Balón'];
+                const miPremio = posicion <= 4 ? premios[posicion] : '—';
+                badge.className = 'wc-fase-badge wc-clasificado';
+                badge.innerText = `🏆 EN LA FINAL — #${posicion}`;
+                texto.innerHTML = `Tu % en Julio: <b style="color:var(--gold)">${pct.toFixed(1)}%</b> &nbsp;|&nbsp; Premio proyectado: <b style="color:var(--success)">${miPremio} + 🍿</b><br>
+                    <small style="color:#666;">Quedan ${17 - dia} días de competencia.</small>`;
+            }
+        } else if (enGrupos) {
+            if (clasificado) {
+                badge.className = 'wc-fase-badge wc-clasificado';
+                badge.innerText = '✅ ¡CLASIFICADO!';
+                texto.innerHTML = `Ya tienes tu lugar en la Final (Jul 1–17). ¡Sigue fuerte! 💪`;
+            } else {
+                const falta = ((parseFloat(user.Meta) || 0) * 1.20) - (parseFloat(user.Ventas) || 0);
+                badge.className = 'wc-fase-badge wc-pendiente';
+                badge.innerText = '⏳ EN FASE DE GRUPOS';
+                texto.innerHTML = `Necesitas el <b style="color:var(--gold)">ORO (120%)</b> en Mayo o Junio para clasificar.<br>
+                    <small style="color:#aaa;">Te faltan <b style="color:var(--red)">${fM(Math.max(0, falta))}</b> este mes.</small>`;
+            }
+        } else {
+            badge.className = 'wc-fase-badge wc-pendiente';
+            badge.innerText = '⏳ TORNEO PRÓXIMO';
+            texto.innerHTML = `El torneo comienza el <b style="color:var(--gold)">18 de Mayo</b>. ¡Prepárate!`;
+        }
+        if (pct >= 120 && !cnf) { confetti({ particleCount: 150, spread: 60, origin: { y: 0.7 } }); cnf = true; }
+    }
+
+        let filtroActual = 'todos';
+
+    function filtroMapa(tipo) {
+        filtroActual = tipo;
+        document.querySelectorAll('.btn-filtro').forEach(b => b.classList.remove('activo'));
+        const btn = document.getElementById('f-' + tipo);
+        if (btn) btn.classList.add('activo');
+        filtrarMapa();
+    }
+
+    function enviarWA(clienteEnc) {
+        const cliente = decodeURIComponent(clienteEnc);
+        const asesor  = user.Nombre.split(' ')[0];
+        const msg = `Buen día, le saluda *${asesor}* de *Catosa Refacciones*. 🙌\n\n` +
+            `Espero se encuentre muy bien. Me pongo en contacto para saber si este mes han necesitado alguna refacción o insumo para sus camiones — ` +
+            `con gusto le ayudo a conseguirlo al mejor precio y con entrega rápida.\n\n` +
+            `Quedo a sus órdenes. ¡Que tenga excelente día! 🚛`;
+        window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`, '_blank');
+    }
+
+    function filtrarMapa() {
+        const q = (document.getElementById('mapa-buscar').value || '').toUpperCase();
+        let lista = todosClientes;
+        if (filtroActual === 'verde') lista = lista.filter(c => colorSemaforo(parseInt(c.Dias)||0) === 'verde');
+        if (filtroActual === 'ambar') lista = lista.filter(c => colorSemaforo(parseInt(c.Dias)||0) === 'ambar');
+        if (filtroActual === 'rojo')  lista = lista.filter(c => colorSemaforo(parseInt(c.Dias)||0) === 'rojo');
+        if (q) lista = lista.filter(c => (c.Cliente||'').toUpperCase().includes(q) || (c.NombreCompleto||'').toUpperCase().includes(q));
+        renderMapa(lista);
+    }
+
+    const SHEETS_VISITAS = 'https://script.google.com/macros/s/AKfycbxs__4zTTQW75cld-n-tyiyhsDcYeFSefGwHGImVgyGMJepLEIgHolMztCp8ov49Fev/exec';
+    const SHEETS_CHECKIN = 'https://script.google.com/macros/s/AKfycbxs__4zTTQW75cld-n-tyiyhsDcYeFSefGwHGImVgyGMJepLEIgHolMztCp8ov49Fev/exec';
+
+    // ─── VISITAS ─────────────────────────────────────────────────────────────
+    function llenarSelectorClientes(clientes) {
+        const sel = document.getElementById('vis-cliente');
+        sel.innerHTML = '<option value="">— Selecciona cliente —</option>';
+        // Ordenar A-Z y usar todos los clientes que ha atendido
+        [...clientes].sort((a, b) => (a.Cliente||'').localeCompare(b.Cliente||'')).forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c.Codigo;
+            opt.textContent = c.Cliente || c.Codigo;
+            opt.dataset.promedio = c.PromedioMensual || 0;
+            opt.dataset.venta    = c.Venta_Mes || 0;
+            opt.dataset.dias     = c.Dias || 0;
+            sel.appendChild(opt);
+        });
+        const otro = document.createElement('option');
+        otro.value = 'OTRO';
+        otro.textContent = '✏️ Otro cliente...';
+        sel.appendChild(otro);
+    }
+
+    function onVisClienteChange() {
+        const sel    = document.getElementById('vis-cliente');
+        const codigo = sel.value;
+        const wrap   = document.getElementById('vis-cliente-otro-wrap');
+        const info   = document.getElementById('vis-cliente-info');
+        const infoTxt= document.getElementById('vis-info-txt');
+
+        wrap.style.display = codigo === 'OTRO' ? 'block' : 'none';
+
+        if (codigo && codigo !== 'OTRO') {
+            const opt  = sel.options[sel.selectedIndex];
+            const prom = parseFloat(opt.dataset.promedio) || 0;
+            const vent = parseFloat(opt.dataset.venta)    || 0;
+            const dias = parseInt(opt.dataset.dias)       || 0;
+            info.style.display = 'block';
+            infoTxt.innerHTML = `Promedio mensual: <b style="color:var(--accent)">${fM(prom)}</b> &nbsp;|&nbsp; Venta este mes: <b style="color:var(--success)">${fM(vent)}</b> &nbsp;|&nbsp; Último contacto: <b>${dias} días</b>`;
+            // Auto-rellenar monto potencial con el promedio histórico
+            if (prom > 0) {
+                document.getElementById('vis-monto').value = Math.round(prom);
+                onVisMonto();
+            }
+        } else {
+            info.style.display = 'none';
+            document.getElementById('vis-monto').value = '';
+            document.getElementById('vis-semaforo').style.display = 'none';
+            document.getElementById('vis-promedio-txt').textContent = '';
+        }
+    }
+
+    function onVisMonto() {
+        const sel    = document.getElementById('vis-cliente');
+        const monto  = parseFloat(document.getElementById('vis-monto').value) || 0;
+        const sem    = document.getElementById('vis-semaforo');
+        const promTxt= document.getElementById('vis-promedio-txt');
+        const opt    = sel.options[sel.selectedIndex];
+        const prom   = opt ? (parseFloat(opt.dataset.promedio) || 0) : 0;
+
+        if (prom > 0 && monto > 0) {
+            const pct = (monto / prom) * 100;
+            sem.style.display = 'inline-block';
+            promTxt.innerHTML = `Promedio histórico: ${fM(prom)} · Potencial = ${pct.toFixed(0)}% del promedio`;
+            if (pct >= 80) {
+                sem.className = 'semaforo-potencial sem-verde';
+                sem.innerText = '🟢 Alto';
+            } else if (pct >= 40) {
+                sem.className = 'semaforo-potencial sem-ambar';
+                sem.innerText = '🟡 Medio';
+            } else {
+                sem.className = 'semaforo-potencial sem-rojo';
+                sem.innerText = '🔴 Bajo';
+            }
+        } else {
+            sem.style.display = 'none';
+            promTxt.textContent = prom > 0 ? `Promedio histórico: ${fM(prom)}` : '';
+        }
+    }
+
+    async function registrarVisita() {
+        const btn    = document.getElementById('btn-registrar-visita');
+        const msg    = document.getElementById('vis-msg');
+        const sel    = document.getElementById('vis-cliente');
+        const codigo = sel.value;
+        const clienteNombre = codigo === 'OTRO'
+            ? document.getElementById('vis-cliente-otro').value.trim()
+            : (sel.options[sel.selectedIndex]?.textContent || codigo);
+        const motivo = document.getElementById('vis-motivo').value;
+        const monto  = document.getElementById('vis-monto').value;
+        const notas  = document.getElementById('vis-notas').value;
+
+        if (!codigo) { msg.innerHTML = '<span style="color:var(--red)">⚠️ Selecciona un cliente</span>'; return; }
+        if (codigo === 'OTRO' && !clienteNombre) { msg.innerHTML = '<span style="color:var(--red)">⚠️ Escribe el nombre del cliente</span>'; return; }
+        if (!motivo) { msg.innerHTML = '<span style="color:var(--red)">⚠️ Selecciona un motivo</span>'; return; }
+
+        btn.disabled = true;
+        btn.textContent = 'Registrando...';
+        msg.textContent = '';
+
+        const ahora = new Date();
+        const fecha = ahora.toLocaleDateString('es-MX');
+        const hora  = ahora.toLocaleTimeString('es-MX', { hour:'2-digit', minute:'2-digit' });
+
+        // Geolocalización
+        let latitud = '', longitud = '';
+        try {
+            const pos = await new Promise((res, rej) =>
+                navigator.geolocation.getCurrentPosition(res, rej, { timeout: 5000 })
+            );
+            latitud  = pos.coords.latitude.toFixed(6);
+            longitud = pos.coords.longitude.toFixed(6);
+        } catch(_) {}
+
+        try {
+            await fetch(SHEETS_VISITAS, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    sheet: 'VISITAS',
+                    fecha, hora,
+                    asesor:         user.Nombre,
+                    sucursal:       user.Sucursal,
+                    codigo:         codigo === 'OTRO' ? 'OTRO' : codigo,
+                    cliente:        clienteNombre,
+                    motivo,
+                    montoPotencial: monto || '0',
+                    notas,
+                    latitud,
+                    longitud
+                })
+            });
+
+            // Limpiar form
+            document.getElementById('vis-cliente').value  = '';
+            document.getElementById('vis-motivo').value   = '';
+            document.getElementById('vis-monto').value    = '';
+            document.getElementById('vis-notas').value    = '';
+            document.getElementById('vis-cliente-otro-wrap').style.display = 'none';
+            document.getElementById('vis-cliente-info').style.display     = 'none';
+            document.getElementById('vis-semaforo').style.display          = 'none';
+            document.getElementById('vis-promedio-txt').textContent        = '';
+
+            msg.innerHTML = `<span style="color:var(--success)">✅ Visita registrada — ${fecha} ${hora}</span>`;
+        } catch(err) {
+            msg.innerHTML = `<span style="color:var(--red)">❌ Error: ${err.message}</span>`;
+        } finally {
+            btn.disabled = false;
+            btn.textContent = '✅ REGISTRAR VISITA';
+        }
+    }
+    async function registrarCheckIn() {
+        const btn = document.getElementById('checkin-btn');
+        const msg = document.getElementById('checkin-msg');
+        btn.disabled = true;
+        btn.textContent = '⏳ Registrando...';
+        const ahora = new Date();
+        const fecha = ahora.toLocaleDateString('es-MX');
+        const hora  = ahora.toLocaleTimeString('es-MX', { hour:'2-digit', minute:'2-digit' });
+        try {
+            await fetch(SHEETS_CHECKIN, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    sheet: 'CHECK IN',
+                    vendedor: user.Nombre,
+                    fecha,
+                    hora
+                })
+            });
+            btn.textContent = 'Check-in registrado';
+            btn.style.background = 'var(--success-dim)';
+            btn.style.borderColor = 'var(--success)';
+            msg.innerHTML = `<span style="color:var(--success);font-size:0.75rem;">${fecha} ${hora} · +10 pts Ruta al Podio</span>`;
+            // Refrescar el podio cuando el registro ya esté en la hoja
+            setTimeout(async () => { try { podioData = await apiFetch('/api/podio?refresh=1'); renderPodio(); } catch(_) {} }, 6000);
+        } catch(err) {
+            btn.disabled = false;
+            btn.textContent = 'Registrar check-in';
+            msg.innerHTML = `<span style="color:var(--red)">❌ ${err.message}</span>`;
+        }
+    }
+
+    let topProductosData = [];
+    let topFiltro = 'unidades';
+
+    function setTopFiltro(tipo) {
+        topFiltro = tipo;
+        document.getElementById('top-f-uni').classList.toggle('activo', tipo === 'unidades');
+        document.getElementById('top-f-mon').classList.toggle('activo', tipo === 'monto');
+        renderTopProductos();
+    }
+
+    function renderTopProductos() {
+        const list = document.getElementById('v-top-list');
+        if (!topProductosData.length) { list.innerHTML = '<div class="loading">Sin ventas este mes</div>'; return; }
+        const sorted = [...topProductosData].sort((a, b) =>
+            topFiltro === 'monto'
+                ? (parseFloat(b.Monto) || 0) - (parseFloat(a.Monto) || 0)
+                : (parseInt(b.Unidades_Vendidas) || 0) - (parseInt(a.Unidades_Vendidas) || 0)
+        ).slice(0, 10);
+        list.innerHTML = '';
+        sorted.forEach((p, i) => {
+            const valor = topFiltro === 'monto' ? fM(p.Monto) : (parseInt(p.Unidades_Vendidas) || 0);
+            const etiq  = topFiltro === 'monto' ? '' : 'vendidas';
+            list.innerHTML += `
+                <div class="client-item" style="padding:10px; background:rgba(255,255,255,0.03); margin-bottom:4px; border-radius:10px; align-items:flex-start;">
+                    <div style="display:flex; align-items:flex-start; flex:1;">
+                        <b style="color:var(--gold); margin-right:8px; margin-top:2px;">#${i+1}</b>
+                        <div>
+                            <b style="font-size:0.85rem;">${p.Parte}</b>
+                            <br><small style="color:#aaa;">${p.Descripcion || ''}</small>
+                        </div>
+                    </div>
+                    <div style="text-align:right; white-space:nowrap;">
+                        <b style="color:var(--accent); font-size:1rem;">${valor}</b>
+                        <br><small style="color:var(--text-subtle);">${etiq}</small>
+                    </div>
+                </div>`;
+        });
+    }
+
+    async function loadTopProductos() {
+        try {
+            const nombre = encodeURIComponent(user.Nombre);
+            topProductosData = await apiFetch(`/api/top-productos?vendedor=${nombre}`);
+            renderTopProductos();
+        } catch (err) {
+            document.getElementById('v-top-list').innerHTML = `<div class="error-msg">❌ Error<br><small>${err.message}</small></div>`;
+        }
+    }
+
+
+
+    // ─── CALCULADORA AUTOMÁTICA ──────────────────────────────────────────────
+    async function loadVentasDiarias() {
+        try {
+            const nombre = encodeURIComponent(user.Nombre);
+            const dias   = await apiFetch(`/api/ventas-diarias?vendedor=${nombre}`);
+            const hoy    = new Date().getDate();
+            const vm     = parseFloat(user.Meta) || 1;
+            let total    = 0;
+
+            // Llenar grid de días
+            const diasMes = new Date(new Date().getFullYear(), new Date().getMonth()+1, 0).getDate();
+            for (let i = 1; i <= diasMes; i++) {
+                const venta  = dias[i] || 0;
+                const box    = document.getElementById('dbox_' + i);
+                const valEl  = document.getElementById('in_day_' + i);
+                if (!box || !valEl) continue;
+
+                if (i > hoy) {
+                    // Días futuros — gris
+                    box.style.borderColor = '#1a1a1a';
+                    valEl.style.color     = '#333';
+                    valEl.innerText       = '—';
+                } else if (venta > 0) {
+                    // Día con venta — verde
+                    box.style.borderColor = 'var(--success)';
+                    box.style.background  = 'rgba(0,255,136,0.05)';
+                    valEl.style.color     = 'var(--success)';
+                    valEl.innerText       = '$' + (venta >= 1000 ? (venta/1000).toFixed(1)+'k' : Math.round(venta));
+                    total += venta;
+                } else {
+                    // Día sin venta pasado — rojo tenue
+                    box.style.borderColor = 'rgba(255,75,43,0.3)';
+                    valEl.style.color     = '#444';
+                    valEl.innerText       = '$0';
+                }
+            }
+
+            actualizarPremio(total, vm);
+        } catch(err) {
+            console.error('Error ventas diarias:', err);
+        }
+    }
+
+    function actualizarPremio(ventaTotal, vm) {
+        const pct    = (ventaTotal / vm) * 100;
+        const canal  = (user.Canal || 'CALLE').toUpperCase();
+
+        // Determinar nivel
+        let nivel, color, emoji, fInd;
+        if (pct >= 120) {
+            nivel = 'ORO'; color = 'var(--gold)'; emoji = '🥇'; fInd = canal === 'MOSTRADOR' ? 1.46 : 1.65;
+        } else if (pct >= 110) {
+            nivel = 'PLATA'; color = 'var(--silver)'; emoji = '🥈'; fInd = canal === 'MOSTRADOR' ? 1.31 : 1.50;
+        } else if (pct >= 75) {
+            nivel = 'BRONCE'; color = 'var(--bronze)'; emoji = '🥉'; fInd = canal === 'MOSTRADOR' ? 1.31 : 1.50;
+        } else {
+            nivel = 'FUERA'; color = 'var(--red)'; emoji = '🚛'; fInd = 1.10;
+        }
+
+        // Bono sucursal
+        const sucData = dbV.filter(v => v.Sucursal === user.Sucursal);
+        let sV = 0;
+        sucData.filter(v => parseFloat(v.Meta) > 0).forEach(v => { sV += parseFloat(v.Ventas)||0; });
+        const sM2 = parseFloat(user.MetaSucursal) || sucData.reduce((s,v) => s + (parseFloat(v.Meta)||0), 0);
+        const pctGrp = sM2 > 0 ? (sV/sM2)*100 : 0;
+        const fGrp   = pctGrp >= 110 ? (canal === 'MOSTRADOR' ? 0.34 : 0.15) : 0;
+
+        const premio = ventaTotal * ((fInd + fGrp) / 100);
+
+        // Actualizar UI
+        const nivelEl = document.getElementById('premio-nivel');
+        nivelEl.style.borderColor  = color;
+        nivelEl.style.background   = `linear-gradient(135deg, var(--surface), ${color}22)`;
+        document.getElementById('premio-emoji').innerText   = emoji;
+        document.getElementById('premio-titulo').innerText  = nivel;
+        document.getElementById('premio-titulo').style.color = color;
+        document.getElementById('premio-monto').innerText   = fM(premio);
+        document.getElementById('premio-monto').style.color = color;
+        document.getElementById('premio-sub').innerText     = fM(ventaTotal) + ' de venta acumulada · ' + pct.toFixed(1) + '%';
+
+        // Barra — mapear 0-120% a 0-100% del ancho
+        const anchoBarra = Math.min(100, (pct / 120) * 100);
+        document.getElementById('premio-barra').style.width = anchoBarra + '%';
+
+        // Confetti si llega a ORO
+        if (pct >= 120 && !cnf) { confetti({ particleCount: 150, spread: 60, origin: { y: 0.7 } }); cnf = true; }
+        updatePremios(pct);
+    }
+
+    // ─── CORES ───────────────────────────────────────────────────────────────
+    let coresFiltro = 'devueltos';
+
+    function setCoresFiltro(tipo) {
+        coresFiltro = tipo;
+        document.getElementById('cores-f-dev').classList.toggle('activo', tipo === 'devueltos');
+        document.getElementById('cores-f-pen').classList.toggle('activo', tipo === 'pendientes');
+        document.getElementById('cores-f-dev').style.background = tipo === 'devueltos' ? 'var(--red)' : '';
+        document.getElementById('cores-f-dev').style.color      = tipo === 'devueltos' ? '#000' : 'var(--red)';
+        document.getElementById('cores-f-pen').style.background = tipo === 'pendientes' ? 'var(--gold)' : '';
+        document.getElementById('cores-f-pen').style.color      = tipo === 'pendientes' ? '#000' : 'var(--gold)';
+        if (tipo === 'pendientes') loadCoresPendientes();
+        else loadCores();
+    }
+
+    async function loadCoresPendientes() {
+        const tbody = document.getElementById('cores-tbody');
+        document.getElementById('cores-kpi-lbl1').innerText = 'Total Sin Pagar';
+        document.getElementById('cores-kpi-lbl2').innerText = 'Monto Pendiente';
+        document.getElementById('cores-kpi-lbl3').innerText = 'Más Antiguo';
+        document.getElementById('cores-thead').innerHTML = `
+            <th>Referencia</th><th>Cliente</th><th>Artículo</th>
+            <th>Tipo</th><th>Fecha Factura</th><th>Cant. Pedida</th>
+            <th>Monto</th><th>Días Sin Pagar</th>`;
+        try {
+            const nombre = encodeURIComponent(user.Nombre);
+            const cores  = await apiFetch(`/api/cores-pendientes?vendedor=${nombre}`);
+            if (cores.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="loading">✅ Sin CORES pendientes de pago</td></tr>';
+                document.getElementById('cores-total').innerText   = '0';
+                document.getElementById('cores-monto').innerText   = fM(0);
+                document.getElementById('cores-maxdias').innerText = '—';
+                return;
+            }
+            const totalMonto = cores.reduce((s, c) => s + (parseFloat(c.Monto) || 0), 0);
+            const maxDias    = Math.max(...cores.map(c => parseInt(c.DiasSinPagar) || 0));
+            document.getElementById('cores-total').innerText   = cores.length;
+            document.getElementById('cores-monto').innerText   = fM(totalMonto);
+            document.getElementById('cores-maxdias').innerText = maxDias + ' días';
+            tbody.innerHTML = '';
+            cores.forEach(c => {
+                const dias  = parseInt(c.DiasSinPagar) || 0;
+                const clase = dias < 7 ? 'dias-verde' : dias <= 20 ? 'dias-ambar' : 'dias-rojo';
+                const tipo  = (c.TipoVenta || '').includes('8%') ? 'CORES 8%' : 'CORES';
+                tbody.innerHTML += `
+                    <tr>
+                        <td style="color:var(--accent);font-weight:bold;">${c.Referencia || c.NroPedido || '—'}</td>
+                        <td style="color:#ccc;">${c.Codigo || '—'}</td>
+                        <td style="color:#aaa;max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${c.Articulo||''}">${c.Articulo||'—'}</td>
+                        <td style="color:var(--text-muted);font-size:0.65rem;">${tipo}</td>
+                        <td style="color:var(--text-muted);white-space:nowrap;">${c.FechaFactura||'—'}</td>
+                        <td style="text-align:center;">${c.CantidadPedida||0}</td>
+                        <td style="color:var(--gold);font-weight:bold;white-space:nowrap;">${fM(c.Monto)}</td>
+                        <td><span class="dias-badge ${clase}">${dias} días</span></td>
+                    </tr>`;
+            });
+        } catch (err) {
+            tbody.innerHTML = `<tr><td colspan="8" class="error-msg">❌ Error: ${err.message}</td></tr>`;
+        }
+    }
+
+    async function loadCores() {
+        document.getElementById('cores-kpi-lbl1').innerText = 'Total Devoluciones';
+        document.getElementById('cores-kpi-lbl2').innerText = 'Monto Devuelto';
+        document.getElementById('cores-kpi-lbl3').innerText = 'Más Reciente';
+        document.getElementById('cores-thead').innerHTML = `
+            <th>Referencia</th><th>Cliente</th><th>Artículo</th>
+            <th>Tipo</th><th>Fecha</th><th>Cantidad</th>
+            <th>Monto</th><th>Días</th>`;
+        const tbody = document.getElementById('cores-tbody');
+        try {
+            const nombre = encodeURIComponent(user.Nombre);
+            const cores  = await apiFetch(`/api/cores?vendedor=${nombre}`);
+
+            if (cores.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="loading">✅ Sin devoluciones de CORES</td></tr>';
+                document.getElementById('cores-total').innerText   = '0';
+                document.getElementById('cores-monto').innerText   = fM(0);
+                document.getElementById('cores-maxdias').innerText = '—';
+                return;
+            }
+
+            const totalMonto  = cores.reduce((s, c) => s + (parseFloat(c.Monto) || 0), 0);
+            const masReciente = cores[0].FechaFactura || '—';
+            document.getElementById('cores-total').innerText   = cores.length;
+            document.getElementById('cores-monto').innerText   = fM(totalMonto);
+            document.getElementById('cores-maxdias').innerText = masReciente;
+
+            tbody.innerHTML = '';
+            cores.forEach(c => {
+                const dias  = parseInt(c.DiasTranscurridos) || 0;
+                const clase = dias < 7 ? 'dias-verde' : dias <= 20 ? 'dias-ambar' : 'dias-rojo';
+                const tipo  = (c.TipoVenta || '').includes('8%') ? 'CORES 8%' : 'CORES';
+                tbody.innerHTML += `
+                    <tr>
+                        <td style="color:var(--accent);font-weight:bold;">${c.NumFactura || c.Referencia || '—'}</td>
+                        <td style="color:#ccc;">${c.Codigo || '—'}</td>
+                        <td style="color:#aaa; max-width:180px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${c.Articulo || ''}">${c.Articulo || '—'}</td>
+                        <td style="color:var(--text-muted); font-size:0.65rem;">${tipo}</td>
+                        <td style="color:var(--text-muted); white-space:nowrap;">${c.FechaFactura || '—'}</td>
+                        <td style="text-align:center;">${c.Cantidad || 0}</td>
+                        <td style="color:var(--red);font-weight:bold;white-space:nowrap;">${fM(c.Monto)}</td>
+                        <td><span class="dias-badge ${clase}">${dias} días</span></td>
+                    </tr>`;
+            });
+        } catch (err) {
+            tbody.innerHTML = `<tr><td colspan="8" class="error-msg">❌ Error: ${err.message}</td></tr>`;
+        }
+    }
+
+
+    // ── RESUMEN MES ANTERIOR ──────────────────────────────────────────────
+    const fM2 = n => new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN',minimumFractionDigits:0}).format(n||0);
+
+    async function abrirResumen() {
+        if (!user) return;
+        document.getElementById('resumen-modal').classList.add('open');
+        document.getElementById('r-ventas').innerText = '...';
+        try {
+            const nombre = encodeURIComponent(user.Nombre);
+            const d = await apiFetch(`/api/resumen-mes?vendedor=${nombre}`);
+            const mesCapital = d.mes.charAt(0).toUpperCase() + d.mes.slice(1);
+
+            document.getElementById('r-mes').innerText       = mesCapital;
+            document.getElementById('r-vendedor').innerText  = user.Nombre;
+            document.getElementById('r-ventas').innerText    = fM2(d.ventasAnt);
+            document.getElementById('r-meta').innerText      = fM2(d.meta);
+            document.getElementById('r-dias').innerText      = d.diasTrabajados;
+
+            const kpiMeta = document.getElementById('r-kpi-meta');
+            document.getElementById('r-pct').innerText = d.pct + '%';
+            kpiMeta.className = 'resumen-kpi ' + (d.cumpleMeta ? 'cumple' : 'nocumple');
+
+            // Top productos
+            const tp = document.getElementById('r-productos');
+            tp.innerHTML = d.topProductos.map((p,i) =>
+                `<tr><td>${i+1}. ${(p.Descripcion||p.Parte).substring(0,28)}</td><td>${fM2(p.Monto)}</td></tr>`
+            ).join('') || '<tr><td colspan="2" style="color:var(--text-muted);text-align:center;">Sin datos</td></tr>';
+
+            // Top clientes
+            const tc = document.getElementById('r-clientes');
+            tc.innerHTML = d.topClientes.map((c,i) =>
+                `<tr><td>${i+1}. ${(c.Cliente||c.Codigo).substring(0,28)}</td><td>${fM2(c.Monto)}</td></tr>`
+            ).join('') || '<tr><td colspan="2" style="color:var(--text-muted);text-align:center;">Sin datos</td></tr>';
+
+            // Oportunidades
+            document.getElementById('r-oportunidades').innerHTML =
+                d.oportunidades.map(o => `<div class="oportu-item">💡 ${o}</div>`).join('');
+
+        } catch(e) {
+            document.getElementById('r-ventas').innerText = 'Error';
+        }
+    }
+
+    function cerrarResumen() {
+        document.getElementById('resumen-modal').classList.remove('open');
+    }
+
+    async function exportarResumenPDF() {
+        window.print();
+    }
+
+    async function exportarResumenPNG() {
+        const el = document.getElementById('resumen-content');
+        if (typeof html2canvas === 'undefined') {
+            const s = document.createElement('script');
+            s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+            document.head.appendChild(s);
+            await new Promise(r => s.onload = r);
+        }
+        const canvas = await html2canvas(el, { backgroundColor:'var(--surface)', scale:2 });
+        const a = document.createElement('a');
+        a.href = canvas.toDataURL('image/png');
+        const mes = document.getElementById('r-mes').innerText.replace(/ /g,'_');
+        a.download = `Resumen_${mes}_${user?.Nombre?.split(' ')[0]||'asesor'}.png`;
+        a.click();
+    }
+
+    
+    // ── DETALLE CLIENTE ───────────────────────────────────────────────────
+    async function abrirDetalleCliente(codigoCod, nombre, nombreCompletoCod, ventaMes, promedio, dias) {
+        const codigo        = decodeURIComponent(codigoCod);
+        const nombreCompleto = decodeURIComponent(nombreCompletoCod);
+
+        // Fill static data immediately
+        document.getElementById('cli-nombre').textContent  = nombre || codigo;
+        document.getElementById('cli-codigo').textContent  = nombreCompleto && nombreCompleto !== nombre ? nombreCompleto + ' · ' + codigo : codigo;
+        document.getElementById('cli-mes-val').textContent  = fM(ventaMes);
+        document.getElementById('cli-prom-val').textContent = fM(promedio);
+        document.getElementById('cli-dias-val').textContent = dias + 'd';
+
+        // Color días
+        const kpiDias = document.getElementById('cli-kpi-dias');
+        kpiDias.className = 'cli-kpi ' + (dias <= 7 ? 'arriba' : dias <= 21 ? 'igual' : 'abajo');
+
+        // Color vs promedio
+        const kpiMes = document.getElementById('cli-kpi-mes');
+        if (promedio > 0) {
+            const pct = ventaMes / promedio;
+            kpiMes.className = 'cli-kpi ' + (pct >= 0.9 ? 'arriba' : pct >= 0.5 ? 'igual' : 'abajo');
+        }
+
+        document.getElementById('cli-modal').classList.add('open');
+
+        // Load detail from server
+        try {
+            const d = await apiFetch(`/api/cliente-detalle?cliente=${encodeURIComponent(codigo)}&vendedor=${encodeURIComponent(user?.Nombre||'')}`);
+
+            // ── Barras últimos 6 meses ────────────────────────────────────
+            const barsEl = document.getElementById('cli-bars');
+            if (d.meses && d.meses.length) {
+                const maxV = Math.max(...d.meses.map(m => parseFloat(m.Venta)||0), 1);
+                barsEl.innerHTML = d.meses.map(m => {
+                    const v   = parseFloat(m.Venta) || 0;
+                    const pct = Math.max(2, (v / maxV) * 100);
+                    const mes = m.Mes ? m.Mes.substring(5) + '/' + m.Mes.substring(2,4) : '—';
+                    const fmtK = v >= 1000 ? (v/1000).toFixed(0)+'k' : v.toFixed(0);
+                    return `<div class="cli-bar-row">
+                        <div class="cli-bar-lbl">${mes}</div>
+                        <div class="cli-bar-track">
+                            <div class="cli-bar-fill" style="width:${pct}%"></div>
+                            <div class="cli-bar-val">$${fmtK}</div>
+                        </div>
+                    </div>`;
+                }).join('');
+            } else {
+                barsEl.innerHTML = '<div style="color:var(--text-subtle);font-size:0.72rem;">Sin historial</div>';
+            }
+
+            // ── Top productos ─────────────────────────────────────────────
+            const prodEl = document.getElementById('cli-productos');
+            if (d.topProductos && d.topProductos.length) {
+                prodEl.innerHTML = d.topProductos.map((p, i) =>
+                    `<tr><td>${i+1}. ${(p.Descripcion||p.Parte||'').substring(0,30)}</td><td>${fM(p.Monto)}</td></tr>`
+                ).join('');
+            } else {
+                prodEl.innerHTML = '<tr><td colspan="2" style="color:var(--text-subtle);">Sin datos</td></tr>';
+            }
+
+            // ── Última compra ─────────────────────────────────────────────
+            if (d.ultimaCompra) {
+                const u = d.ultimaCompra;
+                const fecha = u.Fecha ? new Date(u.Fecha).toLocaleDateString('es-MX') : '—';
+                document.getElementById('cli-ultima').innerHTML =
+                    `📅 <b>${fecha}</b><br>
+                     🛒 ${(u.Producto||'').substring(0,35)}<br>
+                     💰 ${fM(u.Monto)}`;
+            }
+
+        } catch(e) {
+            document.getElementById('cli-bars').innerHTML = `<div style="color:#f44;font-size:0.72rem;">Error: ${e.message}</div>`;
+        }
+    }
+
+    function cerrarDetalleCliente() {
+        document.getElementById('cli-modal').classList.remove('open');
+    }
+
+    
+    // ── DETALLE DÍA ───────────────────────────────────────────────────────
+    async function abrirDetalleDia(dia) {
+        const hoy = new Date().getDate();
+        if (dia > hoy) return; // día futuro
+
+        const venta = parseFloat(document.getElementById('in_day_' + dia)?.innerText?.replace(/[$k,]/g,'')) || 0;
+        if (venta === 0 && dia < hoy) {
+            // día sin ventas — no abrir
+            return;
+        }
+
+        const hoyDate = new Date();
+        const mes   = String(hoyDate.getMonth()+1).padStart(2,'0');
+        const anio  = hoyDate.getFullYear();
+        const diaStr = String(dia).padStart(2,'0');
+        const fecha = `${anio}-${mes}-${diaStr}`;
+        const fechaLabel = `${dia} de ${hoyDate.toLocaleString('es-MX',{month:'long'})} ${anio}`;
+
+        document.getElementById('day-fecha').textContent  = '📅 ' + fechaLabel;
+        document.getElementById('day-total').textContent  = document.getElementById('in_day_' + dia)?.innerText || '—';
+        document.getElementById('day-rows').innerHTML     = '<tr><td colspan="3" style="color:var(--text-subtle);text-align:center;">Cargando...</td></tr>';
+        document.getElementById('day-modal').classList.add('open');
+
+        try {
+            const nombre = encodeURIComponent(user.Nombre);
+            const d = await apiFetch(`/api/ventas-dia?vendedor=${nombre}&fecha=${fecha}`);
+
+            if (!d.ventas || !d.ventas.length) {
+                document.getElementById('day-rows').innerHTML =
+                    '<tr><td colspan="3" style="color:var(--text-subtle);text-align:center;">Sin ventas registradas</td></tr>';
+                return;
+            }
+
+            document.getElementById('day-total').textContent = fM(d.total);
+            document.getElementById('day-rows').innerHTML = d.ventas.map(v => `
+                <tr>
+                    <td style="max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${v.Cliente}">${(v.Cliente||'').substring(0,18)}</td>
+                    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${v.Producto}">${(v.Producto||'').substring(0,22)}</td>
+                    <td>${fM(v.Monto)}</td>
+                </tr>
+            `).join('');
+        } catch(e) {
+            document.getElementById('day-rows').innerHTML =
+                `<tr><td colspan="3" style="color:#f44;text-align:center;">${e.message}</td></tr>`;
+        }
+    }
+
+    function cerrarDetalleDia() {
+        document.getElementById('day-modal').classList.remove('open');
+    }
+
+    </script>
+
+    <!-- ── RESUMEN MES ANTERIOR ───────────────────────────── -->
+    <div id="resumen-modal">
+        <div class="resumen-card" id="resumen-content">
+            <div class="resumen-header">
+                <h2>📊 Resumen <span id="r-mes">—</span></h2>
+                <p id="r-vendedor">—</p>
+            </div>
+            <div class="resumen-kpis">
+                <div class="resumen-kpi" id="r-kpi-ventas">
+                    <div class="rk-val" id="r-ventas">—</div>
+                    <div class="rk-lbl">Ventas</div>
+                </div>
+                <div class="resumen-kpi" id="r-kpi-meta">
+                    <div class="rk-val" id="r-pct">—</div>
+                    <div class="rk-lbl">vs Meta</div>
+                </div>
+                <div class="resumen-kpi">
+                    <div class="rk-val" id="r-meta">—</div>
+                    <div class="rk-lbl">Meta</div>
+                </div>
+                <div class="resumen-kpi">
+                    <div class="rk-val" id="r-dias">—</div>
+                    <div class="rk-lbl">Días con ventas</div>
+                </div>
+            </div>
+            <div class="resumen-section">
+                <h3>🏆 Top 5 Productos</h3>
+                <table class="resumen-table" id="r-productos"></table>
+            </div>
+            <div class="resumen-section">
+                <h3>🤝 Top 5 Clientes</h3>
+                <table class="resumen-table" id="r-clientes"></table>
+            </div>
+            <div class="resumen-section">
+                <h3>💡 Áreas de oportunidad</h3>
+                <div id="r-oportunidades"></div>
+            </div>
+            <div class="resumen-btns">
+                <button class="btn-pdf" onclick="exportarResumenPDF()">📄 Exportar PDF</button>
+                <button class="btn-png" onclick="exportarResumenPNG()">🖼️ Guardar PNG</button>
+                <button class="btn-close-resumen" onclick="cerrarResumen()">✕ Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ── DETALLE CLIENTE ───────────────────────────────── -->
+    <div id="cli-modal">
+        <div class="cli-card">
+            <div class="cli-header">
+                <div class="cli-nombre" id="cli-nombre">—</div>
+                <div class="cli-codigo" id="cli-codigo">—</div>
+            </div>
+            <div class="cli-kpis">
+                <div class="cli-kpi" id="cli-kpi-mes">
+                    <div class="ck-val" id="cli-mes-val">—</div>
+                    <div class="ck-lbl">Este mes</div>
+                </div>
+                <div class="cli-kpi" id="cli-kpi-prom">
+                    <div class="ck-val igual" id="cli-prom-val">—</div>
+                    <div class="ck-lbl">Prom. mensual</div>
+                </div>
+                <div class="cli-kpi" id="cli-kpi-dias">
+                    <div class="ck-val" id="cli-dias-val">—</div>
+                    <div class="ck-lbl">Días sin compra</div>
+                </div>
+            </div>
+            <div class="cli-section">
+                <h3>📈 Últimos 6 meses</h3>
+                <div class="cli-bars" id="cli-bars">
+                    <div style="color:var(--text-subtle);font-size:0.72rem;">Cargando...</div>
+                </div>
+            </div>
+            <div class="cli-section">
+                <h3>🏆 Top productos (último año)</h3>
+                <table class="cli-table" id="cli-productos">
+                    <tr><td colspan="2" style="color:var(--text-subtle);">Cargando...</td></tr>
+                </table>
+            </div>
+            <div class="cli-section" id="cli-ult-section">
+                <h3>🕐 Última compra</h3>
+                <div class="cli-ult" id="cli-ultima">—</div>
+            </div>
+            <button class="cli-close" onclick="cerrarDetalleCliente()">✕ Cerrar</button>
+        </div>
+    </div>
+
+
+    <!-- ── DETALLE DÍA ───────────────────────────────────── -->
+    <div id="day-modal">
+        <div class="day-card">
+            <div class="day-header">
+                <h2 id="day-fecha">—</h2>
+                <div class="day-total" id="day-total">—</div>
+            </div>
+            <table class="day-table">
+                <thead><tr><th>Cliente</th><th>Producto</th><th style="text-align:right">Monto</th></tr></thead>
+                <tbody id="day-rows"><tr><td colspan="3" style="color:var(--text-subtle);text-align:center;">Cargando...</td></tr></tbody>
+            </table>
+            <button class="day-close" onclick="cerrarDetalleDia()">✕ Cerrar</button>
+        </div>
+    </div>
+
+</body>
+</html>
