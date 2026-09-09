@@ -36,14 +36,6 @@ const HOJA_METAS_PODIO = 'NVOS OBJ VENTA AGO 2026'; // hoja con nuevas cuotas + 
 function cargarExcel() {
   try {
     const wb  = XLSX.readFile(path.join(__dirname, 'metas.xlsx'));
-    const obj = XLSX.utils.sheet_to_json(wb.Sheets['OBJETIVOS VENTA'], { defval: null });
-    obj.forEach(row => {
-      const nombre = (row['NOMBRE ASESOR'] || '').toString().trim().toUpperCase();
-      const meta   = parseFloat(row['META MENSUAL']) || 0;
-      const canal  = (row['CANAL']    || '').toString().trim().toUpperCase();
-      const suc    = (row['SUCURSAL'] || '').toString().trim().toUpperCase();
-      if (nombre && meta > 0) metasMap[nombre] = { meta, canal, sucursal: suc };
-    });
     const car = XLSX.utils.sheet_to_json(wb.Sheets['CARTERA'], { defval: null });
     car.forEach(row => {
       const v = (row['Vendedor '] || row['Vendedor'] || '').toString().trim().toUpperCase();
@@ -65,7 +57,11 @@ function cargarExcel() {
       const nombre = (row['NOMBRE ASESOR'] || '').toString().trim().toUpperCase();
       if (nombre) wcSet.add(nombre);
     });
-    // Metas para RUTA AL PODIO: usa la hoja de nuevas cuotas si existe, si no OBJETIVOS VENTA
+    // Metas por vendedor: una sola fuente para toda la app (dashboard, app de ventas y Ruta al Podio).
+    // Usa la hoja de cuotas nuevas si existe (con su columna "NUEVO ...", p.ej. "NUEVO SEPT 2026"),
+    // si no cae a OBJETIVOS VENTA. Antes esto se leía dos veces de hojas distintas (metasMap vs
+    // podioMetasMap), lo que causaba que actualizar una hoja no se reflejara en la otra.
+    metasMap = {};
     podioMetasMap = {};
     const hojaPodio = wb.Sheets[HOJA_METAS_PODIO] ? HOJA_METAS_PODIO : 'OBJETIVOS VENTA';
     XLSX.utils.sheet_to_json(wb.Sheets[hojaPodio], { defval: null }).forEach(row => {
@@ -75,13 +71,33 @@ function cargarExcel() {
       const meta   = (colNueva && parseFloat(row[colNueva])) || parseFloat(row['META MENSUAL']) || 0;
       const canal  = (row['CANAL']    || '').toString().trim().toUpperCase();
       const suc    = (row['SUCURSAL'] || '').toString().trim().toUpperCase();
-      if (nombre && canal) podioMetasMap[nombre] = { meta, canal, sucursal: suc };
+      if (nombre && meta > 0) metasMap[nombre] = { meta, canal, sucursal: suc };
+      if (nombre && canal)    podioMetasMap[nombre] = { meta, canal, sucursal: suc };
     });
+    // Metas por sucursal: si la misma hoja trae una tabla "Sucursal / Nueva Meta ...", úsala en vez del valor fijo
+    const sheetPodio = wb.Sheets[hojaPodio];
+    if (sheetPodio) {
+      const nuevasSuc = {};
+      XLSX.utils.sheet_to_json(sheetPodio, { defval: null }).forEach(row => {
+        const label = (row['Sucursal'] || '').toString().trim();
+        const m = /^sucursal\s+(.+)$/i.exec(label);
+        if (!m) return;
+        const suc = normSuc(m[1]);
+        const colNueva = Object.keys(row).find(k => /^nueva\s*meta/i.test(k.trim()));
+        const nueva = colNueva ? parseFloat(row[colNueva]) : NaN;
+        const vieja = parseFloat(row['Meta sucursal']);
+        const meta  = (isFinite(nueva) && nueva > 0) ? nueva : ((isFinite(vieja) && vieja > 0) ? vieja : 0);
+        if (suc && meta > 0) nuevasSuc[suc] = meta;
+      });
+      if (Object.keys(nuevasSuc).length) {
+        META_SUCURSAL = { ...META_SUCURSAL, ...nuevasSuc };
+        console.log(`Metas por sucursal actualizadas desde "${hojaPodio}":`, nuevasSuc);
+      }
+    }
     console.log(`Ruta al Podio: metas desde hoja "${hojaPodio}" (${Object.keys(podioMetasMap).length} asesores)`);
     console.log(`Excel cargado: ${Object.keys(metasMap).length} asesores, ${Object.values(carteraMap).flat().length} clientes, ${Object.keys(aceiteBaseMap).length} bases de aceite, ${wcSet.size} concursantes WC, ${Object.keys(aceiteBaseMap).length} concursantes aceite`);
   } catch (err) { console.error('Error leyendo metas.xlsx:', err.message); }
 }
-cargarExcel();
 
 app.get('/api/recargar-metas', (req, res) => {
   metasMap = {}; carteraMap = {}; aceiteBaseMap = {}; wcSet = new Set();
@@ -111,8 +127,9 @@ function buscarCartera(vendedor) {
   return [];
 }
 
-// Metas por sucursal (definidas por dirección)
-const META_SUCURSAL = {
+// Metas por sucursal (valores por defecto; se sobreescriben con la tabla "Sucursal / Nueva Meta ..."
+// de metas.xlsx si está presente — ver cargarExcel())
+let META_SUCURSAL = {
   'TORREON':        5000000,
   'GOMEZ PALACIO':  7000000,
   'MONCLOVA':       2100000,
@@ -126,6 +143,8 @@ const SUCURSAL_NORM = {
   'MONC': 'MONCLOVA', 'PN': 'PIEDRAS NEGRAS',
 };
 function normSuc(s) { const k = (s||'').toUpperCase().trim(); return SUCURSAL_NORM[k] || k; }
+
+cargarExcel(); // se llama aquí (no antes) porque depende de normSuc()/SUCURSAL_NORM ya definidos
 
 const SUCURSALES    = `'ANA','GOMEZ PALACIO','MONCLOVA','PIEDRAS NEGRAS','TORREON'`;
 const TIPOS_EXCL    = `'PRESUPUESTO','PRESUPUESTO 8%','Traspaso salida almacen'`;
@@ -171,7 +190,7 @@ app.get('/api/ventas-totales', async (req, res) => {
 
     // Total global
     const total = result.recordset.reduce((sum, r) => sum + (parseFloat(r.Ventas)||0), 0);
-    res.json({ total, porSucursal: result.recordset });
+    res.json({ total, porSucursal: result.recordset, metas: META_SUCURSAL });
   } catch (err) {
     console.error('Error /api/ventas-totales:', err.message);
     res.status(500).json({ error: err.message });
