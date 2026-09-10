@@ -111,8 +111,14 @@ function nombreKey(s) { return (s || '').toString().trim().toUpperCase(); }
 function buscarMeta(nombreSql) {
   const key = nombreKey(nombreSql);
   if (metasMap[key]) return metasMap[key];
+  const kw = key.split(' ');
+  // Aproximado: exige que además del parecido en el primer nombre, el
+  // apellido (última palabra) también coincida — evita que dos personas
+  // distintas que comparten solo el primer nombre (p.ej. dos "VICTOR")
+  // se confundan entre sí.
   for (const [k, v] of Object.entries(metasMap)) {
-    if (key.includes(k.split(' ')[0]) || k.includes(key.split(' ')[0])) return v;
+    const kkw = k.split(' ');
+    if ((key.includes(kkw[0]) || k.includes(kw[0])) && kw[kw.length - 1] === kkw[kkw.length - 1]) return v;
   }
   return { meta: 0, canal: 'CALLE', sucursal: '' };
 }
@@ -1556,12 +1562,23 @@ async function fechasPorVendedorDesdeCSV(url, colsNombre, colsFecha) {
   return out;
 }
 
-// Match flexible nombre SQL → metas del podio (misma lógica que buscarMeta)
-function buscarMetaPodio(nombreSql) {
+// Match exacto nombre SQL → metas del podio
+function buscarMetaPodioExacto(nombreSql) {
   const key = nombreKey(nombreSql);
   if (podioMetasMap[key]) return { ...podioMetasMap[key], excel: key };
+  return null;
+}
+
+// Match flexible (aproximado, solo por 1ra palabra) → usar SOLO como respaldo,
+// y solo contra entradas del Excel que ningún otro nombre SQL haya reclamado ya
+// de forma exacta (evita que "VICTOR X" le robe el perfil a "VICTOR Y").
+function buscarMetaPodioAprox(nombreSql, excluir) {
+  const key = nombreKey(nombreSql);
+  const kw = key.split(' ');
   for (const [k, v] of Object.entries(podioMetasMap)) {
-    if (key.includes(k.split(' ')[0]) || k.includes(key.split(' ')[0])) return { ...v, excel: k };
+    if (excluir.has(k)) continue;
+    const kkw = k.split(' ');
+    if ((key.includes(kkw[0]) || k.includes(kw[0])) && kw[kw.length - 1] === kkw[kkw.length - 1]) return { ...v, excel: k };
   }
   return null;
 }
@@ -1617,10 +1634,23 @@ async function calcularPodio() {
     porMesSql[mes] = { ventasDia: vd, ventasMes: vm, fleetrite: fl };
   }
 
-  // Participantes: vendedores SQL cuyo canal (Excel) sea CALLE o MOSTRADOR
+  // Participantes: vendedores SQL cuyo canal (Excel) sea CALLE o MOSTRADOR.
+  // Dos pasadas: primero se reservan todas las coincidencias EXACTAS de nombre
+  // (para que un nombre SQL sin fila en el Excel no le "robe" por aproximación
+  // el perfil de otro vendedor que sí coincide exacto, sin importar el orden
+  // en que SQL devuelva los nombres), y solo después se intenta aproximar por
+  // similitud los nombres SQL que quedaron sin coincidencia.
   const participantes = [], usados = new Set();
+  const pendientes = [];
   [...nombresSql].forEach(n => {
-    const m = buscarMetaPodio(n);
+    const m = buscarMetaPodioExacto(n);
+    if (!m) { pendientes.push(n); return; }
+    if (!podio.PODIO.CANALES.includes(m.canal) || usados.has(m.excel)) return;
+    usados.add(m.excel);
+    participantes.push({ Nombre: n, Sucursal: normSuc(m.sucursal), Canal: m.canal, Meta: m.meta });
+  });
+  pendientes.forEach(n => {
+    const m = buscarMetaPodioAprox(n, usados);
     if (!m || !podio.PODIO.CANALES.includes(m.canal) || usados.has(m.excel)) return;
     usados.add(m.excel);
     participantes.push({ Nombre: n, Sucursal: normSuc(m.sucursal), Canal: m.canal, Meta: m.meta });
