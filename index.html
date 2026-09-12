@@ -762,8 +762,8 @@
 
         
         /* ── DETALLE DÍA MODAL ───────────────────────────── */
-        #day-modal { display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.88); overflow-y:auto; padding:16px; }
-        #day-modal.open { display:flex; align-items:flex-start; justify-content:center; }
+        #day-modal, #flrt-modal, #reto-modal { display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.88); overflow-y:auto; padding:16px; }
+        #day-modal.open, #flrt-modal.open, #reto-modal.open { display:flex; align-items:flex-start; justify-content:center; }
         .day-card { background:var(--surface); border:1px solid var(--success); border-radius:20px; width:100%; max-width:480px; padding:22px; margin:auto; }
         .day-header { margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid #1e1e1e; display:flex; justify-content:space-between; align-items:center; }
         .day-header h2 { color:var(--success); font-size:1rem; font-family:'Syne',sans-serif; margin:0; }
@@ -1200,25 +1200,112 @@
                 <div class="r-val">Próximamente</div><div class="r-sub">${R.ENCUESTA_MIN} escaneos/semana = ${R.ENCUESTA_SEMANA} pts</div>${bar(0, 1)}</div>`;
         } else {
             const n = semActual ? semActual.total : 0, meta = sem ? sem.meta : 15;
-            semanaHTML = `<div class="reto ${semActual && semActual.cumple ? 'ok' : ''}">
+            const clickSem = esCalle ? 'abrirVisitasDetalle()' : 'abrirEncuestaDetalle()';
+            semanaHTML = `<div class="reto ${semActual && semActual.cumple ? 'ok' : ''}" style="cursor:pointer;" onclick="${clickSem}">
                 <div class="r-top"><span>${esCalle ? '📋 Visitas' : '📱 Encuesta QR'} · semana</span><span class="r-pts">+${sem ? sem.pts : 0}</span></div>
                 <div class="r-val">${n} / ${meta}</div>
-                <div class="r-sub">${sem ? sem.cumplidas : 0} semana${sem && sem.cumplidas === 1 ? '' : 's'} cumplida${sem && sem.cumplidas === 1 ? '' : 's'} · ${esCalle ? R.VISITAS_SEMANA : R.ENCUESTA_SEMANA} pts c/u</div>${bar(n, meta)}</div>`;
+                <div class="r-sub">${sem ? sem.cumplidas : 0} semana${sem && sem.cumplidas === 1 ? '' : 's'} cumplida${sem && sem.cumplidas === 1 ? '' : 's'} · ${esCalle ? R.VISITAS_SEMANA : R.ENCUESTA_SEMANA} pts c/u · toca para ver detalle</div>${bar(n, meta)}</div>`;
         }
         document.getElementById('podio-retos').innerHTML = `
-            <div class="reto ${ck.dias >= diasHabilesHastaHoy && ck.dias > 0 ? 'ok' : ''}">
+            <div class="reto ${ck.dias >= diasHabilesHastaHoy && ck.dias > 0 ? 'ok' : ''}" style="cursor:pointer;" onclick="abrirCheckinDetalle()">
                 <div class="r-top"><span>📍 Check-in</span><span class="r-pts">+${ck.pts}</span></div>
                 <div class="r-val">${ck.dias} / ${diasHabilesHastaHoy} días</div>
-                <div class="r-sub">${R.CHECKIN_DIA} pts por día · ${ck.fechas.includes(d.hoy) ? 'hoy ✅' : 'hoy pendiente'}</div>${bar(ck.dias, diasHabilesHastaHoy)}</div>
-            <div class="reto ${c.rachaActual >= 2 ? 'ok' : ''}">
+                <div class="r-sub">${R.CHECKIN_DIA} pts por día · ${ck.fechas.includes(d.hoy) ? 'hoy ✅' : 'hoy pendiente'} · toca para ver días</div>${bar(ck.dias, diasHabilesHastaHoy)}</div>
+            <div class="reto ${c.rachaActual >= 2 ? 'ok' : ''}" style="cursor:pointer;" onclick="abrirConstanciaDetalle()">
                 <div class="r-top"><span>📈 Constancia</span><span class="r-pts">+${c.pts}</span></div>
                 <div class="r-val">${c.diasSuperados} / ${diasHabilesHastaHoy} días</div>
-                <div class="r-sub">Meta diaria ${fM(c.metaDiaria)} · racha máx. ${c.rachaMax}</div>${bar(c.diasSuperados, diasHabilesHastaHoy)}</div>
+                <div class="r-sub">Meta diaria ${fM(c.metaDiaria)} · racha máx. ${c.rachaMax} · toca para ver días</div>${bar(c.diasSuperados, diasHabilesHastaHoy)}</div>
             ${semanaHTML}
-            <div class="reto ${f.pts > 0 ? 'ok' : ''}">
+            <div class="reto ${f.pts > 0 ? 'ok' : ''}" style="cursor:pointer;" onclick="abrirFleetriteDetalle()">
                 <div class="r-top"><span>🔧 Fleetrite NPs</span><span class="r-pts">+${f.pts}</span></div>
                 <div class="r-val">${f.nps} NPs</div>
-                <div class="r-sub">${f.siguiente ? `Faltan ${f.faltan} para ${f.siguiente} NPs` : '¡Nivel máximo!'}</div>${bar(f.nps, f.siguiente || 50)}</div>`;
+                <div class="r-sub">${f.siguiente ? `Faltan ${f.faltan} para ${f.siguiente} NPs` : '¡Nivel máximo!'} · toca para ver cuáles</div>${bar(f.nps, f.siguiente || 50)}</div>`;
+    }
+
+    // ─── DETALLE NPs FLEETRITE ────────────────────────────────────────────────
+    async function abrirFleetriteDetalle() {
+        if (!user) return;
+        document.getElementById('flrt-modal').classList.add('open');
+        document.getElementById('flrt-total').innerText = '—';
+        document.getElementById('flrt-rows').innerHTML = '<tr><td colspan="3" style="color:var(--text-subtle);text-align:center;">Cargando...</td></tr>';
+        try {
+            const nombre = encodeURIComponent(user.Nombre);
+            const mes = (podioData && podioData.mesActual) || '';
+            const d = await apiFetch(`/api/podio/fleetrite-detalle?vendedor=${nombre}&mes=${mes}`);
+            document.getElementById('flrt-total').innerText = `${d.total} NPs`;
+            document.getElementById('flrt-rows').innerHTML = d.nps.length
+                ? d.nps.map(n => `<tr><td>${n.articulo}</td><td>${n.descripcion}</td><td style="text-align:right">${n.cantidad}</td></tr>`).join('')
+                : '<tr><td colspan="3" style="color:var(--text-subtle);text-align:center;">Sin NPs Fleetrite este mes</td></tr>';
+        } catch (e) {
+            document.getElementById('flrt-rows').innerHTML = `<tr><td colspan="3" style="color:var(--red)">Error: ${e.message}</td></tr>`;
+        }
+    }
+
+    function cerrarFleetriteDetalle() {
+        document.getElementById('flrt-modal').classList.remove('open');
+    }
+
+    // ─── DETALLE DE RETOS (Check-in, Constancia, Visitas, Encuesta QR) ────────
+    function cerrarRetoDetalle() {
+        document.getElementById('reto-modal').classList.remove('open');
+    }
+
+    function abrirCheckinDetalle() {
+        if (!user || !podioData) return;
+        const yo = podioData.ranking.find(r => r.Nombre === user.Nombre);
+        if (!yo || !yo.actual) return;
+        const ck = yo.actual.checkin;
+        document.getElementById('reto-titulo').innerText = '📍 Check-in del mes';
+        document.getElementById('reto-total').innerText = `${ck.dias} día${ck.dias === 1 ? '' : 's'}`;
+        const fechas = [...ck.fechas].sort().reverse();
+        document.getElementById('reto-body').innerHTML = fechas.length
+            ? `<table class="day-table"><thead><tr><th>Fecha</th></tr></thead><tbody>${fechas.map(f => `<tr><td>${f}</td></tr>`).join('')}</tbody></table>`
+            : '<div style="color:var(--text-subtle);text-align:center;padding:20px 0;">Sin check-ins este mes</div>';
+        document.getElementById('reto-modal').classList.add('open');
+    }
+
+    function abrirConstanciaDetalle() {
+        if (!user || !podioData) return;
+        const yo = podioData.ranking.find(r => r.Nombre === user.Nombre);
+        if (!yo || !yo.actual) return;
+        const c = yo.actual.constancia;
+        document.getElementById('reto-titulo').innerText = '📈 Constancia — detalle por día';
+        document.getElementById('reto-total').innerText = `${c.diasSuperados} superados · racha máx. ${c.rachaMax}`;
+        const dias = [...c.dias].sort((a, b) => b.fecha.localeCompare(a.fecha));
+        document.getElementById('reto-body').innerHTML = dias.length
+            ? `<table class="day-table"><thead><tr><th>Fecha</th><th>Venta</th><th style="text-align:right">Resultado</th></tr></thead><tbody>${
+                dias.map(x => `<tr><td>${x.fecha}</td><td>${fM(x.venta)}</td><td style="text-align:right">${x.superado ? '✅ superó' : '—'}</td></tr>`).join('')
+              }</tbody></table><div style="font-size:0.62rem;color:var(--text-subtle);margin-top:8px;">Meta diaria: ${fM(c.metaDiaria)}</div>`
+            : '<div style="color:var(--text-subtle);text-align:center;padding:20px 0;">Sin datos este mes</div>';
+        document.getElementById('reto-modal').classList.add('open');
+    }
+
+    async function abrirVisitasDetalle()  { await abrirSheetDetalle('visitas',  '📋 Visitas registradas'); }
+    async function abrirEncuestaDetalle() { await abrirSheetDetalle('encuesta', '📱 Encuesta QR — escaneos'); }
+
+    async function abrirSheetDetalle(tipo, titulo) {
+        if (!user) return;
+        document.getElementById('reto-titulo').innerText = titulo;
+        document.getElementById('reto-total').innerText = '—';
+        document.getElementById('reto-body').innerHTML = '<div style="color:var(--text-subtle);text-align:center;padding:20px 0;">Cargando...</div>';
+        document.getElementById('reto-modal').classList.add('open');
+        try {
+            const nombre = encodeURIComponent(user.Nombre);
+            const mes = (podioData && podioData.mesActual) || '';
+            const d = await apiFetch(`/api/podio/${tipo}-detalle?vendedor=${nombre}&mes=${mes}`);
+            document.getElementById('reto-total').innerText = `${d.total} registro${d.total === 1 ? '' : 's'}`;
+            if (!d.registros.length) {
+                document.getElementById('reto-body').innerHTML = '<div style="color:var(--text-subtle);text-align:center;padding:20px 0;">Sin registros este mes</div>';
+                return;
+            }
+            // Columnas dinámicas: lo que traiga el Sheet además de la fecha (p.ej. cliente, comentario).
+            const cols = [...new Set(d.registros.flatMap(r => Object.keys(r.campos)))];
+            document.getElementById('reto-body').innerHTML = `<table class="day-table"><thead><tr><th>Fecha</th>${cols.map(c => `<th>${c}</th>`).join('')}</tr></thead><tbody>${
+                d.registros.map(r => `<tr><td>${r.fecha}</td>${cols.map(c => `<td>${r.campos[c] || ''}</td>`).join('')}</tr>`).join('')
+            }</tbody></table>`;
+        } catch (e) {
+            document.getElementById('reto-body').innerHTML = `<div style="color:var(--red);text-align:center;padding:20px 0;">Error: ${e.message}</div>`;
+        }
     }
 
     function marcarCheckinHoy(yo) {
@@ -2188,6 +2275,33 @@
                 <tbody id="day-rows"><tr><td colspan="3" style="color:var(--text-subtle);text-align:center;">Cargando...</td></tr></tbody>
             </table>
             <button class="day-close" onclick="cerrarDetalleDia()">✕ Cerrar</button>
+        </div>
+    </div>
+
+    <!-- ── DETALLE NPs FLEETRITE ─────────────────────────────────────────── -->
+    <div id="flrt-modal">
+        <div class="day-card">
+            <div class="day-header">
+                <h2>🔧 NPs Fleetrite del mes</h2>
+                <div class="day-total" id="flrt-total">—</div>
+            </div>
+            <table class="day-table">
+                <thead><tr><th>Parte</th><th>Descripción</th><th style="text-align:right">Cant.</th></tr></thead>
+                <tbody id="flrt-rows"><tr><td colspan="3" style="color:var(--text-subtle);text-align:center;">Cargando...</td></tr></tbody>
+            </table>
+            <button class="day-close" onclick="cerrarFleetriteDetalle()">✕ Cerrar</button>
+        </div>
+    </div>
+
+    <!-- ── DETALLE DE RETOS (Check-in / Constancia / Visitas / Encuesta) ──── -->
+    <div id="reto-modal">
+        <div class="day-card">
+            <div class="day-header">
+                <h2 id="reto-titulo">—</h2>
+                <div class="day-total" id="reto-total">—</div>
+            </div>
+            <div id="reto-body" style="overflow-x:auto;">Cargando...</div>
+            <button class="day-close" onclick="cerrarRetoDetalle()">✕ Cerrar</button>
         </div>
     </div>
 
