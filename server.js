@@ -156,6 +156,11 @@ const SUCURSALES    = `'ANA','GOMEZ PALACIO','MONCLOVA','PIEDRAS NEGRAS','TORREO
 const TIPOS_EXCL    = `'PRESUPUESTO','PRESUPUESTO 8%','Traspaso salida almacen'`;
 const TIPO_EXCL_SQL = `(s.DES_TIPO_VENTA NOT IN (${TIPOS_EXCL}) AND s.DES_TIPO_VENTA IS NOT NULL AND LTRIM(RTRIM(s.DES_TIPO_VENTA)) <> '')`;
 
+// Es Fleetrite: por familia de artículo (FLEETRITE) o por prefijo/patrón del
+// número de parte (FLT, FLTR, FLRT) — no todos los NPs Fleetrite vienen
+// correctamente clasificados en la familia, así que se cubren ambos casos.
+const FLEETRITE_SQL = `(s.DES_FAM_APRO LIKE '%FLEETRITE%' OR s.ARTICULO LIKE '%FLT%' OR s.ARTICULO LIKE '%FLTR%' OR s.ARTICULO LIKE '%FLRT%')`;
+
 const TIPOS_EXCL_ACEITE = `${TIPOS_EXCL},'Venta O.R. Filiales','Venta O.R. Internas','Ventas internas refacciones'`;
 const TIPO_EXCL_ACEITE_SQL = `(s.DES_TIPO_VENTA NOT IN (${TIPOS_EXCL_ACEITE}) AND s.DES_TIPO_VENTA IS NOT NULL AND LTRIM(RTRIM(s.DES_TIPO_VENTA)) <> '')`;
 
@@ -1562,6 +1567,37 @@ async function fechasPorVendedorDesdeCSV(url, colsNombre, colsFecha) {
   return out;
 }
 
+// Igual que fechasPorVendedorDesdeCSV pero conserva el renglón completo del
+// Sheet (todas sus columnas), para poder mostrarle al asesor el detalle de
+// qué registró cada día (a quién visitó, etc.), no solo la fecha.
+async function filasPorVendedorDesdeCSV(url, colsNombre, colsFecha) {
+  if (!url) return {};
+  const filas = podio.parseCSV(await httpGetText(url));
+  const out = {};
+  filas.forEach(f => {
+    const nombre = podio.nombreKey(podio.col(f, ...colsNombre));
+    const fecha  = podio.normalizarFecha(podio.col(f, ...colsFecha));
+    if (!nombre || !fecha || !podio.mesConcurso(fecha)) return;
+    (out[nombre] = out[nombre] || []).push({ fecha, fila: f });
+  });
+  return out;
+}
+
+// Busca las filas de un vendedor dentro de { NOMBRE: [...] } con el mismo
+// criterio flexible (exacto primero, luego por 1er+último nombre) usado en
+// el resto de Ruta al Podio, para no perder registros por variaciones de
+// mayúsculas/espacios en el nombre del Sheet.
+function filasDeVendedor(porNombre, nombreSql) {
+  const key = nombreKey(nombreSql);
+  if (porNombre[key]) return porNombre[key];
+  const kw = key.split(' ');
+  for (const [k, v] of Object.entries(porNombre)) {
+    const kkw = k.split(' ');
+    if ((key.includes(kkw[0]) || k.includes(kw[0])) && kw[kw.length - 1] === kkw[kkw.length - 1]) return v;
+  }
+  return [];
+}
+
 // Match exacto nombre SQL → metas del podio
 function buscarMetaPodioExacto(nombreSql) {
   const key = nombreKey(nombreSql);
@@ -1620,7 +1656,7 @@ async function calcularPodio() {
       WHERE LEFT(s.FECHA, 7) = @mes
         AND ${TIPO_EXCL_SQL}
         AND s.NOM_ALMACEN_LIN IN (${SUCURSALES})
-        AND s.DES_FAM_APRO LIKE '%FLEETRITE%'
+        AND ${FLEETRITE_SQL}
         AND s.NOM_VENDEDOR IS NOT NULL AND s.NOM_VENDEDOR <> ''
       GROUP BY s.NOM_VENDEDOR
     `);
@@ -1690,6 +1726,93 @@ app.get('/api/podio', async (req, res) => {
     res.json(podioCache.data);
   } catch (err) {
     console.error('Error /api/podio:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Detalle de NPs Fleetrite vendidos por un asesor en el mes (para que pueda
+// ver exactamente cuáles números de parte le están contando en Ruta al Podio)
+app.get('/api/podio/fleetrite-detalle', async (req, res) => {
+  try {
+    const db = await getPool();
+    const vendedor = decodeURIComponent(req.query.vendedor || '');
+    const hoy = podio.hoyISO();
+    const mes = /^\d{4}-\d{2}$/.test(req.query.mes || '') ? req.query.mes : hoy.slice(0, 7);
+    if (!vendedor) return res.status(400).json({ error: 'Falta vendedor' });
+
+    const r = await db.request()
+      .input('mes', sql.VarChar, mes)
+      .input('vend', sql.VarChar, `%${vendedor}%`)
+      .query(`
+        SELECT s.ARTICULO AS Parte, MAX(s.DES_ARTICULO) AS Descripcion,
+               SUM(s.CANTIDAD) AS Cantidad, MAX(LEFT(s.FECHA, 10)) AS UltimaFecha
+        FROM FTSABI_PR s
+        WHERE LEFT(s.FECHA, 7) = @mes
+          AND ${TIPO_EXCL_SQL}
+          AND s.NOM_ALMACEN_LIN IN (${SUCURSALES})
+          AND ${FLEETRITE_SQL}
+          AND s.NOM_VENDEDOR LIKE @vend
+        GROUP BY s.ARTICULO
+        ORDER BY UltimaFecha DESC
+      `);
+
+    const nps = r.recordset.map(row => ({
+      articulo: row.Parte, descripcion: row.Descripcion || '', cantidad: parseInt(row.Cantidad) || 0,
+      ultimaFecha: row.UltimaFecha,
+    }));
+    res.json({ mes, vendedor, total: nps.length, nps });
+  } catch (err) {
+    console.error('Error /api/podio/fleetrite-detalle:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Detalle de Visitas (CALLE) o Encuesta QR (MOSTRADOR) de un asesor en el mes:
+// le muestra el renglón completo que registró el Sheet cada día (cliente,
+// comentarios, lo que traiga la hoja), no solo la fecha.
+async function detalleSheetPorVendedor(url, colsNombre, colsFecha, vendedor, mes) {
+  const porNombre = await filasPorVendedorDesdeCSV(url, colsNombre, colsFecha);
+  const filas = filasDeVendedor(porNombre, vendedor)
+    .filter(r => !mes || r.fecha.slice(0, 7) === mes)
+    .sort((a, b) => b.fecha.localeCompare(a.fecha));
+  // Quita del renglón las columnas ya usadas para nombre/fecha, para no
+  // repetir esa info; deja el resto tal cual venga en el Sheet.
+  const colsOmitir = new Set([...colsNombre, ...colsFecha].map(c => c.toLowerCase()));
+  return filas.map(r => {
+    const campos = {};
+    Object.entries(r.fila).forEach(([k, v]) => {
+      if (!colsOmitir.has(k.toLowerCase()) && v) campos[k] = v;
+    });
+    return { fecha: r.fecha, campos };
+  });
+}
+
+app.get('/api/podio/visitas-detalle', async (req, res) => {
+  try {
+    const vendedor = decodeURIComponent(req.query.vendedor || '');
+    const hoy = podio.hoyISO();
+    const mes = /^\d{4}-\d{2}$/.test(req.query.mes || '') ? req.query.mes : hoy.slice(0, 7);
+    if (!vendedor) return res.status(400).json({ error: 'Falta vendedor' });
+    const registros = await detalleSheetPorVendedor(CSV_VISITAS, ['Asesor', 'Vendedor'], ['Fecha'], vendedor, mes);
+    res.json({ mes, vendedor, total: registros.length, registros });
+  } catch (err) {
+    console.error('Error /api/podio/visitas-detalle:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/podio/encuesta-detalle', async (req, res) => {
+  try {
+    const vendedor = decodeURIComponent(req.query.vendedor || '');
+    const hoy = podio.hoyISO();
+    const mes = /^\d{4}-\d{2}$/.test(req.query.mes || '') ? req.query.mes : hoy.slice(0, 7);
+    if (!vendedor) return res.status(400).json({ error: 'Falta vendedor' });
+    const registros = await detalleSheetPorVendedor(
+      CSV_ENCUESTA_QR, ['Vendedor', 'Asesor', 'Nombre del asesor'],
+      ['Marca temporal', 'Timestamp', 'Fecha'], vendedor, mes);
+    res.json({ mes, vendedor, total: registros.length, registros });
+  } catch (err) {
+    console.error('Error /api/podio/encuesta-detalle:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
