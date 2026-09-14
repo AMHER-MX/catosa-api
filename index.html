@@ -1176,7 +1176,7 @@
         const R = d.reglas;
         document.getElementById('podio-reglas').innerHTML = `
             <li><b>Check-in diario</b>: ${R.CHECKIN_DIA} pts por día.</li>
-            <li><b>Constancia</b>: ${R.CONSTANCIA_DIA} pts por cada día que superes tu promedio diario de meta; +${R.RACHA_DIA_EXTRA} pts extra por cada día consecutivo (lun–sáb, el domingo no rompe la racha).</li>
+            <li><b>Constancia</b>: ${R.CONSTANCIA_DIA} pts por cada día que superes tu promedio diario de meta. Si lo superas varios días seguidos (lun–sáb, el domingo no rompe la racha), el bono de racha crece: 2º día seguido +${R.RACHA_DIA_EXTRA}, 3º +${R.RACHA_DIA_EXTRA * 2}, 4º +${R.RACHA_DIA_EXTRA * 3}... entre más larga la racha, más vale cada día extra.</li>
             <li><b>Visitas</b> (CALLE): ${R.VISITAS_SEMANA} pts por semana con ${R.VISITAS_MIN}+ visitas registradas.</li>
             <li><b>Encuesta QR</b> (MOSTRADOR): ${R.ENCUESTA_SEMANA} pts por semana con ${R.ENCUESTA_MIN}+ escaneos.</li>
             <li><b>Fleetrite</b>: números de parte distintos vendidos en el mes → ${R.FLEETRITE.slice().reverse().map(t => `${t.min}+ NPs = ${t.pts} pts`).join(' · ')}.</li>
