@@ -156,10 +156,10 @@ const SUCURSALES    = `'ANA','GOMEZ PALACIO','MONCLOVA','PIEDRAS NEGRAS','TORREO
 const TIPOS_EXCL    = `'PRESUPUESTO','PRESUPUESTO 8%','Traspaso salida almacen'`;
 const TIPO_EXCL_SQL = `(s.DES_TIPO_VENTA NOT IN (${TIPOS_EXCL}) AND s.DES_TIPO_VENTA IS NOT NULL AND LTRIM(RTRIM(s.DES_TIPO_VENTA)) <> '')`;
 
-// Es Fleetrite: por familia de artículo (FLEETRITE) o por prefijo/patrón del
-// número de parte (FLT, FLTR, FLRT) — no todos los NPs Fleetrite vienen
-// correctamente clasificados en la familia, así que se cubren ambos casos.
-const FLEETRITE_SQL = `(s.DES_FAM_APRO LIKE '%FLEETRITE%' OR s.ARTICULO LIKE '%FLT%' OR s.ARTICULO LIKE '%FLTR%' OR s.ARTICULO LIKE '%FLRT%')`;
+// Es Fleetrite: el número de parte contiene FLT, FLTR o FLRT (no se usa la
+// familia del artículo en el ERP porque clasifica ahí piezas que no son
+// Fleetrite, como se detectó con abrazaderas/filtros PROSTAR).
+const FLEETRITE_SQL = `(s.ARTICULO LIKE '%FLT%' OR s.ARTICULO LIKE '%FLTR%' OR s.ARTICULO LIKE '%FLRT%')`;
 
 const TIPOS_EXCL_ACEITE = `${TIPOS_EXCL},'Venta O.R. Filiales','Venta O.R. Internas','Ventas internas refacciones'`;
 const TIPO_EXCL_ACEITE_SQL = `(s.DES_TIPO_VENTA NOT IN (${TIPOS_EXCL_ACEITE}) AND s.DES_TIPO_VENTA IS NOT NULL AND LTRIM(RTRIM(s.DES_TIPO_VENTA)) <> '')`;
@@ -1757,8 +1757,8 @@ app.get('/api/podio/fleetrite-detalle', async (req, res) => {
       `);
 
     const nps = r.recordset.map(row => ({
-      articulo: row.Parte, descripcion: row.Descripcion || '', cantidad: parseInt(row.Cantidad) || 0,
-      ultimaFecha: row.UltimaFecha,
+      articulo: row.Parte, descripcion: row.Descripcion || '',
+      cantidad: parseInt(row.Cantidad) || 0, ultimaFecha: row.UltimaFecha,
     }));
     res.json({ mes, vendedor, total: nps.length, nps });
   } catch (err) {
