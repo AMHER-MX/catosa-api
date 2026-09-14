@@ -245,7 +245,8 @@
     
     // ── PANTALLA TV ───────────────────────────────────────────────────────
     let tvTimer = null, tvTick = null, tvSecs = 300;
-    const SUCURSAL_METAS = {
+    // Respaldo si el servidor aún no trae "metas" en /api/ventas-totales (versión vieja de server.js)
+    const SUCURSAL_METAS_FALLBACK = {
         'TORREON':        5000000,
         'GOMEZ PALACIO':  7000000,
         'MONCLOVA':       2100000,
@@ -374,7 +375,7 @@
             bottom.innerHTML = sucursales.map(suc => {
                 const row  = d.porSucursal.find(r => r.Sucursal === suc);
                 const venta = parseFloat(row?.Ventas) || 0;
-                const meta  = SUCURSAL_METAS[suc] || 0;
+                const meta  = (d.metas && d.metas[suc]) || SUCURSAL_METAS_FALLBACK[suc] || 0;
                 const pct   = meta > 0 ? Math.min((venta/meta)*100, 100) : 0;
                 const cls   = pct >= 100 ? 'ok' : pct >= 70 ? 'mid' : 'low';
                 const color = pct >= 100 ? '#00ff88' : pct >= 70 ? 'var(--gold)' : '#8b3a3a';
@@ -663,7 +664,8 @@
     
     // ── PANTALLA TV ───────────────────────────────────────────────────────
     let tvTimer = null, tvTick = null, tvSecs = 300;
-    const SUCURSAL_METAS = {
+    // Respaldo si el servidor aún no trae "metas" en /api/ventas-totales (versión vieja de server.js)
+    const SUCURSAL_METAS_FALLBACK = {
         'TORREON':        5000000,
         'GOMEZ PALACIO':  7000000,
         'MONCLOVA':       2100000,
@@ -792,7 +794,7 @@
             bottom.innerHTML = sucursales.map(suc => {
                 const row  = d.porSucursal.find(r => r.Sucursal === suc);
                 const venta = parseFloat(row?.Ventas) || 0;
-                const meta  = SUCURSAL_METAS[suc] || 0;
+                const meta  = (d.metas && d.metas[suc]) || SUCURSAL_METAS_FALLBACK[suc] || 0;
                 const pct   = meta > 0 ? Math.min((venta/meta)*100, 100) : 0;
                 const cls   = pct >= 100 ? 'ok' : pct >= 70 ? 'mid' : 'low';
                 const color = pct >= 100 ? '#00ff88' : pct >= 70 ? 'var(--gold)' : '#8b3a3a';
@@ -1849,7 +1851,7 @@ function renderPodioG() {
 
     const R = podioG.reglas;
     document.getElementById('podio-g-nota').innerHTML =
-        `Puntos: check-in ${R.CHECKIN_DIA}/día · constancia ${R.CONSTANCIA_DIA}/día sobre meta diaria +${R.RACHA_DIA_EXTRA} por racha · ` +
+        `Puntos: check-in ${R.CHECKIN_DIA}/día · constancia ${R.CONSTANCIA_DIA}/día sobre meta diaria + bono de racha creciente (${R.RACHA_DIA_EXTRA}, ${R.RACHA_DIA_EXTRA * 2}, ${R.RACHA_DIA_EXTRA * 3}... por día extra seguido) · ` +
         `visitas (Calle) ${R.VISITAS_SEMANA}/semana con ${R.VISITAS_MIN}+ · encuesta QR (Mostrador) ${R.ENCUESTA_SEMANA}/semana con ${R.ENCUESTA_MIN}+ · ` +
         `Fleetrite ${R.FLEETRITE.slice().reverse().map(t => `${t.min}+ NPs=${t.pts}`).join(', ')}. ` +
         (podioG.encuestaConfigurada ? '' : '<span style="color:var(--warning)">⚠️ Encuesta QR aún sin configurar (Mostrador suma 0 en ese reto).</span>') +
@@ -3051,7 +3053,8 @@ function renderVisitas() {
     
     // ── PANTALLA TV ───────────────────────────────────────────────────────
     let tvTimer = null, tvTick = null, tvSecs = 300;
-    const SUCURSAL_METAS = {
+    // Respaldo si el servidor aún no trae "metas" en /api/ventas-totales (versión vieja de server.js)
+    const SUCURSAL_METAS_FALLBACK = {
         'TORREON':        5000000,
         'GOMEZ PALACIO':  7000000,
         'MONCLOVA':       2100000,
@@ -3180,7 +3183,7 @@ function renderVisitas() {
             bottom.innerHTML = sucursales.map(suc => {
                 const row  = d.porSucursal.find(r => r.Sucursal === suc);
                 const venta = parseFloat(row?.Ventas) || 0;
-                const meta  = SUCURSAL_METAS[suc] || 0;
+                const meta  = (d.metas && d.metas[suc]) || SUCURSAL_METAS_FALLBACK[suc] || 0;
                 const pct   = meta > 0 ? Math.min((venta/meta)*100, 100) : 0;
                 const cls   = pct >= 100 ? 'ok' : pct >= 70 ? 'mid' : 'low';
                 const color = pct >= 100 ? '#00ff88' : pct >= 70 ? 'var(--gold)' : '#8b3a3a';
