@@ -1040,7 +1040,14 @@
 
     async function apiFetch(endpoint) {
         const res = await fetch(API + endpoint);
-        if (!res.ok) throw new Error(`Error ${res.status} en ${endpoint}`);
+        if (!res.ok) {
+            // Intenta leer el mensaje real que manda el servidor ({error: "..."})
+            // en vez de solo mostrar el código HTTP, para poder diagnosticarlo
+            // sin necesitar ver los logs del servidor.
+            let detalle = '';
+            try { detalle = (await res.json()).error || ''; } catch (e) {}
+            throw new Error(`Error ${res.status} en ${endpoint}${detalle ? ' — ' + detalle : ''}`);
+        }
         return res.json();
     }
 
