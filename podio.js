@@ -23,6 +23,11 @@ const PODIO = {
     '2026-11': { nombre: 'Día de Muertos + Navidad', emoji: '💀🎄' },
   },
   PUESTOS: ['Oro', 'Plata', 'Bronce', '4to', '5to'],
+  // Días festivos dentro del concurso: si un asesor no vendió (o no superó su
+  // meta diaria) ese día, NO se rompe su racha de Constancia — como domingo.
+  // Si sí vino de guardia y superó su meta, el día cuenta normal (con bono
+  // de racha incluido).
+  FESTIVOS: ['2026-09-16', '2026-11-02', '2026-11-16'],
 };
 
 // ── Utilidades de fecha (todas en strings YYYY-MM-DD, sin zonas horarias) ────
@@ -102,6 +107,7 @@ function nombreKey(s) { return (s || '').toString().trim().toUpperCase().replace
 function calcConstancia(ventasDia, meta, mes, hoy) {
   const habiles = diasHabilesMes(mes);
   const metaDiaria = meta > 0 && habiles > 0 ? meta / habiles : 0;
+  const festivos = new Set(PODIO.FESTIVOS || []);
   const dias = [];
   let racha = 0, rachaMax = 0, diasSuperados = 0, ptsBase = 0, ptsRacha = 0;
   const ult = ultimoDiaMes(mes);
@@ -109,18 +115,25 @@ function calcConstancia(ventasDia, meta, mes, hoy) {
     const f = `${mes}-${pad(d)}`;
     if (f > hoy) break;
     if (diaSemana(f) === 0) continue;                  // domingo: no cuenta ni rompe racha
+    const esFestivo = festivos.has(f);
     const venta = parseFloat(ventasDia[f]) || 0;
     const superado = metaDiaria > 0 && venta > metaDiaria;
     if (superado) {
       diasSuperados++; ptsBase += PODIO.PTS.CONSTANCIA_DIA;
       racha++;
-      if (racha >= 2) ptsRacha += PODIO.PTS.RACHA_DIA_EXTRA;
+      // Bono de racha creciente: el 2º día consecutivo suma +10, el 3º +20,
+      // el 4º +30... (RACHA_DIA_EXTRA × posición dentro de la racha, contando
+      // desde el 2º día), no un bono fijo — entre más larga la racha, más
+      // vale cada día extra.
+      if (racha >= 2) ptsRacha += PODIO.PTS.RACHA_DIA_EXTRA * (racha - 1);
       rachaMax = Math.max(rachaMax, racha);
+    } else if (esFestivo) {
+      continue;                                         // festivo sin venta: no cuenta, no rompe racha (como domingo)
     } else if (f < hoy) {
       racha = 0;                                        // día hábil pasado sin superar: rompe
     }
     // si f === hoy y aún no supera, la racha sigue "viva" hasta que cierre el día
-    dias.push({ fecha: f, venta: Math.round(venta), superado });
+    dias.push({ fecha: f, venta: Math.round(venta), superado, festivo: esFestivo });
   }
   return { metaDiaria: Math.round(metaDiaria), diasHabiles: habiles, diasSuperados,
            rachaActual: racha, rachaMax, ptsBase, ptsRacha, pts: ptsBase + ptsRacha, dias };
