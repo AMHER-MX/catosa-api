@@ -1572,7 +1572,15 @@ async function fechasPorVendedorDesdeCSV(url, colsNombre, colsFecha) {
 // qué registró cada día (a quién visitó, etc.), no solo la fecha.
 async function filasPorVendedorDesdeCSV(url, colsNombre, colsFecha) {
   if (!url) return {};
-  const filas = podio.parseCSV(await httpGetText(url));
+  let texto;
+  try {
+    texto = await httpGetText(url);
+  } catch (e) {
+    // Re-lanza con contexto de qué Sheet falló, para poder diagnosticarlo
+    // desde el mensaje de error sin necesitar ver los logs del servidor.
+    throw new Error(`No se pudo leer el Sheet (${url.slice(0, 60)}...): ${e.message}`);
+  }
+  const filas = podio.parseCSV(texto);
   const out = {};
   filas.forEach(f => {
     const nombre = podio.nombreKey(podio.col(f, ...colsNombre));
