@@ -1274,8 +1274,8 @@
         const dias = [...c.dias].sort((a, b) => b.fecha.localeCompare(a.fecha));
         document.getElementById('reto-body').innerHTML = dias.length
             ? `<table class="day-table"><thead><tr><th>Fecha</th><th>Venta</th><th style="text-align:right">Resultado</th></tr></thead><tbody>${
-                dias.map(x => `<tr><td>${x.fecha}</td><td>${fM(x.venta)}</td><td style="text-align:right">${x.superado ? '✅ superó' : '—'}</td></tr>`).join('')
-              }</tbody></table><div style="font-size:0.62rem;color:var(--text-subtle);margin-top:8px;">Meta diaria: ${fM(c.metaDiaria)}</div>`
+                dias.map(x => `<tr><td>${x.fecha}${x.festivo ? ' 🎉' : ''}</td><td>${fM(x.venta)}</td><td style="text-align:right">${x.superado ? '✅ superó' : '—'}</td></tr>`).join('')
+              }</tbody></table><div style="font-size:0.62rem;color:var(--text-subtle);margin-top:8px;">Meta diaria: ${fM(c.metaDiaria)} · 🎉 = día festivo (si no superaste, no te rompe la racha)</div>`
             : '<div style="color:var(--text-subtle);text-align:center;padding:20px 0;">Sin datos este mes</div>';
         document.getElementById('reto-modal').classList.add('open');
     }
