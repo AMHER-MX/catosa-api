@@ -1207,11 +1207,12 @@
                 <div class="r-val">Próximamente</div><div class="r-sub">${R.ENCUESTA_MIN} escaneos/semana = ${R.ENCUESTA_SEMANA} pts</div>${bar(0, 1)}</div>`;
         } else {
             const n = semActual ? semActual.total : 0, meta = sem ? sem.meta : 15;
+            const hayBono = sem && sem.semanas.some(s => s.bono);
             const clickSem = esCalle ? 'abrirVisitasDetalle()' : 'abrirEncuestaDetalle()';
             semanaHTML = `<div class="reto ${semActual && semActual.cumple ? 'ok' : ''}" style="cursor:pointer;" onclick="${clickSem}">
                 <div class="r-top"><span>${esCalle ? '📋 Visitas' : '📱 Encuesta QR'} · semana</span><span class="r-pts">+${sem ? sem.pts : 0}</span></div>
                 <div class="r-val">${n} / ${meta}</div>
-                <div class="r-sub">${sem ? sem.cumplidas : 0} semana${sem && sem.cumplidas === 1 ? '' : 's'} cumplida${sem && sem.cumplidas === 1 ? '' : 's'} · ${esCalle ? R.VISITAS_SEMANA : R.ENCUESTA_SEMANA} pts c/u · toca para ver detalle</div>${bar(n, meta)}</div>`;
+                <div class="r-sub">${sem ? sem.cumplidas : 0} semana${sem && sem.cumplidas === 1 ? '' : 's'} cumplida${sem && sem.cumplidas === 1 ? '' : 's'}${hayBono ? ' (incluye 1 🎁 acreditada)' : ''} · ${esCalle ? R.VISITAS_SEMANA : R.ENCUESTA_SEMANA} pts c/u · toca para ver detalle</div>${bar(n, meta)}</div>`;
         }
         document.getElementById('podio-retos').innerHTML = `
             <div class="reto ${ck.dias >= diasHabilesHastaHoy && ck.dias > 0 ? 'ok' : ''}" style="cursor:pointer;" onclick="abrirCheckinDetalle()">
