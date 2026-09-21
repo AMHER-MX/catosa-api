@@ -28,6 +28,13 @@ const PODIO = {
   // Si sí vino de guardia y superó su meta, el día cuenta normal (con bono
   // de racha incluido).
   FESTIVOS: ['2026-09-16', '2026-11-02', '2026-11-16'],
+  // Bono manual de Encuesta QR (solo canal MOSTRADOR): semanas en las que se
+  // les acredita la semana completa (los ENCUESTA_SEMANA pts) aunque no haya
+  // escaneos reales registrados — p.ej. la semana en que no se alcanzaron a
+  // repartir los códigos QR. Identificada por el lunes de esa semana
+  // (YYYY-MM-DD). A partir de la semana siguiente corre normal, con datos
+  // reales del Sheet.
+  ENCUESTA_BONO_SEMANAS: ['2026-09-14'],
 };
 
 // ── Utilidades de fecha (todas en strings YYYY-MM-DD, sin zonas horarias) ────
@@ -147,7 +154,7 @@ function calcCheckin(fechas, mes) {
 
 // Semanas (lunes a domingo) con ≥ min registros → pts por semana.
 // Una semana pertenece al mes en que cae su lunes.
-function calcSemanal(fechas, mes, min, ptsSemana) {
+function calcSemanal(fechas, mes, min, ptsSemana, bonoSemanas) {
   const porSemana = {};
   (fechas || []).forEach(f => {
     if (!f) return;
@@ -155,6 +162,7 @@ function calcSemanal(fechas, mes, min, ptsSemana) {
     if (mesDe(lun) !== mes) return;
     porSemana[lun] = (porSemana[lun] || 0) + 1;
   });
+  const bono = new Set(bonoSemanas || []);
   // incluir todas las semanas del mes (para mostrar avance aunque tenga 0)
   let lun = lunesDe(`${mes}-01`);
   if (mesDe(lun) !== mes) lun = sumarDias(lun, 7);
@@ -163,7 +171,8 @@ function calcSemanal(fechas, mes, min, ptsSemana) {
   for (; mesDe(lun) === mes; lun = sumarDias(lun, 7)) {
     if (lun > hoy) break;
     const total = porSemana[lun] || 0;
-    semanas.push({ inicio: lun, fin: sumarDias(lun, 6), total, cumple: total >= min });
+    const esBono = bono.has(lun);
+    semanas.push({ inicio: lun, fin: sumarDias(lun, 6), total, cumple: total >= min || esBono, bono: esBono });
   }
   const cumplidas = semanas.filter(s => s.cumple).length;
   return { semanas, cumplidas, pts: cumplidas * ptsSemana, meta: min };
@@ -197,7 +206,7 @@ function calcularMes(datos) {
     const checkin    = calcCheckin(datos.checkins[k], mes);
     const constancia = calcConstancia(datos.ventasDia[k] || {}, p.Meta, mes, hoy);
     const visitas    = esCalle ? calcSemanal(datos.visitas[k], mes, PODIO.PTS.VISITAS_MIN, PODIO.PTS.VISITAS_SEMANA) : null;
-    const encuesta   = !esCalle ? calcSemanal(datos.encuestas[k], mes, PODIO.PTS.ENCUESTA_MIN, PODIO.PTS.ENCUESTA_SEMANA) : null;
+    const encuesta   = !esCalle ? calcSemanal(datos.encuestas[k], mes, PODIO.PTS.ENCUESTA_MIN, PODIO.PTS.ENCUESTA_SEMANA, PODIO.ENCUESTA_BONO_SEMANAS) : null;
     const fleetrite  = calcFleetrite(datos.fleetrite[k]);
     const total = checkin.pts + constancia.pts + (visitas ? visitas.pts : 0) + (encuesta ? encuesta.pts : 0) + fleetrite.pts;
     return {
