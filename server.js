@@ -1783,7 +1783,11 @@ app.get('/api/podio/fleetrite-detalle', async (req, res) => {
     // Disponibles: piezas del catálogo Fleetrite con existencia en almacén que
     // este asesor todavía NO ha vendido este mes (para que sepa cuáles le
     // faltan y puede ofrecer para llegar a su meta de NPs).
-    const yaVendidas = new Set(nps.map(n => n.articulo.trim().toUpperCase()));
+    // El ERP antepone un prefijo de unidad ("0/", "1/"...) al número de parte
+    // real (ej. "0/FLRT4720BUSR" = FLRT4720BUSR por pieza). El catálogo no
+    // trae ese prefijo, así que hay que quitarlo antes de comparar.
+    const sinPrefijo = s => (s || '').trim().toUpperCase().replace(/^\d+\//, '');
+    const yaVendidas = new Set(nps.map(n => sinPrefijo(n.articulo)));
     let disponibles = [];
     let disponiblesError = null;
     let disponiblesDebug = null;
@@ -1798,7 +1802,7 @@ app.get('/api/podio/fleetrite-detalle', async (req, res) => {
       `);
       const conExistencia = inv.recordset.length;
       disponibles = inv.recordset
-        .map(row => ({ ...row, ParteNorm: (row.Parte || '').trim().toUpperCase() }))
+        .map(row => ({ ...row, ParteNorm: sinPrefijo(row.Parte) }))
         .filter(row => FLEETRITE_CATALOGO_NORM[row.ParteNorm] && !yaVendidas.has(row.ParteNorm))
         .map(row => ({
           articulo: row.Parte.trim(),
