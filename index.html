@@ -1246,7 +1246,10 @@
                 ? d.nps.map(n => `<tr><td>${n.articulo}</td><td>${n.descripcion}</td><td style="text-align:right">${n.cantidad}</td></tr>`).join('')
                 : '<tr><td colspan="3" style="color:var(--text-subtle);text-align:center;">Sin NPs Fleetrite este mes</td></tr>';
             const disp = d.disponibles || [];
-            document.getElementById('flrt-disp-rows').innerHTML = disp.length
+            if (d.disponiblesDebug) console.log('Fleetrite disponibles debug:', d.disponiblesDebug);
+            document.getElementById('flrt-disp-rows').innerHTML = d.disponiblesError
+                ? `<tr><td colspan="3" style="color:var(--red)">Error: ${d.disponiblesError}</td></tr>`
+                : disp.length
                 ? disp.slice(0, 40).map(n => `<tr><td>${n.articulo}</td><td>${n.descripcion}</td><td style="text-align:right">${n.existencia}</td></tr>`).join('')
                 : '<tr><td colspan="3" style="color:var(--text-subtle);text-align:center;">Sin piezas disponibles por el momento</td></tr>';
         } catch (e) {
