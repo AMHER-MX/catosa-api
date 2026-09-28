@@ -351,6 +351,13 @@ app.get('/api/productos', async (req, res) => {
   }
 });
 
+// ── CATÁLOGO FLEETRITE (para que el asesor busque y comparta con el cliente) ──
+// Datos estáticos (no requieren SQL): número de parte → descripción / ref. cruzada.
+app.get('/api/fleetrite-catalogo', (req, res) => {
+  const lista = Object.entries(FLEETRITE_CATALOGO).map(([articulo, descripcion]) => ({ articulo, descripcion }));
+  res.json({ total: lista.length, partes: lista });
+});
+
 // ── TOP 10 PRODUCTOS DEL VENDEDOR ─────────────────────────────────────────────
 app.get('/api/top-productos', async (req, res) => {
   try {
