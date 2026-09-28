@@ -10,6 +10,13 @@ const podio   = require('./podio');   // Ruta al Podio: reglas de puntos
 // catálogo general del proveedor. Se usa para mostrarle a cada asesor qué
 // piezas Fleetrite tiene disponibles en almacén y aún no ha vendido este mes.
 const FLEETRITE_CATALOGO = require('./fleetrite-catalogo.json');
+// Normalizado (trim + mayúsculas) porque el ERP suele traer ARTICULO con
+// espacios de relleno (columnas CHAR de ancho fijo) — una comparación exacta
+// sin normalizar no encuentra nada aunque la pieza sí esté en el catálogo.
+const FLEETRITE_CATALOGO_NORM = {};
+Object.entries(FLEETRITE_CATALOGO).forEach(([k, v]) => {
+  FLEETRITE_CATALOGO_NORM[k.trim().toUpperCase()] = v;
+});
 
 const app = express();
 app.use(cors({ origin: '*', methods: ['GET','POST','OPTIONS'], allowedHeaders: ['Content-Type','Authorization'] }));
@@ -1776,8 +1783,10 @@ app.get('/api/podio/fleetrite-detalle', async (req, res) => {
     // Disponibles: piezas del catálogo Fleetrite con existencia en almacén que
     // este asesor todavía NO ha vendido este mes (para que sepa cuáles le
     // faltan y puede ofrecer para llegar a su meta de NPs).
-    const yaVendidas = new Set(nps.map(n => n.articulo));
+    const yaVendidas = new Set(nps.map(n => n.articulo.trim().toUpperCase()));
     let disponibles = [];
+    let disponiblesError = null;
+    let disponiblesDebug = null;
     try {
       const inv = await db.request().query(`
         SELECT i.ARTICULO AS Parte, MAX(i.DES_ARTICULO) AS Descripcion, SUM(i.EXIS_REALES) AS Existencia
@@ -1787,20 +1796,26 @@ app.get('/api/podio/fleetrite-detalle', async (req, res) => {
         GROUP BY i.ARTICULO
         HAVING SUM(i.EXIS_REALES) > 0
       `);
+      const conExistencia = inv.recordset.length;
       disponibles = inv.recordset
-        .filter(row => FLEETRITE_CATALOGO[row.Parte] && !yaVendidas.has(row.Parte))
+        .map(row => ({ ...row, ParteNorm: (row.Parte || '').trim().toUpperCase() }))
+        .filter(row => FLEETRITE_CATALOGO_NORM[row.ParteNorm] && !yaVendidas.has(row.ParteNorm))
         .map(row => ({
-          articulo: row.Parte,
-          descripcion: FLEETRITE_CATALOGO[row.Parte] || row.Descripcion || '',
+          articulo: row.Parte.trim(),
+          descripcion: FLEETRITE_CATALOGO_NORM[row.ParteNorm] || row.Descripcion || '',
           existencia: parseInt(row.Existencia) || 0,
         }))
         .sort((a, b) => b.existencia - a.existencia);
+      // Info de diagnóstico temporal — quitar cuando quede confirmado que funciona bien.
+      disponiblesDebug = { conExistenciaEnERP: conExistencia, cruzanConCatalogo: disponibles.length,
+                           ejemploERP: inv.recordset.slice(0, 3).map(r => r.Parte) };
     } catch (e) {
       console.error('Error calculando disponibles Fleetrite:', e.message);
+      disponiblesError = e.message;
       // No rompemos el endpoint principal si falla el cruce con inventario
     }
 
-    res.json({ mes, vendedor, total: nps.length, nps, disponibles });
+    res.json({ mes, vendedor, total: nps.length, nps, disponibles, disponiblesError, disponiblesDebug });
   } catch (err) {
     console.error('Error /api/podio/fleetrite-detalle:', err.message);
     res.status(500).json({ error: err.message });
