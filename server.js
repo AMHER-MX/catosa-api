@@ -6,6 +6,10 @@ const XLSX    = require('xlsx');
 const path    = require('path');
 const https   = require('https');
 const podio   = require('./podio');   // Ruta al Podio: reglas de puntos
+// Catálogo de refacciones Fleetrite (No. de parte → descripción), extraído del
+// catálogo general del proveedor. Se usa para mostrarle a cada asesor qué
+// piezas Fleetrite tiene disponibles en almacén y aún no ha vendido este mes.
+const FLEETRITE_CATALOGO = require('./fleetrite-catalogo.json');
 
 const app = express();
 app.use(cors({ origin: '*', methods: ['GET','POST','OPTIONS'], allowedHeaders: ['Content-Type','Authorization'] }));
@@ -1768,7 +1772,35 @@ app.get('/api/podio/fleetrite-detalle', async (req, res) => {
       articulo: row.Parte, descripcion: row.Descripcion || '',
       cantidad: parseInt(row.Cantidad) || 0, ultimaFecha: row.UltimaFecha,
     }));
-    res.json({ mes, vendedor, total: nps.length, nps });
+
+    // Disponibles: piezas del catálogo Fleetrite con existencia en almacén que
+    // este asesor todavía NO ha vendido este mes (para que sepa cuáles le
+    // faltan y puede ofrecer para llegar a su meta de NPs).
+    const yaVendidas = new Set(nps.map(n => n.articulo));
+    let disponibles = [];
+    try {
+      const inv = await db.request().query(`
+        SELECT i.ARTICULO AS Parte, MAX(i.DES_ARTICULO) AS Descripcion, SUM(i.EXIS_REALES) AS Existencia
+        FROM FTIGBI_PR i
+        WHERE i.ALMACEN IN ('101', '102', '101LA', '102LA')
+          AND (i.ARTICULO LIKE '%FLT%' OR i.ARTICULO LIKE '%FLTR%' OR i.ARTICULO LIKE '%FLRT%')
+        GROUP BY i.ARTICULO
+        HAVING SUM(i.EXIS_REALES) > 0
+      `);
+      disponibles = inv.recordset
+        .filter(row => FLEETRITE_CATALOGO[row.Parte] && !yaVendidas.has(row.Parte))
+        .map(row => ({
+          articulo: row.Parte,
+          descripcion: FLEETRITE_CATALOGO[row.Parte] || row.Descripcion || '',
+          existencia: parseInt(row.Existencia) || 0,
+        }))
+        .sort((a, b) => b.existencia - a.existencia);
+    } catch (e) {
+      console.error('Error calculando disponibles Fleetrite:', e.message);
+      // No rompemos el endpoint principal si falla el cruce con inventario
+    }
+
+    res.json({ mes, vendedor, total: nps.length, nps, disponibles });
   } catch (err) {
     console.error('Error /api/podio/fleetrite-detalle:', err.message);
     res.status(500).json({ error: err.message });
