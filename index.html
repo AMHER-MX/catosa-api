@@ -762,8 +762,8 @@
 
         
         /* ── DETALLE DÍA MODAL ───────────────────────────── */
-        #day-modal, #flrt-modal, #reto-modal { display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.88); overflow-y:auto; padding:16px; }
-        #day-modal.open, #flrt-modal.open, #reto-modal.open { display:flex; align-items:flex-start; justify-content:center; }
+        #day-modal, #flrt-modal, #reto-modal, #cat-modal { display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.88); overflow-y:auto; padding:16px; }
+        #day-modal.open, #flrt-modal.open, #reto-modal.open, #cat-modal.open { display:flex; align-items:flex-start; justify-content:center; }
         .day-card { background:var(--surface); border:1px solid var(--success); border-radius:20px; width:100%; max-width:480px; padding:22px; margin:auto; }
         .day-header { margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid #1e1e1e; display:flex; justify-content:space-between; align-items:center; }
         .day-header h2 { color:var(--success); font-size:1rem; font-family:'Syne',sans-serif; margin:0; }
@@ -871,6 +871,9 @@
 
     <button onclick="abrirResumen()" style="width:100%;padding:14px;background:linear-gradient(135deg,#1a1600,#3a2e00);border:1px solid var(--gold);border-radius:14px;color:var(--gold);font-size:0.85rem;font-weight:700;cursor:pointer;margin-bottom:12px;">
             📊 Resumen del mes anterior
+        </button>
+        <button onclick="abrirCatalogoFleetrite()" style="width:100%;padding:14px;background:linear-gradient(135deg,#0d2a26,#134a42);border:1px solid #1fa896;border-radius:14px;color:#4be0c8;font-size:0.85rem;font-weight:700;cursor:pointer;margin-bottom:12px;">
+            🔧 Catálogo Fleetrite
         </button>
         <button class="btn-forms" onclick="window.open('https://docs.google.com/forms/d/e/1FAIpQLSfWF2AutcLCDhfBL6hoABmWVv4OKDvorCNB2CJTgY5QlrPrwA/viewform?usp=dialog','_blank')" style="background:transparent;border:1px solid var(--border);color:var(--text-muted);font-weight:500;">
         Registrar cliente en base de datos
@@ -1260,6 +1263,75 @@
 
     function cerrarFleetriteDetalle() {
         document.getElementById('flrt-modal').classList.remove('open');
+    }
+
+    // ─── CATÁLOGO FLEETRITE (buscar + compartir con cliente) ──────────────────
+    let catalogoFleetriteData = null; // cache: se descarga una sola vez
+
+    async function abrirCatalogoFleetrite() {
+        document.getElementById('cat-modal').classList.add('open');
+        document.getElementById('cat-buscar').value = '';
+        if (!catalogoFleetriteData) {
+            document.getElementById('cat-rows').innerHTML = '<div style="color:var(--text-subtle);text-align:center;padding:20px 0;">Cargando catálogo...</div>';
+            try {
+                const d = await apiFetch('/api/fleetrite-catalogo');
+                catalogoFleetriteData = d.partes || [];
+            } catch (e) {
+                document.getElementById('cat-rows').innerHTML = `<div style="color:var(--red);text-align:center;padding:20px 0;">Error: ${e.message}</div>`;
+                return;
+            }
+        }
+        filtrarCatalogoFleetrite();
+    }
+
+    function cerrarCatalogoFleetrite() {
+        document.getElementById('cat-modal').classList.remove('open');
+    }
+
+    function filtrarCatalogoFleetrite() {
+        if (!catalogoFleetriteData) return;
+        const q = (document.getElementById('cat-buscar').value || '').trim().toUpperCase();
+        const filtradas = q
+            ? catalogoFleetriteData.filter(p => p.articulo.toUpperCase().includes(q) || p.descripcion.toUpperCase().includes(q))
+            : catalogoFleetriteData;
+        document.getElementById('cat-total').innerText = `${filtradas.length} pieza${filtradas.length === 1 ? '' : 's'}`;
+        const MOSTRAR = 60;
+        const rows = filtradas.slice(0, MOSTRAR).map(p => {
+            const npEsc = p.articulo.replace(/'/g, "\\'");
+            const descEsc = p.descripcion.replace(/'/g, "\\'");
+            return `<div style="padding:10px 0;border-bottom:1px solid var(--border);">
+                <div style="font-weight:700;font-size:0.75rem;color:var(--accent);">${p.articulo}</div>
+                <div style="font-size:0.68rem;color:var(--text-muted);margin:2px 0 8px;">${p.descripcion}</div>
+                <div style="display:flex;gap:8px;">
+                    <button onclick="compartirFichaWhatsApp('${npEsc}','${descEsc}')" style="flex:1;padding:8px;border-radius:8px;border:1px solid #25d36655;background:#25d36622;color:#25d366;font-size:0.68rem;font-weight:700;cursor:pointer;">💬 WhatsApp</button>
+                    <button onclick="compartirFichaCorreo('${npEsc}','${descEsc}')" style="flex:1;padding:8px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text-muted);font-size:0.68rem;font-weight:700;cursor:pointer;">✉️ Correo</button>
+                </div>
+            </div>`;
+        }).join('');
+        document.getElementById('cat-rows').innerHTML = rows
+            || '<div style="color:var(--text-subtle);text-align:center;padding:20px 0;">Sin resultados</div>';
+        if (filtradas.length > MOSTRAR) {
+            document.getElementById('cat-rows').innerHTML += `<div style="color:var(--text-subtle);text-align:center;font-size:0.6rem;padding:8px 0;">Mostrando ${MOSTRAR} de ${filtradas.length} — afina tu búsqueda para ver el resto</div>`;
+        }
+    }
+
+    function textoFichaFleetrite(np, descripcion) {
+        const vendedor = (user && user.Nombre) || '';
+        return `Hola, te comparto la ficha de esta refacción Fleetrite:\n\n`
+            + `No. de parte: ${np}\n`
+            + `Descripción: ${descripcion}\n\n`
+            + `Cualquier duda quedo al pendiente.\n${vendedor}`;
+    }
+
+    function compartirFichaWhatsApp(np, descripcion) {
+        const texto = encodeURIComponent(textoFichaFleetrite(np, descripcion));
+        window.open(`https://wa.me/?text=${texto}`, '_blank');
+    }
+
+    function compartirFichaCorreo(np, descripcion) {
+        const asunto = encodeURIComponent(`Ficha técnica Fleetrite — ${np}`);
+        const cuerpo = encodeURIComponent(textoFichaFleetrite(np, descripcion));
+        window.location.href = `mailto:?subject=${asunto}&body=${cuerpo}`;
     }
 
     // ─── DETALLE DE RETOS (Check-in, Constancia, Visitas, Encuesta QR) ────────
@@ -2292,6 +2364,23 @@
                 <tbody id="day-rows"><tr><td colspan="3" style="color:var(--text-subtle);text-align:center;">Cargando...</td></tr></tbody>
             </table>
             <button class="day-close" onclick="cerrarDetalleDia()">✕ Cerrar</button>
+        </div>
+    </div>
+
+    <!-- ── CATÁLOGO FLEETRITE (buscar + compartir con cliente) ─────────────── -->
+    <div id="cat-modal">
+        <div class="day-card">
+            <div class="day-header">
+                <h2>🔧 Catálogo Fleetrite</h2>
+                <div class="day-total" id="cat-total">—</div>
+            </div>
+            <input type="text" id="cat-buscar" placeholder="Buscar por No. de parte o descripción..." oninput="filtrarCatalogoFleetrite()"
+                   style="width:100%;padding:10px 12px;margin-bottom:10px;border-radius:8px;border:1px solid var(--border);background:#0d0d0d;color:var(--text);font-size:0.75rem;">
+            <div style="font-size:0.6rem;color:var(--text-subtle);margin-bottom:10px;">Toca 💬 o ✉️ en una pieza para compartirla con tu cliente. Se abre ya redactado — solo eliges el contacto o el destinatario.</div>
+            <div id="cat-rows" style="max-height:52vh;overflow-y:auto;">
+                <div style="color:var(--text-subtle);text-align:center;padding:20px 0;">Cargando catálogo...</div>
+            </div>
+            <button class="day-close" onclick="cerrarCatalogoFleetrite()">✕ Cerrar</button>
         </div>
     </div>
 
