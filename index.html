@@ -1236,6 +1236,7 @@
         document.getElementById('flrt-modal').classList.add('open');
         document.getElementById('flrt-total').innerText = '—';
         document.getElementById('flrt-rows').innerHTML = '<tr><td colspan="3" style="color:var(--text-subtle);text-align:center;">Cargando...</td></tr>';
+        document.getElementById('flrt-disp-rows').innerHTML = '<tr><td colspan="3" style="color:var(--text-subtle);text-align:center;">Cargando...</td></tr>';
         try {
             const nombre = encodeURIComponent(user.Nombre);
             const mes = (podioData && podioData.mesActual) || '';
@@ -1244,8 +1245,13 @@
             document.getElementById('flrt-rows').innerHTML = d.nps.length
                 ? d.nps.map(n => `<tr><td>${n.articulo}</td><td>${n.descripcion}</td><td style="text-align:right">${n.cantidad}</td></tr>`).join('')
                 : '<tr><td colspan="3" style="color:var(--text-subtle);text-align:center;">Sin NPs Fleetrite este mes</td></tr>';
+            const disp = d.disponibles || [];
+            document.getElementById('flrt-disp-rows').innerHTML = disp.length
+                ? disp.slice(0, 40).map(n => `<tr><td>${n.articulo}</td><td>${n.descripcion}</td><td style="text-align:right">${n.existencia}</td></tr>`).join('')
+                : '<tr><td colspan="3" style="color:var(--text-subtle);text-align:center;">Sin piezas disponibles por el momento</td></tr>';
         } catch (e) {
             document.getElementById('flrt-rows').innerHTML = `<tr><td colspan="3" style="color:var(--red)">Error: ${e.message}</td></tr>`;
+            document.getElementById('flrt-disp-rows').innerHTML = '<tr><td colspan="3" style="color:var(--text-subtle);text-align:center;">—</td></tr>';
         }
     }
 
@@ -2296,6 +2302,11 @@
             <table class="day-table">
                 <thead><tr><th>Parte</th><th>Descripción</th><th style="text-align:right">Cant.</th></tr></thead>
                 <tbody id="flrt-rows"><tr><td colspan="3" style="color:var(--text-subtle);text-align:center;">Cargando...</td></tr></tbody>
+            </table>
+            <div style="font-size:0.72rem;font-weight:700;margin:14px 0 4px;color:var(--text-subtle);">📦 Disponibles en almacén (aún no vendidas este mes)</div>
+            <table class="day-table">
+                <thead><tr><th>Parte</th><th>Descripción</th><th style="text-align:right">Exist.</th></tr></thead>
+                <tbody id="flrt-disp-rows"><tr><td colspan="3" style="color:var(--text-subtle);text-align:center;">Cargando...</td></tr></tbody>
             </table>
             <button class="day-close" onclick="cerrarFleetriteDetalle()">✕ Cerrar</button>
         </div>
