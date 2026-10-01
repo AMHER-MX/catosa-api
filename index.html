@@ -1743,6 +1743,23 @@
     const SHEETS_VISITAS = 'https://script.google.com/macros/s/AKfycbxs__4zTTQW75cld-n-tyiyhsDcYeFSefGwHGImVgyGMJepLEIgHolMztCp8ov49Fev/exec';
     const SHEETS_CHECKIN = 'https://script.google.com/macros/s/AKfycbxs__4zTTQW75cld-n-tyiyhsDcYeFSefGwHGImVgyGMJepLEIgHolMztCp8ov49Fev/exec';
 
+    // En celular, una señal intermitente (perder el WiFi/datos un instante justo
+    // al enviar) hace que fetch() tire "Failed to fetch" aunque el servidor esté
+    // bien. Reintenta un par de veces antes de darle el error al asesor — casi
+    // siempre el 2º intento sí pasa.
+    async function fetchConReintento(url, options, intentos = 3, esperaMs = 1200) {
+        let ultimoError;
+        for (let i = 0; i < intentos; i++) {
+            try {
+                return await fetch(url, options);
+            } catch (err) {
+                ultimoError = err;
+                if (i < intentos - 1) await new Promise(r => setTimeout(r, esperaMs));
+            }
+        }
+        throw ultimoError;
+    }
+
     // ─── VISITAS ─────────────────────────────────────────────────────────────
     function llenarSelectorClientes(clientes) {
         const sel = document.getElementById('vis-cliente');
@@ -1855,7 +1872,7 @@
         } catch(_) {}
 
         try {
-            await fetch(SHEETS_VISITAS, {
+            await fetchConReintento(SHEETS_VISITAS, {
                 method: 'POST',
                 mode: 'no-cors',
                 headers: { 'Content-Type': 'application/json' },
@@ -1901,7 +1918,7 @@
         const fecha = ahora.toLocaleDateString('es-MX');
         const hora  = ahora.toLocaleTimeString('es-MX', { hour:'2-digit', minute:'2-digit' });
         try {
-            await fetch(SHEETS_CHECKIN, {
+            await fetchConReintento(SHEETS_CHECKIN, {
                 method: 'POST',
                 mode: 'no-cors',
                 headers: { 'Content-Type': 'application/json' },
