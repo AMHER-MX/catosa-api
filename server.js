@@ -243,8 +243,10 @@ app.get('/api/ventas', async (req, res) => {
         ORDER BY Ventas DESC
       `);
 
+    const metasYaUsadas = new Set(); // referencias a metasMap[x] ya cubiertas por una fila con ventas
     const datos = result.recordset.map(row => {
       const m = buscarMeta(row.Nombre);
+      metasYaUsadas.add(m);
       const metaSuc = META_SUCURSAL[normSuc(m.sucursal || row.Sucursal_SQL)] || 0;
       return {
         Nombre: row.Nombre, Sucursal: normSuc(m.sucursal || row.Sucursal_SQL),
@@ -253,6 +255,22 @@ app.get('/api/ventas', async (req, res) => {
         Venta_Prov: 0, Meta_Prov: 50000,
       };
     });
+
+    // Asegura que CUALQUIER asesor activo (con meta en metas.xlsx) pueda entrar a
+    // la app aunque todavía no tenga ninguna venta registrada este mes. Sin esto,
+    // el día 1 de cada mes (antes de que entren las primeras ventas) la lista de
+    // "/api/ventas" sale casi vacía porque solo incluía vendedores con ventas ya
+    // hechas, y el login fallaba con "JUGADOR NO ENCONTRADO" para todo mundo.
+    Object.entries(metasMap).forEach(([nombre, m]) => {
+      if (metasYaUsadas.has(m)) return; // ya salió arriba con sus ventas del mes
+      const metaSuc = META_SUCURSAL[normSuc(m.sucursal)] || 0;
+      datos.push({
+        Nombre: nombre, Sucursal: normSuc(m.sucursal), Canal: m.canal,
+        Ventas: 0, Meta: m.meta, MetaSucursal: metaSuc,
+        Venta_Prov: 0, Meta_Prov: 50000,
+      });
+    });
+
     res.json(datos);
   } catch (err) {
     console.error('Error /api/ventas:', err.message);
