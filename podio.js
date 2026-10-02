@@ -153,22 +153,29 @@ function calcCheckin(fechas, mes) {
 }
 
 // Semanas (lunes a domingo) con ≥ min registros → pts por semana.
-// Una semana pertenece al mes en que cae su lunes.
+// Una semana que cae a caballo entre dos meses (p.ej. lun 28-sep a dom 4-oct)
+// pertenece al mes que tiene MÁS días de esa semana, no automáticamente al
+// mes del lunes — si no, los registros de los primeros días de un mes nuevo
+// se cuentan para el mes anterior (ya cerrado) y nunca aparecen en el mes
+// actual. Usamos el jueves (día 4 de 7) como "día decisivo": si el jueves ya
+// es del mes nuevo, ese mes tiene 4+ de los 7 días y se queda con la semana.
+function mesDeSemana(lun) { return mesDe(sumarDias(lun, 3)); }
+
 function calcSemanal(fechas, mes, min, ptsSemana, bonoSemanas) {
   const porSemana = {};
   (fechas || []).forEach(f => {
     if (!f) return;
     const lun = lunesDe(f);
-    if (mesDe(lun) !== mes) return;
+    if (mesDeSemana(lun) !== mes) return;
     porSemana[lun] = (porSemana[lun] || 0) + 1;
   });
   const bono = new Set(bonoSemanas || []);
   // incluir todas las semanas del mes (para mostrar avance aunque tenga 0)
   let lun = lunesDe(`${mes}-01`);
-  if (mesDe(lun) !== mes) lun = sumarDias(lun, 7);
+  if (mesDeSemana(lun) !== mes) lun = sumarDias(lun, 7);
   const semanas = [];
   const hoy = hoyISO();
-  for (; mesDe(lun) === mes; lun = sumarDias(lun, 7)) {
+  for (; mesDeSemana(lun) === mes; lun = sumarDias(lun, 7)) {
     if (lun > hoy) break;
     const total = porSemana[lun] || 0;
     const esBono = bono.has(lun);
