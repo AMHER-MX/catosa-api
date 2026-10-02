@@ -1567,7 +1567,14 @@ app.get('/api/ventas-dia', async (req, res) => {
 // ═════════════════════════════════════════════════════════════════════════════
 const SHEETS_ID_APP   = '1vUYJz5r1kgMNDel9-6LqaiKAeb3g_n0JwS5_Hs59yeM';
 const CSV_CHECKIN     = `https://docs.google.com/spreadsheets/d/${SHEETS_ID_APP}/gviz/tq?tqx=out:csv&sheet=CHECK%20IN`;
-const CSV_VISITAS     = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTXRBcfvzRWWgd4GI6OZ2CI4fPXdDzkQIucSNCb_1lZhKW9kmBVcXCFx19L5kdTCMEy0d9Yy5GOttRH/pub?gid=1425733996&single=true&output=csv';
+// Antes usaba un link "Publicar en la web" (.../pub?...&output=csv), que es una
+// foto fija de la hoja y solo se actualiza si alguien vuelve a publicarla a mano.
+// Las visitas nuevas se seguían guardando bien, pero ese link nunca las reflejaba,
+// así que a los asesores no les marcaba nada nuevo. Es la misma hoja de cálculo
+// que CHECK IN (mismo SHEETS_ID_APP), solo que es la pestaña con gid=1425733996,
+// así que usamos el mismo tipo de link "en vivo" (gviz) que ya usan Check-in y
+// Encuesta QR.
+const CSV_VISITAS     = `https://docs.google.com/spreadsheets/d/${SHEETS_ID_APP}/gviz/tq?tqx=out:csv&gid=1425733996`;
 // Encuesta QR (MOSTRADOR): respuestas de "Encuesta de Satisfaccion del Cliente Catosa"
 // (Google Form con campo "Asesor" pre-llenado por un link/QR distinto por asesor de Mostrador).
 const CSV_ENCUESTA_QR = 'https://docs.google.com/spreadsheets/d/120SwsVZRm8WsI2JwBAYncay-J9NCTo6RdFwe1Iraokw/gviz/tq?tqx=out:csv&gid=584098663';
