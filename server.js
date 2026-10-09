@@ -1943,6 +1943,228 @@ app.get('/api/podio/jefes', async (req, res) => {
   }
 });
 
+// ═════════════════════════════════════════════════════════════════════════════
+// ── ATENCIÓN AL CLIENTE (sistema aparte: atencion.html) ──────────────────────
+// 1) /api/atencion/clientes   → semáforo de clientes de refacciones con su
+//    promedio de compra (monto y días) y prioridad. Viene de SQL (FTSABI_PR).
+// 2) /api/atencion/registros  → notas / canalizaciones que captura la ejecutiva.
+//    Se guardan en un Google Sheet (hoja "ATENCION") mediante Apps Script, igual
+//    que Check-in y Visitas; aquí solo se LEEN (gviz CSV en vivo).
+// 3) /api/atencion/canalizados?asesor=  → lo que le canalizaron a un asesor,
+//    para mostrarlo en la app de vendedores.
+// ═════════════════════════════════════════════════════════════════════════════
+// ID del Google Sheet "ATENCION AL CLIENTE" (compartido: cualquiera con el enlace puede VER).
+// Pégalo aquí después de crear la hoja (ver atencion-apps-script.gs). Vacío = aún sin configurar.
+const ATENCION_SHEET_ID = '16X5jKM8HFs8txuy9-znKas-Cnp1MzOB0QfRX3KviXps';
+const ATENCION_CSV = ATENCION_SHEET_ID
+  ? `https://docs.google.com/spreadsheets/d/${ATENCION_SHEET_ID}/gviz/tq?tqx=out:csv&sheet=ATENCION` : '';
+const ATENCION_CLIENTES_CACHE_MS  = 10 * 60 * 1000;
+const ATENCION_REGISTROS_CACHE_MS = 45 * 1000;
+const ATENCION_ESTATUS_CERRADOS = ['RECUPERADO', 'CERRADO', 'SIN INTERES', 'SIN INTERÉS', 'PERDIDO'];
+const DIA_MS = 86400000;
+let atencionClientesCache = {};   // { meses: { t, data } }
+let atencionRegistrosCache = { t: 0, data: null };
+
+function fechaUTC(iso) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso || ''));
+  return m ? Date.UTC(+m[1], +m[2] - 1, +m[3]) : null;
+}
+
+// Mismo asesor aunque el nombre varíe un poco (mismo criterio flexible del resto de la app)
+function mismoAsesor(a, b) {
+  const ka = nombreKey(a), kb = nombreKey(b);
+  if (!ka || !kb) return false;
+  if (ka === kb) return true;
+  const ta = ka.split(' '), tb = kb.split(' ');
+  return ta[0] === tb[0] && ta[ta.length - 1] === tb[tb.length - 1];
+}
+
+async function calcularAtencionClientes(meses) {
+  const db  = await getPool();
+  const hoyStr = podio.hoyISO();
+  const hoyMs  = fechaUTC(hoyStr);
+  const desde  = new Date(hoyMs - meses * 30.4375 * DIA_MS).toISOString().split('T')[0];
+
+  const r = await db.request().input('desde', sql.Date, desde).query(`
+    WITH base AS (
+      SELECT s.CLIENTE, CONVERT(varchar(10), CAST(s.FECHA AS date), 23) AS Dia,
+             s.NOM_VENDEDOR, s.NOM_ALMACEN_LIN, s.IMP_TOTAL_LINEA AS Monto
+      FROM FTSABI_PR s
+      WHERE s.FECHA >= @desde
+        AND ${TIPO_EXCL_SQL}
+        AND s.NOM_ALMACEN_LIN IN (${SUCURSALES})
+        AND s.CLIENTE IS NOT NULL
+    ),
+    agg AS (
+      SELECT CLIENTE, COUNT(DISTINCT Dia) AS Compras, SUM(Monto) AS Total,
+             MIN(Dia) AS Primera, MAX(Dia) AS Ultima
+      FROM base GROUP BY CLIENTE
+    ),
+    vend AS (
+      SELECT CLIENTE, NOM_VENDEDOR, MAX(NOM_ALMACEN_LIN) AS Suc,
+             ROW_NUMBER() OVER (PARTITION BY CLIENTE ORDER BY SUM(Monto) DESC) AS rn
+      FROM base GROUP BY CLIENTE, NOM_VENDEDOR
+    )
+    SELECT a.CLIENTE AS Codigo,
+           COALESCE(NULLIF(c.NOMBRE_COMERCIAL,''), c.NOMBRE, a.CLIENTE) AS Cliente,
+           COALESCE(c.NOMBRE, '') AS NombreCompleto,
+           a.Compras, a.Total, a.Primera, a.Ultima,
+           v.NOM_VENDEDOR AS Asesor, v.Suc AS Sucursal
+    FROM agg a
+    LEFT JOIN vend v ON v.CLIENTE = a.CLIENTE AND v.rn = 1
+    LEFT JOIN FMCUBI_PR c ON c.CUENTA = a.CLIENTE
+    WHERE a.Total > 0
+  `);
+
+  // Cartera inversa: nombre de cliente → asesor dueño (hoja CARTERA de metas.xlsx)
+  const carteraInv = {};
+  Object.entries(carteraMap).forEach(([vend, clientes]) => {
+    (clientes || []).forEach(n => { carteraInv[n.toUpperCase().trim()] = vend; });
+  });
+
+  const lista = r.recordset.map(x => {
+    const compras = parseInt(x.Compras) || 0;
+    const total   = parseFloat(x.Total) || 0;
+    const ult = fechaUTC(x.Ultima), pri = fechaUTC(x.Primera);
+    const dias = ult != null ? Math.max(0, Math.round((hoyMs - ult) / DIA_MS)) : null;
+    const promDias = (compras > 1 && ult != null && pri != null) ? (ult - pri) / DIA_MS / (compras - 1) : null;
+    const atraso = (promDias && promDias > 0 && dias != null) ? dias / promDias : null;
+    const nomU = (x.Cliente || '').toString().toUpperCase().trim();
+    const nomCU = (x.NombreCompleto || '').toString().toUpperCase().trim();
+    const dueno = carteraInv[nomU] || carteraInv[nomCU] || null;
+    return {
+      Codigo: (x.Codigo || '').toString().trim(),
+      Cliente: (x.Cliente || '').toString().trim(),
+      NombreCompleto: (x.NombreCompleto || '').toString().trim(),
+      Asesor: dueno || (x.Asesor || '').toString().trim(),
+      EsCartera: !!dueno,
+      Sucursal: normSuc(x.Sucursal || ''),
+      Compras: compras,
+      Total: Math.round(total),
+      Ticket: compras ? Math.round(total / compras) : 0,
+      PromDias: promDias != null ? Math.round(promDias * 10) / 10 : null,
+      Ultima: x.Ultima || null,
+      Dias: dias,
+      Atraso: atraso != null ? Math.round(atraso * 10) / 10 : null,
+      // Mismo criterio de semáforo que la app de vendedores (días desde la última compra)
+      Semaforo: dias == null ? 'rojo' : dias <= 7 ? 'verde' : dias <= 21 ? 'ambar' : 'rojo',
+    };
+  });
+
+  // Prioridad = monto del periodo × qué tan atrasado está contra SU propio ritmo.
+  // Solo se priorizan clientes ya fuera de "verde" (más de 7 días sin comprar).
+  // Quien compró una sola vez no tiene ritmo: se le asume atraso 1.5 (media).
+  lista.forEach(c => {
+    c.Score = c.Dias != null && c.Dias > 21
+      ? Math.round(c.Total * Math.min(c.Atraso != null ? c.Atraso : 1.5, 4)) : 0;
+  });
+  const conScore = lista.filter(c => c.Score > 0).sort((a, b) => b.Score - a.Score);
+  const nAlta = Math.ceil(conScore.length * 0.2), nMedia = Math.ceil(conScore.length * 0.5);
+  conScore.forEach((c, i) => { c.Prioridad = i < nAlta ? 'alta' : i < nMedia ? 'media' : 'baja'; });
+  lista.forEach(c => { if (!c.Prioridad) c.Prioridad = 'baja'; });
+
+  const resumen = { verde: 0, ambar: 0, rojo: 0, alta: nAlta, total: lista.length };
+  lista.forEach(c => { resumen[c.Semaforo]++; });
+  return { hoy: hoyStr, desde, meses, resumen, clientes: lista };
+}
+
+app.get('/api/atencion/clientes', async (req, res) => {
+  try {
+    const meses = Math.min(36, Math.max(3, parseInt(req.query.meses) || 12));
+    const c = atencionClientesCache[meses];
+    if (c && Date.now() - c.t < ATENCION_CLIENTES_CACHE_MS && req.query.fresco !== '1') return res.json(c.data);
+    const data = await calcularAtencionClientes(meses);
+    atencionClientesCache[meses] = { t: Date.now(), data };
+    res.json(data);
+  } catch (err) {
+    console.error('Error /api/atencion/clientes:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Lee la bitácora del Sheet (cada renglón es un evento: NOTA, CANALIZACION o ESTATUS)
+async function leerAtencionRegistros() {
+  if (!ATENCION_CSV) return { configurado: false, eventos: [] };
+  if (atencionRegistrosCache.data && Date.now() - atencionRegistrosCache.t < ATENCION_REGISTROS_CACHE_MS)
+    return atencionRegistrosCache.data;
+  let texto;
+  try { texto = await httpGetText(ATENCION_CSV); }
+  catch (e) { throw new Error(`No se pudo leer la hoja ATENCION (¿está compartida como "cualquiera con el enlace puede ver"?): ${e.message}`); }
+  const eventos = podio.parseCSV(texto).map(f => ({
+    fecha:   podio.col(f, 'Fecha'),
+    caso:    podio.col(f, 'Caso'),
+    cliente: podio.col(f, 'Cliente'),
+    nombre:  podio.col(f, 'NombreCliente', 'Nombre cliente'),
+    asesor:  podio.col(f, 'Asesor'),
+    tipo:    podio.col(f, 'Tipo').toUpperCase(),
+    motivo:  podio.col(f, 'Motivo'),
+    detalle: podio.col(f, 'Detalle'),
+    estatus: podio.col(f, 'Estatus'),
+    por:     podio.col(f, 'Registro'),
+  })).filter(e => e.cliente || e.caso);
+  const data = { configurado: true, eventos };
+  atencionRegistrosCache = { t: Date.now(), data };
+  return data;
+}
+
+// Estado actual de cada caso de canalización = su último estatus
+function resolverCasos(eventos) {
+  const casos = {};
+  eventos.forEach(e => {
+    if (!e.caso) return;
+    const c = casos[e.caso] = casos[e.caso] || { caso: e.caso, cliente: '', nombre: '', asesor: '', motivo: '', detalle: '', fecha: '', estatus: 'Pendiente', historial: [] };
+    if (e.tipo === 'CANALIZACION') {
+      c.cliente = e.cliente; c.nombre = e.nombre; c.asesor = e.asesor;
+      c.motivo = e.motivo; c.detalle = e.detalle; c.fecha = e.fecha; c.por = e.por;
+    }
+    if (e.estatus) c.estatus = e.estatus;
+    c.historial.push(e);
+  });
+  return Object.values(casos).filter(c => c.cliente || c.asesor);
+}
+const casoAbierto = c => !ATENCION_ESTATUS_CERRADOS.includes((c.estatus || '').toUpperCase().trim());
+
+app.get('/api/atencion/registros', async (req, res) => {
+  try {
+    const { configurado, eventos } = await leerAtencionRegistros();
+    const porCliente = {};
+    eventos.forEach(e => { if (e.cliente) (porCliente[e.cliente] = porCliente[e.cliente] || []).push(e); });
+    const casos = resolverCasos(eventos);
+    const estadoCliente = {};
+    casos.forEach(c => {
+      if (!c.cliente) return;
+      const prev = estadoCliente[c.cliente];
+      if (!prev || casoAbierto(c)) estadoCliente[c.cliente] = { caso: c.caso, asesor: c.asesor, estatus: c.estatus, abierto: casoAbierto(c) };
+    });
+    // Clientes con solo notas (sin canalización): se marcan como "con seguimiento"
+    Object.entries(porCliente).forEach(([cli, evs]) => {
+      if (estadoCliente[cli]) return;
+      const ult = evs.slice().reverse().find(e => e.estatus);
+      estadoCliente[cli] = { caso: '', asesor: '', estatus: ult ? ult.estatus : 'Con nota', abierto: false, nota: true };
+    });
+    res.json({ configurado, eventos: porCliente, estado: estadoCliente, casos });
+  } catch (err) {
+    console.error('Error /api/atencion/registros:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/atencion/canalizados', async (req, res) => {
+  try {
+    const asesor = decodeURIComponent(req.query.asesor || '');
+    const { configurado, eventos } = await leerAtencionRegistros();
+    if (!configurado) return res.json({ configurado: false, casos: [] });
+    const casos = resolverCasos(eventos)
+      .filter(c => casoAbierto(c) && mismoAsesor(c.asesor, asesor))
+      .map(c => ({ caso: c.caso, cliente: c.cliente, nombre: c.nombre, motivo: c.motivo,
+                   detalle: c.detalle, fecha: c.fecha, estatus: c.estatus, por: c.por }));
+    res.json({ configurado: true, casos });
+  } catch (err) {
+    console.error('Error /api/atencion/canalizados:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Catosa API en http://localhost:${PORT}`);
