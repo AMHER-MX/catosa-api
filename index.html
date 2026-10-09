@@ -762,8 +762,8 @@
 
         
         /* ── DETALLE DÍA MODAL ───────────────────────────── */
-        #day-modal, #flrt-modal, #reto-modal, #cat-modal { display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.88); overflow-y:auto; padding:16px; }
-        #day-modal.open, #flrt-modal.open, #reto-modal.open, #cat-modal.open { display:flex; align-items:flex-start; justify-content:center; }
+        #day-modal, #flrt-modal, #reto-modal, #cat-modal, #can-modal { display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.88); overflow-y:auto; padding:16px; }
+        #day-modal.open, #flrt-modal.open, #reto-modal.open, #cat-modal.open, #can-modal.open { display:flex; align-items:flex-start; justify-content:center; }
         .day-card { background:var(--surface); border:1px solid var(--success); border-radius:20px; width:100%; max-width:480px; padding:22px; margin:auto; }
         .day-header { margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid #1e1e1e; display:flex; justify-content:space-between; align-items:center; }
         .day-header h2 { color:var(--success); font-size:1rem; font-family:'Syne',sans-serif; margin:0; }
@@ -874,6 +874,9 @@
         </button>
         <button onclick="abrirCatalogoFleetrite()" style="width:100%;padding:14px;background:linear-gradient(135deg,#0d2a26,#134a42);border:1px solid #1fa896;border-radius:14px;color:#4be0c8;font-size:0.85rem;font-weight:700;cursor:pointer;margin-bottom:12px;">
             🔧 Catálogo Fleetrite
+        </button>
+        <button id="btn-canalizados" onclick="abrirCanalizados()" style="display:none;width:100%;padding:14px;background:linear-gradient(135deg,#1a1030,#2d1b5e);border:1px solid #8b5cf6;border-radius:14px;color:#c4b5fd;font-size:0.85rem;font-weight:700;cursor:pointer;margin-bottom:12px;">
+            📌 Clientes que me canalizó Atención al cliente <span id="can-badge" style="display:inline-block;background:#8b5cf6;color:#fff;border-radius:99px;padding:1px 9px;font-size:0.7rem;margin-left:6px;">0</span>
         </button>
         <button class="btn-forms" onclick="window.open('https://docs.google.com/forms/d/e/1FAIpQLSfWF2AutcLCDhfBL6hoABmWVv4OKDvorCNB2CJTgY5QlrPrwA/viewform?usp=dialog','_blank')" style="background:transparent;border:1px solid var(--border);color:var(--text-muted);font-weight:500;">
         Registrar cliente en base de datos
@@ -1106,6 +1109,7 @@
         loadTopProductos();
         loadVentasDiarias();
         loadCores();
+        cargarCanalizados();
     }
 
     // ─── RUTA AL PODIO ───────────────────────────────────────────────────────
@@ -1263,6 +1267,56 @@
 
     function cerrarFleetriteDetalle() {
         document.getElementById('flrt-modal').classList.remove('open');
+    }
+
+    // ─── CLIENTES CANALIZADOS POR ATENCIÓN AL CLIENTE ─────────────────────────
+    // URL de Apps Script de Atención al cliente (la misma que en atencion.html). Vacía = sin función de "Ya lo contacté".
+    const ATENCION_SCRIPT = 'https://script.google.com/macros/s/AKfycbzF-Cfa_Xs-jaOuUcXiQR0H7GEYh-J0W-7dHIJPaTAId8oB_qro8_a7izujqi0XPPOT/exec';
+    let canalizados = [];
+
+    async function cargarCanalizados() {
+        try {
+            const d = await apiFetch('/api/atencion/canalizados?asesor=' + encodeURIComponent(user.Nombre));
+            canalizados = d.casos || [];
+        } catch (e) { canalizados = []; return; }   // sin avisos molestos: es un extra
+        const btn = document.getElementById('btn-canalizados');
+        document.getElementById('can-badge').innerText = canalizados.length;
+        btn.style.display = canalizados.length ? 'block' : 'none';
+    }
+
+    function abrirCanalizados() {
+        document.getElementById('can-modal').classList.add('open');
+        renderCanalizados();
+    }
+    function cerrarCanalizados() { document.getElementById('can-modal').classList.remove('open'); }
+
+    function renderCanalizados() {
+        document.getElementById('can-total').innerText = `${canalizados.length} pendiente${canalizados.length === 1 ? '' : 's'}`;
+        const esc = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+        document.getElementById('can-rows').innerHTML = canalizados.length ? canalizados.map((c, i) => `
+            <div style="border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:10px;background:#0d0d0d;">
+                <div style="font-weight:700;font-size:0.85rem;">${esc(c.nombre || c.cliente)}</div>
+                <div style="font-size:0.6rem;color:var(--text-subtle);margin:2px 0 8px;">Canalizado ${esc(c.fecha)}${c.por ? ' por ' + esc(c.por) : ''} · ${esc(c.estatus || 'Pendiente')}</div>
+                ${c.motivo ? `<div style="font-size:0.7rem;margin-bottom:4px;"><b style="color:#c4b5fd;">Por qué no compra:</b> ${esc(c.motivo)}</div>` : ''}
+                ${c.detalle ? `<div style="font-size:0.7rem;margin-bottom:10px;"><b style="color:#c4b5fd;">Qué hacer:</b> ${esc(c.detalle)}</div>` : ''}
+                ${ATENCION_SCRIPT ? `<button onclick="marcarContactado(${i})" style="width:100%;padding:10px;border-radius:10px;border:1px solid #22c55e;background:rgba(34,197,94,0.12);color:#4ade80;font-weight:700;font-size:0.75rem;cursor:pointer;">✅ Ya lo contacté</button>` : ''}
+            </div>`).join('')
+            : '<div style="color:var(--text-subtle);text-align:center;padding:20px 0;">No tienes clientes canalizados pendientes 🎉</div>';
+    }
+
+    async function marcarContactado(i) {
+        const c = canalizados[i]; if (!c) return;
+        try {
+            await fetchConReintento(ATENCION_SCRIPT, {
+                method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ caso: c.caso, cliente: c.cliente, nombre: c.nombre, asesor: user.Nombre,
+                                       tipo: 'ESTATUS', estatus: 'Contactado', detalle: 'El asesor marcó el cliente como contactado', por: user.Nombre })
+            });
+            canalizados.splice(i, 1);
+            document.getElementById('can-badge').innerText = canalizados.length;
+            if (!canalizados.length) document.getElementById('btn-canalizados').style.display = 'none';
+            renderCanalizados();
+        } catch (e) { alert('No se pudo registrar. Revisa tu conexión e intenta de nuevo.'); }
     }
 
     // ─── CATÁLOGO FLEETRITE (buscar + compartir con cliente) ──────────────────
@@ -2494,6 +2548,19 @@
                 <tbody id="day-rows"><tr><td colspan="3" style="color:var(--text-subtle);text-align:center;">Cargando...</td></tr></tbody>
             </table>
             <button class="day-close" onclick="cerrarDetalleDia()">✕ Cerrar</button>
+        </div>
+    </div>
+
+    <!-- ── CLIENTES CANALIZADOS POR ATENCIÓN AL CLIENTE ─────────────────────── -->
+    <div id="can-modal">
+        <div class="day-card">
+            <div class="day-header">
+                <h2>📌 Clientes canalizados</h2>
+                <div class="day-total" id="can-total">—</div>
+            </div>
+            <div style="font-size:0.6rem;color:var(--text-subtle);margin-bottom:10px;">Clientes que Atención al cliente detectó sin comprar y te pidió atender. Cuando los contactes, toca "Ya lo contacté" para avisarles.</div>
+            <div id="can-rows" style="max-height:60vh;overflow-y:auto;"></div>
+            <button class="day-close" onclick="cerrarCanalizados()">✕ Cerrar</button>
         </div>
     </div>
 
