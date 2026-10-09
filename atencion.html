@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Atención al Cliente · CATOSA</title>
+<style>
+:root{
+  --bg:#0f172a; --surface:#1e293b; --surface-2:#263348; --border:#334155;
+  --text:#f1f5f9; --muted:#94a3b8; --subtle:#64748b; --accent:#3b82f6;
+  --ok:#22c55e; --warn:#f59e0b; --bad:#ef4444;
+  --ok-dim:rgba(34,197,94,.14); --warn-dim:rgba(245,158,11,.14); --bad-dim:rgba(239,68,68,.14); --accent-dim:rgba(59,130,246,.14);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:14px;min-height:100vh}
+button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
+
+/* LOGIN */
+#login{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;background:#000;padding:16px}
+.login-box{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:32px 28px;width:100%;max-width:340px;text-align:center}
+.login-box h1{font-size:1.05rem;font-weight:600;margin-bottom:4px}
+.login-box p{font-size:.72rem;color:var(--muted);margin-bottom:20px}
+.inp{width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);padding:12px 14px;border-radius:10px;margin-bottom:10px}
+.inp:focus{outline:none;border-color:var(--accent)}
+.btn{border:none;border-radius:10px;padding:11px 16px;font-weight:600;cursor:pointer;background:var(--accent);color:#fff}
+.btn:hover{opacity:.92}.btn:disabled{opacity:.5;cursor:default}
+.btn.sec{background:transparent;border:1px solid var(--border);color:var(--muted)}
+.btn.ok{background:var(--ok)}
+.btn.block{width:100%}
+#login-err{color:var(--bad);font-size:.72rem;min-height:16px;margin-bottom:8px}
+
+/* APP */
+#app{display:none;max-width:1500px;margin:0 auto;padding:12px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.top h1{font-size:1.05rem;font-weight:700}
+.top small{color:var(--muted);font-size:.7rem;display:block;font-weight:400}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:12px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px;cursor:pointer}
+.kpi b{display:block;font-size:1.35rem}
+.kpi span{font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.kpi.act{border-color:var(--accent);background:var(--accent-dim)}
+.kpi.v b{color:var(--ok)}.kpi.a b{color:var(--warn)}.kpi.r b{color:var(--bad)}
+
+.tools{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;align-items:center}
+.tools .inp{margin:0;width:auto;min-width:130px;padding:9px 12px;font-size:.8rem;background:var(--surface)}
+.tools .grow{flex:1;min-width:180px}
+.tools select.inp option{background:var(--surface)}
+#conteo{font-size:.7rem;color:var(--muted);margin:0 0 6px 2px}
+
+.warnbar{background:var(--warn-dim);border:1px solid rgba(245,158,11,.4);color:#fcd34d;border-radius:10px;padding:9px 12px;font-size:.72rem;margin-bottom:10px;display:none}
+
+/* Tabla */
+.tbl-wrap{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:900px}
+th{font-size:.62rem;text-transform:uppercase;letter-spacing:.05em;color:var(--subtle);text-align:left;padding:10px 10px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--surface);white-space:nowrap}
+th.n,td.n{text-align:right}
+td{padding:9px 10px;border-bottom:1px solid rgba(51,65,85,.55);font-size:.8rem;vertical-align:middle}
+tr.row{cursor:pointer}
+tr.row:hover td{background:var(--surface-2)}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:7px;vertical-align:middle}
+.dot.verde{background:var(--ok)}.dot.ambar{background:var(--warn)}.dot.rojo{background:var(--bad)}
+.nm{font-weight:600}.sub{font-size:.65rem;color:var(--subtle)}
+.badge{display:inline-block;font-size:.6rem;font-weight:700;padding:2px 8px;border-radius:99px;white-space:nowrap}
+.b-alta{background:var(--bad-dim);color:#fca5a5;border:1px solid rgba(239,68,68,.4)}
+.b-media{background:var(--warn-dim);color:#fcd34d;border:1px solid rgba(245,158,11,.4)}
+.b-baja{background:rgba(148,163,184,.1);color:var(--muted);border:1px solid var(--border)}
+.st{font-size:.62rem;font-weight:700;padding:2px 8px;border-radius:99px;background:var(--accent-dim);color:#93c5fd;border:1px solid rgba(59,130,246,.35);white-space:nowrap}
+.st.cerrado{background:var(--ok-dim);color:#86efac;border-color:rgba(34,197,94,.35)}
+.st.none{background:transparent;color:var(--subtle);border-color:var(--border)}
+.empty{padding:30px;text-align:center;color:var(--muted)}
+.more{display:block;margin:10px auto;}
+
+/* Modal */
+#modal{display:none;position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.78);overflow-y:auto;padding:14px}
+#modal.open{display:flex;justify-content:center;align-items:flex-start}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:16px;width:100%;max-width:640px;padding:18px;margin:auto}
+.card h2{font-size:1.05rem;line-height:1.25}
+.card .hd{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:12px}
+.x{background:transparent;border:none;color:var(--muted);font-size:1.3rem;cursor:pointer;line-height:1}
+.mets{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.met{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:8px 10px}
+.met b{display:block;font-size:1rem}.met span{font-size:.6rem;color:var(--muted);text-transform:uppercase}
+.sec{margin-top:14px;padding-top:12px;border-top:1px solid var(--border)}
+.sec h3{font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:8px}
+label{display:block;font-size:.68rem;color:var(--muted);margin:8px 0 4px}
+textarea.inp{min-height:70px;resize:vertical}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.hist{max-height:190px;overflow-y:auto}
+.ev{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:8px 10px;margin-bottom:6px;font-size:.74rem}
+.ev .t{font-size:.6rem;color:var(--subtle);margin-bottom:2px}
+.prods td{padding:5px 6px;font-size:.72rem}
+.prods{min-width:0}
+.bars{display:flex;gap:4px;align-items:flex-end;height:54px;margin-top:6px}
+.bars div{flex:1;background:var(--accent);border-radius:3px 3px 0 0;min-height:2px;position:relative}
+.bars span{position:absolute;bottom:-14px;left:0;right:0;text-align:center;font-size:.5rem;color:var(--subtle)}
+#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--ok);color:#04210f;padding:10px 16px;border-radius:10px;font-weight:600;display:none;z-index:99;font-size:.8rem}
+#toast.err{background:var(--bad);color:#fff}
+@media(max-width:600px){.mets{grid-template-columns:repeat(2,1fr)}.row2{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login">
+  <div class="login-box">
+    <h1>ATENCIÓN AL CLIENTE</h1>
+    <p>CATOSA · Seguimiento de clientes de refacciones</p>
+    <input class="inp" id="u-nombre" placeholder="TU NOMBRE" autocomplete="off">
+    <input class="inp" id="u-user" placeholder="USUARIO" autocomplete="off">
+    <input class="inp" id="u-pass" type="password" placeholder="CONTRASEÑA" onkeydown="if(event.key==='Enter')entrar()">
+    <div id="login-err"></div>
+    <button class="btn block" onclick="entrar()">ENTRAR</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="top">
+    <h1>📞 Atención al Cliente <small id="sub">Cargando…</small></h1>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn sec" onclick="recargar(true)">↻ Actualizar</button>
+      <button class="btn sec" onclick="exportarCSV()">⬇ CSV</button>
+      <button class="btn sec" onclick="location.reload()">Salir</button>
+    </div>
+  </div>
+
+  <div class="warnbar" id="warn"></div>
+
+  <div class="kpis" id="kpis"></div>
+
+  <div class="tools">
+    <input class="inp grow" id="q" placeholder="Buscar cliente o asesor…" oninput="pagina=1;render()">
+    <select class="inp" id="f-asesor" onchange="pagina=1;render()"><option value="">Todos los asesores</option></select>
+    <select class="inp" id="f-suc" onchange="pagina=1;render()"><option value="">Todas las sedes</option></select>
+    <select class="inp" id="f-seg" onchange="pagina=1;render()">
+      <option value="">Todo seguimiento</option>
+      <option value="sin">Sin atender</option>
+      <option value="abierto">Canalizados abiertos</option>
+      <option value="cerrado">Cerrados / recuperados</option>
+    </select>
+    <select class="inp" id="orden" onchange="pagina=1;render()">
+      <option value="score">Orden: Prioridad</option>
+      <option value="total">Orden: Monto del periodo</option>
+      <option value="dias">Orden: Días sin comprar</option>
+      <option value="atraso">Orden: Atraso vs su ritmo</option>
+      <option value="ticket">Orden: Compra promedio</option>
+    </select>
+  </div>
+  <div id="conteo"></div>
+
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr>
+        <th>Cliente</th><th>Asesor</th><th>Sede</th>
+        <th class="n">Días sin comprar</th><th class="n">Compra cada (días)</th><th class="n">Atraso</th>
+        <th class="n">Compra promedio</th><th class="n">Monto periodo</th>
+        <th>Prioridad</th><th>Seguimiento</th>
+      </tr></thead>
+      <tbody id="tbody"><tr><td colspan="10" class="empty">Cargando clientes…</td></tr></tbody>
+    </table>
+  </div>
+  <button class="btn sec more" id="more" style="display:none" onclick="pagina++;render()">Ver más</button>
+  <p style="font-size:.62rem;color:var(--subtle);margin:10px 2px">
+    Semáforo: verde ≤ 7 días sin comprar, ámbar ≤ 21, rojo más de 21 (igual que la app de asesores).
+    <b>Atraso</b> = días sin comprar ÷ cada cuántos días suele comprar ese cliente (2.0× = va al doble de lo normal).
+    <b>Prioridad</b> = monto del periodo × atraso, solo para clientes con más de 21 días sin comprar.
+  </p>
+</div>
+
+<!-- FICHA CLIENTE -->
+<div id="modal" onclick="if(event.target===this)cerrar()">
+  <div class="card" id="ficha"></div>
+</div>
+<div id="toast"></div>
+
+<script>
+// ── CONFIG ──────────────────────────────────────────────────────────────────
+const API = 'https://api.catosaapps.lat';
+// URL de la aplicación web de Apps Script (ver atencion-apps-script.gs). Vacía = no se puede guardar aún.
+const ATENCION_SCRIPT = '';
+// Accesos (cámbialos aquí). Misma idea que Gerencia.
+const USUARIOS = { 'ATENCION': 'CLIENTES2026' };
+const PAGINA_TAM = 100;
+
+const MOTIVOS = [
+  'Precio / cotizó con otro', 'Compró con la competencia', 'Sin necesidad por ahora (unidad parada o poco uso)',
+  'Mal servicio o queja', 'No había el producto (inventario)', 'Problemas de crédito o cobranza',
+  'Cambió de contacto / ya no es quien compra', 'No contesta / no se logró contactar', 'Otro'
+];
+const ESTATUS = ['Pendiente', 'Contactado', 'En seguimiento', 'Recuperado', 'Sin interés'];
+const CERRADOS = ['RECUPERADO', 'CERRADO', 'SIN INTERES', 'SIN INTERÉS', 'PERDIDO'];
+
+let quien = '', clientes = [], reg = { configurado: false, eventos: {}, estado: {}, casos: [] }, asesores = [];
+let filtroSem = '', filtroPri = '', pagina = 1, actual = null;
+
+const fM = n => new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', maximumFractionDigits: 0 }).format(n || 0);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+const $ = id => document.getElementById(id);
+
+function toast(msg, err) {
+  const t = $('toast'); t.textContent = msg; t.className = err ? 'err' : ''; t.style.display = 'block';
+  clearTimeout(toast.h); toast.h = setTimeout(() => t.style.display = 'none', 3200);
+}
+
+// ── LOGIN ───────────────────────────────────────────────────────────────────
+function entrar() {
+  const n = $('u-nombre').value.trim(), u = $('u-user').value.toUpperCase().trim(), p = $('u-pass').value.toUpperCase().trim();
+  if (!n) { $('login-err').textContent = 'Escribe tu nombre (queda registrado en tus notas)'; return; }
+  if (!USUARIOS[u] || USUARIOS[u] !== p) { $('login-err').textContent = 'Acceso denegado'; return; }
+  quien = n;
+  $('login').style.display = 'none'; $('app').style.display = 'block';
+  recargar(false);
+}
+
+// ── CARGA ───────────────────────────────────────────────────────────────────
+async function apiGet(ep) {
+  const r = await fetch(API + ep);
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error || ('Error ' + r.status));
+  return j;
+}
+
+async function recargar(fresco) {
+  $('sub').textContent = 'Cargando…';
+  try {
+    const [c, a] = await Promise.all([
+      apiGet('/api/atencion/clientes' + (fresco ? '?fresco=1' : '')),
+      apiGet('/api/atencion/registros').catch(e => ({ configurado: false, eventos: {}, estado: {}, casos: [], _err: e.message })),
+    ]);
+    clientes = c.clientes || []; reg = a;
+    $('sub').textContent = `${clientes.length} clientes con compras desde ${c.desde} · corte ${c.hoy}`;
+    const w = $('warn');
+    if (!reg.configurado) { w.style.display = 'block'; w.textContent = reg._err ? ('No se pudo leer el seguimiento: ' + reg._err) : 'El seguimiento (notas y canalizaciones) aún no está configurado en el servidor: se puede consultar el semáforo, pero no guardar notas.'; }
+    else if (!ATENCION_SCRIPT) { w.style.display = 'block'; w.textContent = 'Falta pegar la URL de Apps Script en atencion.html para poder guardar notas.'; }
+    else w.style.display = 'none';
+    llenarFiltros(); render();
+  } catch (e) {
+    $('sub').textContent = '';
+    $('tbody').innerHTML = `<tr><td colspan="10" class="empty" style="color:var(--bad)">❌ ${esc(e.message)}</td></tr>`;
+  }
+}
+
+function llenarFiltros() {
+  const as = [...new Set(clientes.map(c => c.Asesor).filter(Boolean))].sort();
+  asesores = as;
+  const ca = $('f-asesor').value, cs = $('f-suc').value;
+  $('f-asesor').innerHTML = '<option value="">Todos los asesores</option>' + as.map(a => `<option>${esc(a)}</option>`).join('');
+  const su = [...new Set(clientes.map(c => c.Sucursal).filter(Boolean))].sort();
+  $('f-suc').innerHTML = '<option value="">Todas las sedes</option>' + su.map(a => `<option>${esc(a)}</option>`).join('');
+  $('f-asesor').value = ca; $('f-suc').value = cs;
+}
+
+// ── FILTRADO / RENDER ───────────────────────────────────────────────────────
+const estadoDe = c => reg.estado[c.Codigo] || null;
+const esCerrado = e => e && CERRADOS.includes((e.estatus || '').toUpperCase().trim());
+
+function filtrados() {
+  const q = $('q').value.trim().toUpperCase(), fa = $('f-asesor').value, fs = $('f-suc').value, seg = $('f-seg').value;
+  let l = clientes.filter(c => {
+    if (filtroSem && c.Semaforo !== filtroSem) return false;
+    if (filtroPri && c.Prioridad !== filtroPri) return false;
+    if (fa && c.Asesor !== fa) return false;
+    if (fs && c.Sucursal !== fs) return false;
+    if (q && !(`${c.Cliente} ${c.NombreCompleto} ${c.Asesor} ${c.Codigo}`.toUpperCase().includes(q))) return false;
+    const e = estadoDe(c);
+    if (seg === 'sin' && e) return false;
+    if (seg === 'abierto' && !(e && e.abierto)) return false;
+    if (seg === 'cerrado' && !(e && !e.abierto && !e.nota)) return false;
+    return true;
+  });
+  const k = $('orden').value;
+  const val = { score: c => c.Score, total: c => c.Total, dias: c => c.Dias == null ? -1 : c.Dias, atraso: c => c.Atraso == null ? -1 : c.Atraso, ticket: c => c.Ticket };
+  return l.sort((a, b) => val[k](b) - val[k](a));
+}
+
+function renderKpis() {
+  const cnt = f => clientes.filter(f).length;
+  const abiertos = Object.values(reg.estado).filter(e => e.abierto).length;
+  const items = [
+    ['', 'Todos', clientes.length, '', () => { filtroSem = ''; filtroPri = ''; }],
+    ['v', '🟢 Al día', cnt(c => c.Semaforo === 'verde'), 'verde'],
+    ['a', '🟠 Ámbar', cnt(c => c.Semaforo === 'ambar'), 'ambar'],
+    ['r', '🔴 Rojo', cnt(c => c.Semaforo === 'rojo'), 'rojo'],
+    ['r', '⚡ Prioridad alta', cnt(c => c.Prioridad === 'alta'), 'pri'],
+    ['', '📌 Canalizados abiertos', abiertos, 'abiertos'],
+  ];
+  $('kpis').innerHTML = items.map((it, i) => {
+    const act = (i === 0 && !filtroSem && !filtroPri) || (it[3] === filtroSem && filtroSem) || (it[3] === 'pri' && filtroPri === 'alta');
+    return `<div class="kpi ${it[0]} ${act ? 'act' : ''}" onclick="kpiClick(${i})"><b>${it[2]}</b><span>${it[1]}</span></div>`;
+  }).join('');
+}
+function kpiClick(i) {
+  filtroSem = ''; filtroPri = '';
+  if (i === 1) filtroSem = 'verde'; else if (i === 2) filtroSem = 'ambar'; else if (i === 3) filtroSem = 'rojo';
+  else if (i === 4) filtroPri = 'alta'; else if (i === 5) $('f-seg').value = 'abierto';
+  if (i !== 5 && $('f-seg').value === 'abierto') $('f-seg').value = '';
+  pagina = 1; render();
+}
+
+function render() {
+  renderKpis();
+  const l = filtrados();
+  $('conteo').textContent = `${l.length} cliente${l.length === 1 ? '' : 's'}`;
+  if (!l.length) { $('tbody').innerHTML = '<tr><td colspan="10" class="empty">Sin clientes con esos filtros</td></tr>'; $('more').style.display = 'none'; return; }
+  const vis = l.slice(0, pagina * PAGINA_TAM);
+  $('tbody').innerHTML = vis.map(c => {
+    const e = estadoDe(c);
+    const seg = e ? `<span class="st ${e.abierto || e.nota ? '' : 'cerrado'}">${esc(e.estatus)}${e.asesor && e.abierto ? ' · ' + esc(e.asesor.split(' ')[0]) : ''}</span>` : '<span class="st none">Sin atender</span>';
+    const atr = c.Atraso == null ? '<span class="sub">—</span>' : `<b style="color:${c.Atraso >= 2 ? 'var(--bad)' : c.Atraso >= 1.5 ? 'var(--warn)' : 'var(--text)'}">${c.Atraso}×</b>`;
+    return `<tr class="row" data-c="${esc(c.Codigo)}" onclick="abrir(this.dataset.c)">
+      <td><span class="dot ${c.Semaforo}"></span><span class="nm">${esc(c.Cliente)}</span>${c.EsCartera ? ' <span class="sub">⭐ cartera</span>' : ''}
+          ${c.NombreCompleto && c.NombreCompleto !== c.Cliente ? `<div class="sub">${esc(c.NombreCompleto)}</div>` : ''}</td>
+      <td>${esc(c.Asesor)}</td><td>${esc(c.Sucursal)}</td>
+      <td class="n"><b>${c.Dias == null ? '—' : c.Dias}</b></td>
+      <td class="n">${c.PromDias == null ? '<span class="sub">1 compra</span>' : c.PromDias}</td>
+      <td class="n">${atr}</td>
+      <td class="n">${fM(c.Ticket)}<div class="sub">${c.Compras} compra${c.Compras === 1 ? '' : 's'}</div></td>
+      <td class="n">${fM(c.Total)}</td>
+      <td><span class="badge b-${c.Prioridad}">${c.Prioridad.toUpperCase()}</span></td>
+      <td>${seg}</td></tr>`;
+  }).join('');
+  $('more').style.display = l.length > vis.length ? 'block' : 'none';
+}
+
+// ── FICHA DEL CLIENTE ───────────────────────────────────────────────────────
+function abrir(cod) {
+  const c = clientes.find(x => x.Codigo === cod); if (!c) return;
+  actual = c;
+  const ev = (reg.eventos[cod] || []).slice().reverse();
+  const e = estadoDe(c);
+  const optAs = (asesores.includes(c.Asesor) ? asesores : [c.Asesor, ...asesores]).filter(Boolean)
+    .map(a => `<option>${esc(a)}</option>`).join('');
+  $('ficha').innerHTML = `
+    <div class="hd">
+      <div><h2><span class="dot ${c.Semaforo}"></span>${esc(c.Cliente)}</h2>
+        <div class="sub">${esc(c.NombreCompleto)} · cuenta ${esc(c.Codigo)} · ${esc(c.Sucursal)}</div></div>
+      <button class="x" onclick="cerrar()">✕</button>
+    </div>
+    <div class="mets">
+      <div class="met"><b>${c.Dias == null ? '—' : c.Dias} d</b><span>Sin comprar</span></div>
+      <div class="met"><b>${c.PromDias == null ? '1 compra' : 'c/ ' + c.PromDias + ' d'}</b><span>Ritmo habitual</span></div>
+      <div class="met"><b>${c.Atraso == null ? '—' : c.Atraso + '×'}</b><span>Atraso</span></div>
+      <div class="met"><b>${fM(c.Ticket)}</b><span>Compra promedio</span></div>
+      <div class="met"><b>${fM(c.Total)}</b><span>Monto periodo</span></div>
+      <div class="met"><b>${c.Compras}</b><span>Compras</span></div>
+    </div>
+    <div class="sub">Asesor ${c.EsCartera ? '(cartera)' : '(quien más le vende)'}: <b style="color:var(--text)">${esc(c.Asesor)}</b> · última compra ${esc(c.Ultima || '—')}</div>
+    <div id="detalle" class="sub" style="margin-top:8px"><button class="btn sec" style="padding:6px 10px;font-size:.7rem" onclick="verCompras()">Ver qué compra</button></div>
+
+    <div class="sec">
+      <h3>Registrar seguimiento</h3>
+      <label>¿Por qué no ha comprado? (motivo)</label>
+      <select class="inp" id="f-motivo"><option value="">— Selecciona —</option>${MOTIVOS.map(m => `<option>${esc(m)}</option>`).join('')}</select>
+      <label>Detalle de lo que platicó el cliente</label>
+      <textarea class="inp" id="f-detalle" placeholder="Qué dijo, con quién habló, qué necesita…"></textarea>
+      <div class="row2">
+        <div><label>Estatus</label><select class="inp" id="f-estatus">${ESTATUS.map(s => `<option ${e && e.estatus === s ? 'selected' : ''}>${s}</option>`).join('')}</select></div>
+        <div><label>Canalizar a asesor</label><select class="inp" id="f-asesor-can"><option value="">— No canalizar —</option>${optAs}</select></div>
+      </div>
+      <label>Qué debe hacer el asesor (si lo canalizas)</label>
+      <textarea class="inp" id="f-accion" placeholder="Ej.: Llamar hoy, ofrecer cotización de filtros, visitar esta semana…" style="min-height:54px"></textarea>
+      <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">
+        <button class="btn" id="b-guardar" onclick="guardar()">Guardar</button>
+        <button class="btn sec" onclick="cerrar()">Cancelar</button>
+      </div>
+    </div>
+
+    <div class="sec">
+      <h3>Historial de seguimiento (${ev.length})</h3>
+      <div class="hist">${ev.length ? ev.map(x => `<div class="ev"><div class="t">${esc(x.fecha)} · ${esc(x.por || '—')} · ${esc(x.tipo)}${x.asesor ? ' → ' + esc(x.asesor) : ''}${x.estatus ? ' · ' + esc(x.estatus) : ''}</div>
+          ${x.motivo ? `<b>${esc(x.motivo)}</b><br>` : ''}${esc(x.detalle)}</div>`).join('') : '<div class="sub">Aún sin seguimiento.</div>'}</div>
+    </div>`;
+  $('modal').classList.add('open');
+}
+function cerrar() { $('modal').classList.remove('open'); actual = null; }
+
+async function verCompras() {
+  const box = $('detalle'); box.textContent = 'Cargando…';
+  try {
+    const d = await apiGet('/api/cliente-detalle?cliente=' + encodeURIComponent(actual.Codigo) + '&vendedor=');
+    const max = Math.max(1, ...d.meses.map(m => m.Venta));
+    box.innerHTML = `<div class="sec" style="margin-top:4px;padding-top:8px"><h3>Compras por mes (últimos 6)</h3>
+      <div class="bars" style="margin-bottom:16px">${d.meses.map(m => `<div style="height:${Math.max(4, m.Venta / max * 100)}%" title="${fM(m.Venta)}"><span>${m.Mes.slice(5)}</span></div>`).join('')}</div>
+      <h3>Lo que más compra (12 meses)</h3>
+      <table class="prods"><tbody>${d.topProductos.map(p => `<tr><td>${esc((p.Descripcion || p.Parte || '').toString().trim())}</td><td class="n">${fM(p.Monto)}</td></tr>`).join('') || '<tr><td class="sub">Sin datos</td></tr>'}</tbody></table></div>`;
+  } catch (e) { box.innerHTML = `<span style="color:var(--bad)">${esc(e.message)}</span>`; }
+}
+
+// ── GUARDAR (Apps Script, igual que Check-in/Visitas) ───────────────────────
+async function enviar(fila) {
+  // text/plain evita el preflight CORS; no-cors porque Apps Script no responde cabeceras CORS al POST
+  for (let i = 0; i < 3; i++) {
+    try { await fetch(ATENCION_SCRIPT, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(fila) }); return true; }
+    catch (e) { if (i === 2) throw e; await new Promise(r => setTimeout(r, 1200)); }
+  }
+}
+
+async function guardar() {
+  if (!ATENCION_SCRIPT) { toast('Falta configurar la URL de Apps Script', true); return; }
+  const motivo = $('f-motivo').value, detalle = $('f-detalle').value.trim(), estatus = $('f-estatus').value;
+  const asesor = $('f-asesor-can').value, accion = $('f-accion').value.trim();
+  if (!motivo && !detalle && !asesor) { toast('Escribe un motivo, un detalle o canaliza a un asesor', true); return; }
+  if (asesor && !accion && !detalle) { toast('Indica qué debe hacer el asesor', true); return; }
+  const btn = $('b-guardar'); btn.disabled = true; btn.textContent = 'Guardando…';
+  const e = estadoDe(actual);
+  try {
+    if (asesor) {
+      // Nueva canalización (caso nuevo), o reutiliza el caso abierto del mismo cliente
+      const caso = (e && e.abierto && e.asesor === asesor) ? e.caso : 'C' + Date.now();
+      await enviar({ caso, cliente: actual.Codigo, nombre: actual.Cliente, asesor, tipo: 'CANALIZACION',
+                     motivo, detalle: [accion, detalle && ('Cliente: ' + detalle)].filter(Boolean).join(' · '), estatus: estatus === 'Recuperado' ? 'Pendiente' : estatus, por: quien });
+    } else {
+      await enviar({ caso: e ? e.caso : '', cliente: actual.Codigo, nombre: actual.Cliente, asesor: e ? e.asesor : '', tipo: e && e.abierto && estatus !== (e.estatus) ? 'ESTATUS' : 'NOTA',
+                     motivo, detalle, estatus, por: quien });
+    }
+    // Refleja de inmediato en pantalla (el Sheet tarda unos segundos en reflejarse al leer)
+    const ahora = new Date().toLocaleString('es-MX');
+    (reg.eventos[actual.Codigo] = reg.eventos[actual.Codigo] || []).push({ fecha: ahora, por: quien, tipo: asesor ? 'CANALIZACION' : 'NOTA', asesor, motivo, detalle, estatus });
+    const hayCaso = !!asesor || (e && !e.nota && e.caso);
+    reg.estado[actual.Codigo] = { caso: (e && e.caso) || '', asesor: asesor || (e && e.asesor) || '', estatus, abierto: hayCaso && !CERRADOS.includes(estatus.toUpperCase()), nota: !hayCaso };
+    toast(asesor ? '✅ Canalizado a ' + asesor : '✅ Seguimiento guardado');
+    cerrar(); render();
+    setTimeout(() => apiGet('/api/atencion/registros').then(a => { reg = a; render(); }).catch(() => {}), 6000);
+  } catch (err) {
+    toast('No se pudo guardar: ' + err.message, true); btn.disabled = false; btn.textContent = 'Guardar';
+  }
+}
+
+// ── EXPORTAR ────────────────────────────────────────────────────────────────
+function exportarCSV() {
+  const l = filtrados();
+  const cab = ['Cuenta', 'Cliente', 'Asesor', 'Sede', 'Dias sin comprar', 'Compra cada (dias)', 'Atraso', 'Compra promedio', 'Compras', 'Monto periodo', 'Semaforo', 'Prioridad', 'Seguimiento'];
+  const f = c => { const e = estadoDe(c); return [c.Codigo, c.Cliente, c.Asesor, c.Sucursal, c.Dias, c.PromDias, c.Atraso, c.Ticket, c.Compras, c.Total, c.Semaforo, c.Prioridad, e ? e.estatus : 'Sin atender']; };
+  const csv = [cab, ...l.map(f)].map(r => r.map(v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"').join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' }));
+  a.download = 'atencion-clientes-' + new Date().toISOString().slice(0, 10) + '.csv'; a.click();
+}
+</script>
+</body>
+</html>
