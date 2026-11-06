@@ -1218,7 +1218,7 @@
             const rEl = document.getElementById('podio-racha');
             rEl.className = 'podio-racha' + (racha > 0 ? '' : ' off');
             rEl.innerHTML = `<b>${racha}</b><small>🔥 RACHA ${racha === 1 ? 'DÍA' : 'DÍAS'}</small>`;
-            renderRetos(yo.actual, d);
+            renderRetos(yo.actual, d, yo);
         } else {
             posEl.textContent = '—'; posEl.style.color = 'var(--text-subtle)';
             medEl.textContent = 'SIN PARTICIPAR';
@@ -1246,12 +1246,14 @@
             <li><b>Visitas</b> (CALLE): ${R.VISITAS_SEMANA} pts por semana con ${R.VISITAS_MIN}+ visitas registradas.</li>
             <li><b>Encuesta QR</b> (MOSTRADOR): ${R.ENCUESTA_SEMANA} pts por semana con ${R.ENCUESTA_MIN}+ escaneos.</li>
             <li><b>Fleetrite</b>: números de parte distintos vendidos en el mes → ${R.FLEETRITE.slice().reverse().map(t => `${t.min}+ NPs = ${t.pts} pts`).join(' · ')}.</li>
+            <li><b>🪣 Cubetas Fleetrite</b> (noviembre): ${R.CUBETA_FLEETRITE || 10} pts por cada cubeta Fleetrite vendida (aceites, anticongelante y grasas en cubeta).</li>
+            <li><b>🎁 Bonos especiales</b>: puntos extra que se anuncian por flyer (p. ej. 200 pts por alcanzar la meta de NPs Fleetrite en octubre).</li>
             <li>Podio final al 30 de noviembre con los puntos acumulados de los 3 meses: Oro, Plata, Bronce, 4to y 5to lugar.</li>`;
 
         marcarCheckinHoy(yo);
     }
 
-    function renderRetos(a, d) {
+    function renderRetos(a, d, yo) {
         if (!a) { document.getElementById('podio-retos').innerHTML = ''; return; }
         const R = d.reglas;
         const c = a.constancia, ck = a.checkin, f = a.fleetrite;
@@ -1286,7 +1288,17 @@
             <div class="reto ${f.pts > 0 ? 'ok' : ''}" style="cursor:pointer;" onclick="abrirFleetriteDetalle()">
                 <div class="r-top"><span>🔧 Fleetrite NPs</span><span class="r-pts">+${f.pts}</span></div>
                 <div class="r-val">${f.nps} NPs</div>
-                <div class="r-sub">${f.siguiente ? `Faltan ${f.faltan} para ${f.siguiente} NPs` : '¡Nivel máximo!'} · toca para ver cuáles</div>${bar(f.nps, f.siguiente || 50)}</div>`;
+                <div class="r-sub">${f.siguiente ? `Faltan ${f.faltan} para ${f.siguiente} NPs` : '¡Nivel máximo!'} · toca para ver cuáles</div>${bar(f.nps, f.siguiente || 50)}</div>
+            ${a.cubetas && a.cubetas.activo ? `
+            <div class="reto ${a.cubetas.cubetas > 0 ? 'ok' : ''}">
+                <div class="r-top"><span>🪣 Cubetas Fleetrite</span><span class="r-pts">+${a.cubetas.pts}</span></div>
+                <div class="r-val">${a.cubetas.cubetas} cubeta${a.cubetas.cubetas === 1 ? '' : 's'}</div>
+                <div class="r-sub">¡Cada cubeta cuenta! ${R.CUBETA_FLEETRITE || 10} pts por cubeta vendida este mes</div>${bar(a.cubetas.cubetas, Math.max(10, a.cubetas.cubetas))}</div>` : ''}
+            ${yo && yo.bonos && yo.bonos.length ? yo.bonos.map(b => `
+            <div class="reto ok">
+                <div class="r-top"><span>🎁 Bono especial</span><span class="r-pts">+${b.pts}</span></div>
+                <div class="r-val">${b.pts} pts</div>
+                <div class="r-sub">${b.concepto}</div>${bar(1, 1)}</div>`).join('') : ''}`;
     }
 
     // ─── DETALLE NPs FLEETRITE ────────────────────────────────────────────────

@@ -1545,7 +1545,7 @@
                 <thead><tr>
                     <th>#</th><th>Asesor</th><th class="podio-hide-mobile">Sede</th>
                     <th class="num">Total</th><th class="num podio-hide-mobile">Check-in</th><th class="num podio-hide-mobile">Constancia</th>
-                    <th class="num podio-hide-mobile">Racha</th><th class="num podio-hide-mobile">Visitas / QR</th><th class="num podio-hide-mobile">Fleetrite</th><th class="num">% Meta</th>
+                    <th class="num podio-hide-mobile">Racha</th><th class="num podio-hide-mobile">Visitas / QR</th><th class="num podio-hide-mobile">Fleetrite</th><th class="num podio-hide-mobile" title="Cubetas Fleetrite + bonos especiales">Extras 🎁</th><th class="num">% Meta</th>
                 </tr></thead>
                 <tbody id="podio-tbody"><tr><td colspan="10" class="loading">Cargando...</td></tr></tbody>
             </table>
@@ -1853,12 +1853,16 @@ function filasPodio() {
             return { Nombre: r.Nombre, Sucursal: r.Sucursal, Canal: r.Canal, total: r.total,
                 checkin: ms.reduce((s, m) => s + m.checkin, 0), constancia: ms.reduce((s, m) => s + m.constancia, 0),
                 semanal: ms.reduce((s, m) => s + m.visitas + m.encuesta, 0), fleetrite: ms.reduce((s, m) => s + m.fleetrite, 0),
+                cubetas: ms.reduce((s, m) => s + (m.cubetas || 0), 0), bonos: ms.reduce((s, m) => s + (m.bonos || 0), 0),
+                bonosLista: r.bonos || [],
                 racha: a.constancia ? a.constancia.rachaActual : 0, pct: r.Pct, constanciaPts: r.constanciaPts };
         });
     } else {
         filas = (podioG.porMes[mes] || []).map(r => ({ Nombre: r.Nombre, Sucursal: r.Sucursal, Canal: r.Canal, total: r.total,
             checkin: r.checkin.pts, constancia: r.constancia.pts, semanal: (r.visitas ? r.visitas.pts : 0) + (r.encuesta ? r.encuesta.pts : 0),
-            fleetrite: r.fleetrite.pts, racha: r.constancia.rachaActual, pct: r.Pct, constanciaPts: r.constancia.pts, nps: r.fleetrite.nps }));
+            fleetrite: r.fleetrite.pts, racha: r.constancia.rachaActual, pct: r.Pct, constanciaPts: r.constancia.pts, nps: r.fleetrite.nps,
+            cubetas: r.cubetas ? r.cubetas.pts : 0, nCubetas: r.cubetas && r.cubetas.activo ? r.cubetas.cubetas : undefined,
+            bonos: r.bonos ? r.bonos.pts : 0, bonosLista: r.bonos ? r.bonos.lista : [] }));
     }
     if (podioCanal !== 'TODOS') filas = filas.filter(f => f.Canal === podioCanal);
     filas.sort((a, b) => (b.total - a.total) || (b.constanciaPts - a.constanciaPts) || (b.pct - a.pct) || a.Nombre.localeCompare(b.Nombre));
@@ -1897,14 +1901,16 @@ function renderPodioG() {
             <td class="num podio-hide-mobile">${r.racha > 0 ? `<span class="racha-chip">🔥 ${r.racha}</span>` : '<span style="color:var(--text-subtle)">—</span>'}</td>
             <td class="num podio-hide-mobile">${r.semanal}</td>
             <td class="num podio-hide-mobile">${r.fleetrite}${r.nps !== undefined ? ` <span style="color:var(--text-subtle);font-size:0.55rem;">(${r.nps} NPs)</span>` : ''}</td>
+            <td class="num podio-hide-mobile" title="${[r.cubetas ? `Cubetas Fleetrite: ${r.cubetas} pts` : '', ...(r.bonosLista || []).map(b => `${b.concepto}: ${b.pts} pts`)].filter(Boolean).join('\n')}">${(r.cubetas || 0) + (r.bonos || 0) || '<span style="color:var(--text-subtle)">—</span>'}${r.nCubetas !== undefined ? ` <span style="color:var(--text-subtle);font-size:0.55rem;">(${r.nCubetas} 🪣)</span>` : ''}${r.bonos ? ` <span style="color:var(--gold);font-size:0.55rem;">🎁${r.bonos}</span>` : ''}</td>
             <td class="num" style="color:${r.pct >= 120 ? 'var(--gold)' : r.pct >= 100 ? 'var(--success)' : 'var(--text-muted)'}">${r.pct}%</td>
-        </tr>`).join('') || '<tr><td colspan="10" class="loading">Sin participantes</td></tr>';
+        </tr>`).join('') || '<tr><td colspan="11" class="loading">Sin participantes</td></tr>';
 
     const R = podioG.reglas;
     document.getElementById('podio-g-nota').innerHTML =
         `Puntos: check-in ${R.CHECKIN_DIA}/día · constancia ${R.CONSTANCIA_DIA}/día sobre meta diaria + bono de racha creciente (${R.RACHA_DIA_EXTRA}, ${R.RACHA_DIA_EXTRA * 2}, ${R.RACHA_DIA_EXTRA * 3}... por día extra seguido) · ` +
         `visitas (Calle) ${R.VISITAS_SEMANA}/semana con ${R.VISITAS_MIN}+ · encuesta QR (Mostrador) ${R.ENCUESTA_SEMANA}/semana con ${R.ENCUESTA_MIN}+ · ` +
-        `Fleetrite ${R.FLEETRITE.slice().reverse().map(t => `${t.min}+ NPs=${t.pts}`).join(', ')}. ` +
+        `Fleetrite ${R.FLEETRITE.slice().reverse().map(t => `${t.min}+ NPs=${t.pts}`).join(', ')} · ` +
+        `cubetas Fleetrite ${R.CUBETA_FLEETRITE || 10} pts c/u (noviembre) · bonos especiales 🎁. ` +
         (podioG.encuestaConfigurada ? '' : '<span style="color:var(--warning)">⚠️ Encuesta QR aún sin configurar (Mostrador suma 0 en ese reto).</span>') +
         ` <a href="#" onclick="apiFetch('/api/podio?refresh=1').then(d=>{podioG=d;renderPodioG();});return false;" style="color:var(--accent);">↻ Recalcular</a>`;
 }
@@ -1912,8 +1918,8 @@ function renderPodioG() {
 function descargarPodioCSV() {
     const filas = filasPodio();
     const mes = document.getElementById('podio-mes-sel').value;
-    const head = ['Puesto', 'Asesor', 'Sede', 'Canal', 'Total', 'CheckIn', 'Constancia', 'Racha', 'VisitasQR', 'Fleetrite', 'PctMeta'];
-    const csv = [head.join(',')].concat(filas.map(r => [r.puesto, `"${r.Nombre}"`, r.Sucursal, r.Canal, r.total, r.checkin, r.constancia, r.racha, r.semanal, r.fleetrite, r.pct].join(','))).join('\n');
+    const head = ['Puesto', 'Asesor', 'Sede', 'Canal', 'Total', 'CheckIn', 'Constancia', 'Racha', 'VisitasQR', 'Fleetrite', 'Cubetas', 'Bonos', 'PctMeta'];
+    const csv = [head.join(',')].concat(filas.map(r => [r.puesto, `"${r.Nombre}"`, r.Sucursal, r.Canal, r.total, r.checkin, r.constancia, r.racha, r.semanal, r.fleetrite, r.cubetas || 0, r.bonos || 0, r.pct].join(','))).join('\n');
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' }));
     a.download = `ruta-al-podio-${mes.toLowerCase()}-${podioCanal.toLowerCase()}.csv`; a.click();
