@@ -1399,7 +1399,56 @@
         .tv-footer { padding:5px 24px; border-top:1px solid #111; font-size:9px; color:#2a2a2a; display:flex; justify-content:space-between; flex-shrink:0; }
         #tv-countdown { color:var(--gold); }
 
-        </style>
+        
+        /* ── TABLERO DE CORES (Sin Devolver) ─────────────────────────── */
+        .ct-wrap { font-size:0.75rem; }
+        .ct-kpis { display:grid; grid-template-columns:repeat(5,1fr); gap:8px; margin-bottom:12px; }
+        .ct-kpi { background:var(--bg); border:1px solid var(--border); border-radius:10px; padding:10px 12px; min-width:0; }
+        .ct-kpi span { display:block; font-size:0.58rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:.04em; margin-bottom:4px; }
+        .ct-kpi b { display:block; font-size:1.05rem; font-weight:700; font-variant-numeric:tabular-nums; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .ct-kpi small { display:block; font-size:0.6rem; color:var(--text-subtle); margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .ct-sec { font-size:0.68rem; font-weight:700; color:var(--text); margin:14px 0 8px; display:flex; justify-content:space-between; align-items:center; gap:8px; }
+        .ct-sec small { font-weight:400; color:var(--text-subtle); font-size:0.6rem; }
+        .ct-bar { display:flex; height:26px; border-radius:8px; overflow:hidden; background:var(--bg); margin-bottom:8px; }
+        .ct-bar div { display:flex; align-items:center; justify-content:center; font-size:0.62rem; font-weight:700; color:#0f172a; overflow:hidden; white-space:nowrap; min-width:0; }
+        .ct-aging { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; }
+        .ct-aging button { background:var(--bg); border:1px solid var(--border); border-radius:10px; padding:8px 10px; text-align:left; color:var(--text); cursor:pointer; font:inherit; min-width:0; }
+        .ct-aging button.on { border-color:var(--accent); box-shadow:0 0 0 1px var(--accent) inset; }
+        .ct-aging .t { font-size:0.6rem; color:var(--text-muted); display:flex; align-items:center; gap:5px; }
+        .ct-aging .v { font-size:0.85rem; font-weight:700; margin-top:3px; }
+        .ct-aging .p { font-size:0.58rem; color:var(--text-subtle); }
+        .ct-dot { width:8px; height:8px; border-radius:50%; display:inline-block; flex:none; }
+        .ct-grid2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+        .ct-grid2 > div { min-width:0; }
+        .ct-tbl { width:100%; border-collapse:collapse; font-size:0.7rem; }
+        .ct-tbl th { color:var(--text-muted); font-weight:500; font-size:0.58rem; text-transform:uppercase; letter-spacing:.03em; text-align:left; padding:6px; border-bottom:1px solid var(--border); white-space:nowrap; }
+        .ct-tbl th.n, .ct-tbl td.n { text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+        .ct-tbl th[data-k] { cursor:pointer; user-select:none; }
+        .ct-tbl td { padding:7px 6px; border-bottom:1px solid var(--border-light); vertical-align:middle; }
+        .ct-tbl tr.ct-click { cursor:pointer; }
+        .ct-tbl tr.ct-click:hover td { background:var(--surface-2); }
+        .ct-tbl tr.ct-sel td { background:var(--accent-dim); }
+        .ct-tbl .sub { display:block; font-size:0.6rem; color:var(--text-subtle); }
+        .ct-pill { display:inline-block; padding:2px 7px; border-radius:999px; font-size:0.62rem; font-weight:700; white-space:nowrap; }
+        .ct-pill.ok   { background:var(--success-dim); color:var(--success); }
+        .ct-pill.warn { background:var(--warning-dim); color:var(--warning); }
+        .ct-pill.bad  { background:var(--danger-dim);  color:var(--danger); }
+        .ct-barcell { position:relative; padding-bottom:9px !important; }
+        .ct-barcell i { position:absolute; right:6px; bottom:4px; height:3px; border-radius:2px; background:var(--accent); opacity:.7; }
+        .ct-tools { display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-bottom:8px; }
+        .ct-tools input { flex:1; min-width:140px; background:var(--bg); border:1px solid var(--border); color:var(--text); border-radius:8px; padding:7px 10px; font:inherit; font-size:0.7rem; }
+        .ct-tools button { background:var(--bg); border:1px solid var(--border); color:var(--text); border-radius:8px; padding:7px 10px; font:inherit; font-size:0.65rem; cursor:pointer; white-space:nowrap; }
+        .ct-chip { background:var(--accent-dim); border:1px solid var(--accent); color:#bfdbfe; border-radius:999px; padding:3px 9px; font-size:0.62rem; cursor:pointer; white-space:nowrap; }
+        .ct-scroll { overflow:auto; max-height:420px; }
+        .ct-note { font-size:0.6rem; color:var(--text-subtle); margin-top:8px; line-height:1.5; }
+        .ct-empty { padding:18px; text-align:center; color:var(--text-muted); }
+        @media (max-width:760px) {
+            .ct-kpis { grid-template-columns:repeat(2,1fr); }
+            .ct-kpis .ct-kpi:first-child { grid-column:1/-1; }
+            .ct-grid2 { grid-template-columns:1fr; }
+            .ct-hide-m { display:none; }
+        }
+    </style>
 </head>
 <body>
 
@@ -1562,14 +1611,15 @@
     <!-- CORES DEVOLUCIONES -->
     <div class="card" style="margin-bottom:14px;">
         <div class="card-title">
-            <span>⚠️ CORES <span id="cores-resumen" style="font-size:0.55rem; color:#555; font-weight:400;"></span></span>
-            <a href="cores.html" target="_blank" style="font-size:0.62rem; font-weight:600; color:#fff; background:#3b82f6; padding:6px 12px; border-radius:8px; text-decoration:none; white-space:nowrap;">♻️ Tablero de Cores ↗</a>
+            ⚠️ CORES
+            <span id="cores-resumen" style="font-size:0.55rem; color:#555; font-weight:400;"></span>
         </div>
         <div style="display:flex; gap:6px; margin-bottom:12px;">
-            <button onclick="setCoresFiltroG('devueltos')" id="g-cores-f-dev" class="btn-filtro activo" style="border-color:var(--red);color:var(--red);font-size:0.6rem;">📤 Devueltos</button>
-            <button onclick="setCoresFiltroG('pendientes')" id="g-cores-f-pen" class="btn-filtro" style="border-color:var(--gold);color:var(--gold);font-size:0.6rem;">⏳ Sin Devolver</button>
+            <button onclick="setCoresFiltroG('pendientes')" id="g-cores-f-pen" class="btn-filtro activo" style="border-color:var(--gold);color:#000;background:var(--gold);font-size:0.6rem;">⏳ Sin Devolver</button>
+            <button onclick="setCoresFiltroG('devueltos')" id="g-cores-f-dev" class="btn-filtro" style="border-color:var(--red);color:var(--red);font-size:0.6rem;">📤 Devueltos</button>
         </div>
-        <div style="overflow-x:auto; max-height:360px; overflow-y:auto;">
+        <div id="g-cores-pen"><div class="loading">Cargando CORES...</div></div>
+        <div id="g-cores-dev" style="overflow-x:auto; max-height:360px; overflow-y:auto; display:none;">
             <table class="cores-table">
                 <thead><tr id="g-cores-thead">
                     <th>Referencia</th>
@@ -1748,7 +1798,7 @@ async function login() {
     loadBBD();
     loadVisitas();
     loadCheckins();
-    loadCores();
+    onCoresMesChange();
     loadTorneo();
     loadAceiteG();
     loadPodioG();
@@ -2391,7 +2441,7 @@ function renderCartera() {
 }
 
 // ── CORES ─────────────────────────────────────────────────────────────────────
-let coresFiltroG = 'devueltos';
+let coresFiltroG = 'pendientes';
 
 function onCoresMesChange() {
     if (coresFiltroG === 'pendientes') loadCoresPendientesG();
@@ -2411,52 +2461,170 @@ function setCoresFiltroG(tipo) {
 }
 
 async function loadCoresPendientesG() {
-    // Misma lógica que el Tablero de Cores / informe Quiter U23336
-    const tbody = document.getElementById('cores-tbody');
-    document.getElementById('g-cores-thead').innerHTML = `
-        <th>Remisión</th><th>Asesor</th>
-        <th class="cores-hide-mobile">Cliente</th><th>Artículo</th>
-        <th class="cores-hide-mobile">Fecha</th><th>Monto</th><th>Días</th>`;
+    const cont = document.getElementById('g-cores-pen');
+    document.getElementById('g-cores-dev').style.display = 'none';
+    cont.style.display = '';
+    document.getElementById('cores-resumen').textContent = '';
     try {
         const fv = document.getElementById('f-vend').value;
         const fs = document.getElementById('f-suc')?.value || 'TODAS';
-        const d  = await apiFetch('/api/cores-tablero');
-        const cores = (d.filas || []).filter(c =>
+        const d  = await ctCargar();
+        const base = (d.filas || []).filter(c =>
             (fv === 'TODOS' || (c.Vendedor||'').toUpperCase().includes(fv.toUpperCase().trim())) &&
             (fs === 'TODAS' || (c.Sucursal||'').toUpperCase().trim() === fs.toUpperCase().trim())
         );
-
-        if (cores.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" class="loading">✅ Sin CORES pendientes de devolver</td></tr>';
-            document.getElementById('cores-resumen').textContent = '';
-            return;
-        }
-
-        const totalMonto = cores.reduce((s, c) => s + (parseFloat(c.Importe)||0), 0);
-        const totalPzs   = cores.reduce((s, c) => s + (parseFloat(c.Pendientes)||0), 0);
-        document.getElementById('cores-resumen').textContent = `${totalPzs} piezas · ${fM(totalMonto)} pendiente`;
-
-        tbody.innerHTML = cores.map(c => {
-            const dias  = parseInt(c.Dias) || 0;
-            const clase = dias < 7 ? 'dias-verde' : dias <= 20 ? 'dias-ambar' : 'dias-rojo';
-            const v = (c.Vendedor||'—').split(' ');
-            return `
-                <tr>
-                    <td style="color:var(--blue);font-weight:bold;white-space:nowrap;">${c.Remision||c.Referencia||'—'}</td>
-                    <td style="color:#aaa;font-size:0.6rem;">${v[0]} ${v[1]||''}</td>
-                    <td class="cores-hide-mobile" style="color:#ccc;max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${c.Cliente||''}">${c.Cliente||c.Codigo||'—'}</td>
-                    <td style="color:var(--text-muted);max-width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${c.Descripcion||''}">${c.Descripcion||'—'}</td>
-                    <td class="cores-hide-mobile" style="color:var(--text-muted);white-space:nowrap;">${c.Fecha||'—'}</td>
-                    <td style="color:var(--gold);font-weight:bold;white-space:nowrap;">${fM(c.Importe)}</td>
-                    <td><span class="dias-badge ${clase}">${dias}d</span></td>
-                </tr>`;
-        }).join('');
+        if (coresFiltroG !== 'pendientes') return;
+        ctRender(cont, base, d.corte, true);
     } catch(err) {
-        tbody.innerHTML = `<tr><td colspan="7" class="error-msg">❌ ${err.message}</td></tr>`;
+        cont.innerHTML = `<div class="error-msg">❌ ${err.message}</div>`;
     }
 }
 
+// ── TABLERO DE CORES (pestaña Sin Devolver) ─────────────────────────────────
+// Pendiente = VENTA REMISIONES CORES − CANCELACION (misma lógica que el informe U23336 de Quiter).
+// Datos: /api/cores-tablero (carga nocturna; lo de hoy aparece mañana).
+const CT = {
+    data: null, t: 0,
+    st: { suc:'', vend:'', edad:'', txt:'', sortK:'Dias', sortDir:-1 },
+    ED: { verde:{t:'Menos de 7 días',c:'var(--success)',cls:'ok'}, ambar:{t:'7 a 20 días',c:'var(--warning)',cls:'warn'}, rojo:{t:'21 días o más',c:'var(--danger)',cls:'bad'} },
+    edad: d => d >= 21 ? 'rojo' : d >= 7 ? 'ambar' : 'verde',
+    nom:  s => (s||'').split(' ').slice(0,3).join(' '),
+    esc:  s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),
+    fD:   s => { if (!s) return '—'; const [y,m,d] = String(s).slice(0,10).split('-'); return `${d}/${m}/${y.slice(2)}`; },
+    fM:   n => new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN',maximumFractionDigits:0}).format(n||0),
+    fN:   n => new Intl.NumberFormat('es-MX',{maximumFractionDigits:0}).format(n||0),
+};
+
+async function ctCargar() {
+    if (CT.data && Date.now() - CT.t < 5*60*1000) return CT.data;
+    const d = await apiFetch('/api/cores-tablero');
+    if (d.error) throw new Error(d.error);
+    CT.data = d; CT.t = Date.now();
+    return d;
+}
+
+// el: contenedor · base: filas ya filtradas por la vista (vendedor / filtros de arriba)
+// grupos: true = muestra "Por sucursal" y "Por asesor" (gerencia)
+function ctRender(el, base, corte, grupos) {
+    CT.el = el; CT.base = base; CT.corte = corte; CT.grupos = grupos;
+    const st = CT.st, E = CT.ED, esc = CT.esc, fM = CT.fM, fN = CT.fN;
+    const pasa = (r, sinEdad) =>
+        (!st.suc  || r.Sucursal === st.suc) &&
+        (!st.vend || r.Vendedor === st.vend) &&
+        (sinEdad || !st.edad || CT.edad(r.Dias) === st.edad) &&
+        (!st.txt  || [r.Cliente, r.Codigo, r.Remision, r.Referencia, r.Articulo, r.Descripcion].join(' ').toUpperCase().includes(st.txt.toUpperCase()));
+    const rows = base.filter(r => pasa(r, false));
+    const rowsA = base.filter(r => pasa(r, true));
+    const sum = (a, k) => a.reduce((s, r) => s + (+r[k] || 0), 0);
+
+    const tot = sum(rows,'Importe'), pzs = sum(rows,'Pendientes');
+    const venc = sum(rows.filter(r => r.Dias >= 21),'Importe');
+    const old = rows.reduce((a, r) => !a || r.Dias > a.Dias ? r : a, null);
+    const nRem = new Set(rows.map(r => r.Referencia)).size, nCli = new Set(rows.map(r => r.Codigo)).size;
+
+    const totA = sum(rowsA,'Importe') || 1;
+    const ag = ['verde','ambar','rojo'].map(k => { const rr = rowsA.filter(r => CT.edad(r.Dias) === k); return { k, imp:sum(rr,'Importe'), pzs:sum(rr,'Pendientes') }; });
+
+    const agrupar = key => {
+        const m = {};
+        rows.forEach(r => {
+            const g = m[r[key]] || (m[r[key]] = { k:r[key], cod:r.Codigo, imp:0, pzs:0, venc:0, rem:new Set(), dmax:0, vend:new Set() });
+            g.imp += r.Importe; g.pzs += r.Pendientes; if (r.Dias >= 21) g.venc += r.Importe;
+            g.rem.add(r.Referencia); g.dmax = Math.max(g.dmax, r.Dias); g.vend.add(r.Vendedor);
+        });
+        return Object.values(m).sort((a, b) => b.imp - a.imp);
+    };
+    const tablaGrupo = (titulo, key, label) => {
+        const gs = agrupar(key), max = Math.max(1, ...gs.map(g => g.imp));
+        return `<div><div class="ct-sec">${titulo} <small>clic para filtrar</small></div>
+            <table class="ct-tbl"><thead><tr><th>${titulo.replace('Por ','')}</th><th class="n">Pzs</th><th class="n">Vencido</th><th class="n">Importe</th></tr></thead><tbody>
+            ${gs.map(g => `<tr class="ct-click ${st[key==='Sucursal'?'suc':'vend']===g.k?'ct-sel':''}" data-f="${key==='Sucursal'?'suc':'vend'}" data-v="${esc(g.k)}">
+                <td>${esc(label(g.k))}</td><td class="n">${fN(g.pzs)}</td>
+                <td class="n" style="color:${g.venc?'var(--danger)':'var(--text-subtle)'}">${g.venc?fM(g.venc):'—'}</td>
+                <td class="n ct-barcell">${fM(g.imp)}<i style="width:calc(${g.imp/max*100}% - 12px)"></i></td></tr>`).join('') || '<tr><td colspan="4" class="ct-empty">Sin datos</td></tr>'}
+            </tbody></table></div>`;
+    };
+
+    const cl = agrupar('Cliente');
+    const det = [...rows].sort((a, b) => { const x = a[st.sortK], y = b[st.sortK]; return (typeof x === 'number' ? x - y : String(x).localeCompare(String(y))) * st.sortDir; });
+
+    const chips = [];
+    if (st.suc)  chips.push(['suc', st.suc]);
+    if (st.vend) chips.push(['vend', CT.nom(st.vend)]);
+    if (st.edad) chips.push(['edad', E[st.edad].t]);
+
+    el.innerHTML = `<div class="ct-wrap">
+      <div class="ct-kpis">
+        <div class="ct-kpi"><span>Importe pendiente</span><b style="color:var(--gold)">${fM(tot)}</b><small>${fN(nRem)} remisiones</small></div>
+        <div class="ct-kpi"><span>Piezas</span><b>${fN(pzs)}</b><small>sin devolver</small></div>
+        <div class="ct-kpi"><span>Clientes</span><b>${fN(nCli)}</b><small>con cores pendientes</small></div>
+        <div class="ct-kpi"><span>Vencido 21+ días</span><b style="color:var(--danger)">${fM(venc)}</b><small>${tot ? Math.round(venc/tot*100) + '% del pendiente' : '—'}</small></div>
+        <div class="ct-kpi"><span>Más antiguo</span><b>${old ? old.Dias + ' días' : '—'}</b><small>${old ? esc(old.Remision + ' · ' + CT.nom(old.Cliente)) : ''}</small></div>
+      </div>
+
+      <div class="ct-sec">Antigüedad del importe <small>clic para filtrar</small></div>
+      <div class="ct-bar">${ag.filter(a => a.imp > 0).map(a => `<div style="width:${a.imp/totA*100}%;background:${E[a.k].c}">${Math.round(a.imp/totA*100)}%</div>`).join('')}</div>
+      <div class="ct-aging">${ag.map(a => `<button class="${st.edad===a.k?'on':''}" data-edad="${a.k}">
+          <div class="t"><span class="ct-dot" style="background:${E[a.k].c}"></span>${E[a.k].t}</div>
+          <div class="v">${fM(a.imp)}</div><div class="p">${fN(a.pzs)} piezas</div></button>`).join('')}</div>
+
+      ${grupos ? `<div class="ct-grid2">${tablaGrupo('Por sucursal','Sucursal', s => s)}${tablaGrupo('Por asesor','Vendedor', CT.nom)}</div>` : ''}
+
+      <div class="ct-sec">Clientes con cores pendientes <small>${cl.length} clientes · clic para ver sus remisiones</small></div>
+      <div class="ct-scroll" style="max-height:300px"><table class="ct-tbl"><thead><tr><th>Cliente</th>${grupos?'<th class="ct-hide-m">Asesor</th>':''}<th class="n">Rem.</th><th class="n">Pzs</th><th class="n">Días máx.</th><th class="n">Importe</th></tr></thead><tbody>
+        ${cl.map(g => `<tr class="ct-click" data-cli="${esc(g.k)}">
+            <td>${esc(g.k)}<span class="sub">${esc(g.cod)}</span></td>
+            ${grupos?`<td class="ct-hide-m" style="color:var(--text-muted)">${esc([...g.vend].map(CT.nom).join(', '))}</td>`:''}
+            <td class="n">${g.rem.size}</td><td class="n">${fN(g.pzs)}</td>
+            <td class="n"><span class="ct-pill ${E[CT.edad(g.dmax)].cls}">${g.dmax} d</span></td>
+            <td class="n" style="font-weight:600">${fM(g.imp)}</td></tr>`).join('') || `<tr><td colspan="6" class="ct-empty">✅ Sin cores pendientes</td></tr>`}
+      </tbody></table></div>
+
+      <div class="ct-sec">Detalle de remisiones <small>${det.length} líneas</small></div>
+      <div class="ct-tools">
+        <input class="ct-txt" placeholder="Buscar cliente, remisión o artículo" value="${esc(st.txt)}">
+        ${chips.map(([k, t]) => `<span class="ct-chip" data-clr="${k}">${esc(t)} ✕</span>`).join('')}
+        <button class="ct-csv">⬇️ CSV</button>
+      </div>
+      <div class="ct-scroll"><table class="ct-tbl"><thead><tr>
+        <th data-k="Fecha" class="ct-hide-m">Fecha</th><th data-k="Remision">Remisión</th><th data-k="Cliente">Cliente</th>
+        ${grupos?'<th data-k="Vendedor" class="ct-hide-m">Asesor</th>':''}<th data-k="Descripcion" class="ct-hide-m">Artículo</th>
+        <th data-k="Pendientes" class="n">Pzs</th><th data-k="Importe" class="n">Importe</th><th data-k="Dias" class="n">Días</th>
+      </tr></thead><tbody>
+        ${det.map(r => `<tr>
+            <td class="ct-hide-m" style="white-space:nowrap;color:var(--text-muted)">${CT.fD(r.Fecha)}</td>
+            <td style="white-space:nowrap;color:var(--accent);font-weight:600">${esc(r.Remision)}<span class="sub">${esc(r.Referencia)}</span></td>
+            <td>${esc(r.Cliente)}<span class="sub">${esc(r.Codigo)}</span></td>
+            ${grupos?`<td class="ct-hide-m" style="color:var(--text-muted)">${esc(CT.nom(r.Vendedor))}</td>`:''}
+            <td class="ct-hide-m">${esc(r.Descripcion)}<span class="sub">${esc(r.Articulo)}</span></td>
+            <td class="n">${fN(r.Pendientes)}</td><td class="n">${fM(r.Importe)}</td>
+            <td class="n"><span class="ct-pill ${E[CT.edad(r.Dias)].cls}">${r.Dias} d</span></td></tr>`).join('') || `<tr><td colspan="8" class="ct-empty">✅ Sin cores pendientes con estos filtros</td></tr>`}
+      </tbody></table></div>
+      <div class="ct-note">Datos al ${CT.fD(corte)} · carga nocturna de Quiter (lo de hoy aparece mañana). Pendiente = remisiones de cores menos sus cancelaciones; misma lógica que el informe U23336.</div>
+    </div>`;
+
+    // Eventos
+    const again = () => ctRender(CT.el, CT.base, CT.corte, CT.grupos);
+    el.querySelectorAll('[data-edad]').forEach(b => b.onclick = () => { st.edad = st.edad === b.dataset.edad ? '' : b.dataset.edad; again(); });
+    el.querySelectorAll('tr[data-f]').forEach(tr => tr.onclick = () => { const f = tr.dataset.f; st[f] = st[f] === tr.dataset.v ? '' : tr.dataset.v; again(); });
+    el.querySelectorAll('tr[data-cli]').forEach(tr => tr.onclick = () => { st.txt = tr.dataset.cli; again(); el.querySelector('.ct-txt').scrollIntoView({behavior:'smooth', block:'center'}); });
+    el.querySelectorAll('[data-clr]').forEach(c => c.onclick = () => { st[c.dataset.clr] = ''; again(); });
+    el.querySelectorAll('th[data-k]').forEach(th => th.onclick = () => { const k = th.dataset.k; st.sortDir = st.sortK === k ? -st.sortDir : (['Dias','Importe','Pendientes'].includes(k) ? -1 : 1); st.sortK = k; again(); });
+    const inp = el.querySelector('.ct-txt');
+    inp.oninput = () => { clearTimeout(CT.tm); CT.tm = setTimeout(() => { st.txt = inp.value.trim(); again(); const n = CT.el.querySelector('.ct-txt'); n.focus(); n.setSelectionRange(n.value.length, n.value.length); }, 300); };
+    el.querySelector('.ct-csv').onclick = () => {
+        const cols = ['Fecha','Sucursal','Remision','Referencia','Codigo','Cliente','Vendedor','Articulo','Descripcion','Pendientes','PVP','Importe','Dias'];
+        const q = v => `"${String(v ?? '').replace(/"/g,'""')}"`;
+        const csv = '﻿' + [cols.join(','), ...rows.map(r => cols.map(c => q(r[c])).join(','))].join('\n');
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob([csv], { type:'text/csv;charset=utf-8' }));
+        a.download = `cores-pendientes-${corte || 'hoy'}.csv`; a.click();
+    };
+}
+
 async function loadCores() {
+    document.getElementById('g-cores-pen').style.display = 'none';
+    document.getElementById('g-cores-dev').style.display = '';
     document.getElementById('g-cores-thead').innerHTML = `
         <th>Referencia</th><th>Asesor</th>
         <th class="cores-hide-mobile">Cliente</th><th>Artículo</th>
