@@ -1562,12 +1562,12 @@
     <!-- CORES DEVOLUCIONES -->
     <div class="card" style="margin-bottom:14px;">
         <div class="card-title">
-            ⚠️ CORES
-            <span id="cores-resumen" style="font-size:0.55rem; color:#555; font-weight:400;"></span>
+            <span>⚠️ CORES <span id="cores-resumen" style="font-size:0.55rem; color:#555; font-weight:400;"></span></span>
+            <a href="cores.html" target="_blank" style="font-size:0.62rem; font-weight:600; color:#fff; background:#3b82f6; padding:6px 12px; border-radius:8px; text-decoration:none; white-space:nowrap;">♻️ Tablero de Cores ↗</a>
         </div>
         <div style="display:flex; gap:6px; margin-bottom:12px;">
             <button onclick="setCoresFiltroG('devueltos')" id="g-cores-f-dev" class="btn-filtro activo" style="border-color:var(--red);color:var(--red);font-size:0.6rem;">📤 Devueltos</button>
-            <button onclick="setCoresFiltroG('pendientes')" id="g-cores-f-pen" class="btn-filtro" style="border-color:var(--gold);color:var(--gold);font-size:0.6rem;">⏳ Sin Pagar</button>
+            <button onclick="setCoresFiltroG('pendientes')" id="g-cores-f-pen" class="btn-filtro" style="border-color:var(--gold);color:var(--gold);font-size:0.6rem;">⏳ Sin Devolver</button>
         </div>
         <div style="overflow-x:auto; max-height:360px; overflow-y:auto;">
             <table class="cores-table">
@@ -1737,6 +1737,7 @@ async function login() {
     if (!USUARIOS[u] || USUARIOS[u] !== p) { alert('ACCESO DENEGADO'); return; }
 
     userRole = u;
+    try { localStorage.setItem('amherRol', JSON.stringify({u, t: Date.now()})); } catch(e) {}
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('main-app').style.display = 'block';
     document.getElementById('role-display').textContent = u === 'DIRECTOR' ? '⭐ DIRECTOR' : '🏟️ GERENTE';
@@ -1948,7 +1949,7 @@ async function renderAll() {
     } else {
         loadClientes('');
     }
-    loadCores();
+    onCoresMesChange(); // respeta la pestaña de CORES activa
 }
 
 function renderTime(lista) {
@@ -2410,43 +2411,46 @@ function setCoresFiltroG(tipo) {
 }
 
 async function loadCoresPendientesG() {
+    // Misma lógica que el Tablero de Cores / informe Quiter U23336
     const tbody = document.getElementById('cores-tbody');
     document.getElementById('g-cores-thead').innerHTML = `
-        <th>Referencia</th><th>Asesor</th>
+        <th>Remisión</th><th>Asesor</th>
         <th class="cores-hide-mobile">Cliente</th><th>Artículo</th>
-        <th class="cores-hide-mobile">Fecha</th><th>Monto</th><th>Días Sin Pagar</th>`;
+        <th class="cores-hide-mobile">Fecha</th><th>Monto</th><th>Días</th>`;
     try {
-        const fv     = document.getElementById('f-vend').value;
-        const nombre = fv !== 'TODOS' ? encodeURIComponent(fv) : '';
-        const filtroSuc = document.getElementById('f-suc')?.value || 'TODAS';
-        const cores  = await apiFetch(`/api/cores-pendientes-ventas?vendedor=${nombre}&mes=2026-07&sucursal=${encodeURIComponent(filtroSuc)}`);
-        // Mapear campo Dias
-        cores.forEach(c => { if (c.Dias !== undefined) c.DiasSinPagar = c.Dias; });
+        const fv = document.getElementById('f-vend').value;
+        const fs = document.getElementById('f-suc')?.value || 'TODAS';
+        const d  = await apiFetch('/api/cores-tablero');
+        const cores = (d.filas || []).filter(c =>
+            (fv === 'TODOS' || (c.Vendedor||'').toUpperCase().includes(fv.toUpperCase().trim())) &&
+            (fs === 'TODAS' || (c.Sucursal||'').toUpperCase().trim() === fs.toUpperCase().trim())
+        );
 
         if (cores.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" class="loading">✅ Sin CORES pendientes de pago</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" class="loading">✅ Sin CORES pendientes de devolver</td></tr>';
             document.getElementById('cores-resumen').textContent = '';
             return;
         }
 
-        const totalMonto = cores.reduce((s, c) => s + (parseFloat(c.Monto)||0), 0);
-        document.getElementById('cores-resumen').textContent = `${cores.length} registros · ${fM(totalMonto)} pendiente`;
+        const totalMonto = cores.reduce((s, c) => s + (parseFloat(c.Importe)||0), 0);
+        const totalPzs   = cores.reduce((s, c) => s + (parseFloat(c.Pendientes)||0), 0);
+        document.getElementById('cores-resumen').textContent = `${totalPzs} piezas · ${fM(totalMonto)} pendiente`;
 
-        tbody.innerHTML = '';
-        cores.forEach(c => {
-            const dias  = parseInt(c.DiasSinPagar) || 0;
+        tbody.innerHTML = cores.map(c => {
+            const dias  = parseInt(c.Dias) || 0;
             const clase = dias < 7 ? 'dias-verde' : dias <= 20 ? 'dias-ambar' : 'dias-rojo';
-            tbody.innerHTML += `
+            const v = (c.Vendedor||'—').split(' ');
+            return `
                 <tr>
-                    <td style="color:var(--blue);font-weight:bold;white-space:nowrap;">${c.Referencia||'—'}</td>
-                    <td style="color:#aaa;font-size:0.6rem;">${(c.Vendedor||'—').split(' ')[0]} ${(c.Vendedor||'').split(' ')[1]||''}</td>
-                    <td class="cores-hide-mobile" style="color:#ccc;">${c.Codigo||'—'}</td>
-                    <td style="color:var(--text-muted);max-width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${c.Articulo||'—'}</td>
-                    <td class="cores-hide-mobile" style="color:var(--text-muted);white-space:nowrap;">${c.FechaFactura||'—'}</td>
-                    <td style="color:var(--gold);font-weight:bold;white-space:nowrap;">${fM(c.Monto)}</td>
+                    <td style="color:var(--blue);font-weight:bold;white-space:nowrap;">${c.Remision||c.Referencia||'—'}</td>
+                    <td style="color:#aaa;font-size:0.6rem;">${v[0]} ${v[1]||''}</td>
+                    <td class="cores-hide-mobile" style="color:#ccc;max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${c.Cliente||''}">${c.Cliente||c.Codigo||'—'}</td>
+                    <td style="color:var(--text-muted);max-width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${c.Descripcion||''}">${c.Descripcion||'—'}</td>
+                    <td class="cores-hide-mobile" style="color:var(--text-muted);white-space:nowrap;">${c.Fecha||'—'}</td>
+                    <td style="color:var(--gold);font-weight:bold;white-space:nowrap;">${fM(c.Importe)}</td>
                     <td><span class="dias-badge ${clase}">${dias}d</span></td>
                 </tr>`;
-        });
+        }).join('');
     } catch(err) {
         tbody.innerHTML = `<tr><td colspan="7" class="error-msg">❌ ${err.message}</td></tr>`;
     }

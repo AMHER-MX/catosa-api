@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tablero de Cores — Amher Sync</title>
+<link rel="icon" type="image/png" sizes="32x32" href="https://amher-mx.github.io/catosa-api/favicon-32.png">
+<meta name="theme-color" content="#0f172a">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0f172a; --surface:#1e293b; --surface-2:#172033; --border:#334155;
+  --text:#e2e8f0; --muted:#94a3b8; --subtle:#64748b; --accent:#3b82f6;
+  --ok:#22c55e; --warn:#f59e0b; --bad:#ef4444;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif;font-size:14px;min-height:100vh}
+.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+
+/* LOGIN */
+#login{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--bg);z-index:50;padding:16px}
+.login-box{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px;width:100%;max-width:340px;text-align:center}
+.login-box h1{font-size:1.1rem;margin-bottom:4px}
+.login-box p{font-size:.75rem;color:var(--muted);margin-bottom:20px}
+.login-box input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;color:var(--text);padding:12px;margin-bottom:10px;font:inherit;text-transform:uppercase}
+.login-box button{width:100%;background:var(--accent);border:none;border-radius:10px;color:#fff;padding:12px;font:600 .9rem Inter;cursor:pointer}
+
+/* LAYOUT */
+#app{display:none;max-width:1280px;margin:0 auto;padding:20px 16px 48px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+.top h1{font-size:1.35rem;font-weight:800;letter-spacing:-.01em}
+.top .sub{font-size:.75rem;color:var(--muted);margin-top:2px}
+.top-actions{display:flex;gap:8px}
+.btn{background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:8px 14px;font:500 .78rem Inter;cursor:pointer;text-decoration:none;white-space:nowrap}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+
+.filters{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px}
+.filters select,.filters input{background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:10px 12px;font:inherit;font-size:.8rem;width:100%;min-width:0}
+
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 16px}
+.kpi span{display:block;font-size:.68rem;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em}
+.kpi b{font-size:1.4rem;font-weight:700;font-variant-numeric:tabular-nums}
+.kpi small{display:block;font-size:.68rem;color:var(--subtle);margin-top:4px}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:16px;min-width:0}
+.card h2{font-size:.85rem;font-weight:700;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.card h2 small{font-weight:400;color:var(--muted);font-size:.7rem}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid2 .card{margin-bottom:0}
+.row-gap{margin-bottom:16px}
+
+/* AGING */
+.aging-bar{display:flex;height:34px;border-radius:10px;overflow:hidden;background:var(--bg);margin-bottom:12px}
+.aging-bar div{display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;color:#0f172a;min-width:0;overflow:hidden;white-space:nowrap}
+.aging-legend{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.aging-legend button{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:10px;text-align:left;color:var(--text);cursor:pointer;font:inherit}
+.aging-legend button.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+.aging-legend .t{font-size:.7rem;color:var(--muted);display:flex;align-items:center;gap:6px}
+.aging-legend .v{font-size:1rem;font-weight:700;margin-top:4px}
+.aging-legend .p{font-size:.68rem;color:var(--subtle)}
+.dot{width:9px;height:9px;border-radius:50%;display:inline-block;flex:none}
+
+/* TABLES */
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:.78rem}
+th{color:var(--muted);font-weight:500;font-size:.68rem;text-transform:uppercase;letter-spacing:.03em;text-align:left;padding:8px;border-bottom:1px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none}
+th.num{text-align:right}
+td{padding:9px 8px;border-bottom:1px solid #26334a;vertical-align:middle}
+tr.click{cursor:pointer}
+tr.click:hover td{background:var(--surface-2)}
+tr.sel td{background:#1d2b45}
+.bar-cell{position:relative;min-width:110px}
+.bar-cell .bg{position:absolute;right:8px;bottom:4px;height:3px;border-radius:2px;background:var(--accent);opacity:.7}
+.bar-cell .val{position:relative;display:block;text-align:right}
+.pill{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:999px;font-size:.7rem;font-weight:600;white-space:nowrap}
+.pill.ok{background:rgba(34,197,94,.14);color:var(--ok)}
+.pill.warn{background:rgba(245,158,11,.14);color:var(--warn)}
+.pill.bad{background:rgba(239,68,68,.14);color:var(--bad)}
+.muted{color:var(--muted)}
+.sm{font-size:.7rem}
+.empty{padding:24px;text-align:center;color:var(--muted)}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.chip{background:#1d2b45;border:1px solid var(--accent);color:#bfdbfe;border-radius:999px;padding:4px 10px;font-size:.7rem;cursor:pointer}
+.note{font-size:.7rem;color:var(--subtle);margin-top:10px;line-height:1.5}
+
+@media (max-width:900px){
+  .kpis{grid-template-columns:repeat(2,1fr)}
+  .kpis .kpi:first-child{grid-column:1/-1}
+  .grid2{grid-template-columns:1fr}
+  .filters{grid-template-columns:1fr 1fr}
+  .hide-m{display:none}
+}
+</style>
+</head>
+<body>
+
+<div id="login">
+  <div class="login-box">
+    <h1>Tablero de Cores</h1>
+    <p>Amher Sync · Refacciones CATOSA</p>
+    <input id="u" placeholder="Usuario" autocomplete="username">
+    <input id="p" type="password" placeholder="Contraseña" autocomplete="current-password">
+    <button onclick="login()">Entrar</button>
+  </div>
+</div>
+
+<div id="app">
+  <div class="top">
+    <div>
+      <h1>♻️ Tablero de Cores</h1>
+      <div class="sub" id="sub">Cores pendientes de devolver por el cliente · cargando…</div>
+    </div>
+    <div class="top-actions">
+      <button class="btn" onclick="descargarCSV()">⬇️ CSV</button>
+      <a class="btn" href="gerencia.html">← Gerencia</a>
+    </div>
+  </div>
+
+  <div class="filters">
+    <select id="f-suc" onchange="render()"><option value="">Todas las sucursales</option></select>
+    <select id="f-vend" onchange="render()"><option value="">Todos los asesores</option></select>
+    <select id="f-edad" onchange="render()">
+      <option value="">Cualquier antigüedad</option>
+      <option value="verde">🟢 Menos de 7 días</option>
+      <option value="ambar">🟡 7 a 20 días</option>
+      <option value="rojo">🔴 21 días o más</option>
+    </select>
+    <input id="f-txt" placeholder="Buscar cliente, remisión o artículo" oninput="render()">
+  </div>
+
+  <div class="kpis">
+    <div class="kpi"><span>Importe pendiente</span><b id="k-imp">—</b><small id="k-imp-s"></small></div>
+    <div class="kpi"><span>Piezas</span><b id="k-pzs">—</b><small id="k-pzs-s"></small></div>
+    <div class="kpi"><span>Clientes</span><b id="k-cli">—</b><small id="k-cli-s"></small></div>
+    <div class="kpi"><span>Vencido (21+ días)</span><b id="k-venc" style="color:var(--bad)">—</b><small id="k-venc-s"></small></div>
+    <div class="kpi"><span>Más antiguo</span><b id="k-old">—</b><small id="k-old-s"></small></div>
+  </div>
+
+  <div class="card">
+    <h2>Antigüedad del importe pendiente <small>clic para filtrar</small></h2>
+    <div class="aging-bar" id="aging-bar"></div>
+    <div class="aging-legend" id="aging-legend"></div>
+  </div>
+
+  <div class="grid2 row-gap">
+    <div class="card">
+      <h2>Por sucursal <small>clic para filtrar</small></h2>
+      <div class="tbl-wrap"><table><thead><tr><th>Sucursal</th><th class="num">Pzs</th><th class="num">Vencido</th><th class="num">Importe</th></tr></thead><tbody id="t-suc"></tbody></table></div>
+    </div>
+    <div class="card">
+      <h2>Por asesor <small>clic para filtrar</small></h2>
+      <div class="tbl-wrap"><table><thead><tr><th>Asesor</th><th class="num">Pzs</th><th class="num">Vencido</th><th class="num">Importe</th></tr></thead><tbody id="t-vend"></tbody></table></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Clientes con más cores pendientes <small id="cli-count"></small></h2>
+    <div class="tbl-wrap"><table><thead><tr><th>Cliente</th><th class="hide-m">Asesor</th><th class="num">Remisiones</th><th class="num">Pzs</th><th class="num">Días máx.</th><th class="num">Importe</th></tr></thead><tbody id="t-cli"></tbody></table></div>
+  </div>
+
+  <div class="card">
+    <h2>Detalle de remisiones <small id="det-count"></small></h2>
+    <div class="chips" id="chips"></div>
+    <div class="tbl-wrap"><table>
+      <thead><tr>
+        <th data-k="Fecha">Fecha</th><th data-k="Remision">Remisión</th><th data-k="Cliente">Cliente</th>
+        <th data-k="Vendedor" class="hide-m">Asesor</th><th data-k="Descripcion">Artículo</th>
+        <th data-k="Pendientes" class="num">Pzs</th><th data-k="Importe" class="num">Importe</th><th data-k="Dias" class="num">Días</th>
+      </tr></thead>
+      <tbody id="t-det"></tbody>
+    </table></div>
+    <div class="note">Pendiente = remisiones de cores vendidas menos sus cancelaciones (devolución del core). Misma lógica que el informe U23336 de Quiter. Los datos vienen de la carga nocturna, así que los movimientos de hoy aparecen mañana.</div>
+  </div>
+</div>
+
+<script>
+const API = 'https://api.catosaapps.lat';
+const USUARIOS = { GERENTE:'CATOSA2026', DIRECTOR:'MASTER2026' };
+const fM = n => new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN',maximumFractionDigits:0}).format(n||0);
+const fN = n => new Intl.NumberFormat('es-MX',{maximumFractionDigits:0}).format(n||0);
+const fD = s => { if(!s) return '—'; const [y,m,d]=s.slice(0,10).split('-'); return `${d}/${m}/${y.slice(2)}`; };
+const nom = s => (s||'').split(' ').slice(0,3).join(' ');
+const esc = s => String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const edad = d => d >= 21 ? 'rojo' : d >= 7 ? 'ambar' : 'verde';
+const EDADES = {
+  verde:{t:'Menos de 7 días',c:'var(--ok)',cls:'ok'},
+  ambar:{t:'7 a 20 días',c:'var(--warn)',cls:'warn'},
+  rojo:{t:'21 días o más',c:'var(--bad)',cls:'bad'},
+};
+
+let DATA = [], CORTE = '', sortK = 'Dias', sortDir = -1;
+
+// ── Acceso: si entró a gerencia en las últimas 12 h, no pide login ──
+function login(){
+  const u = document.getElementById('u').value.toUpperCase().trim();
+  const p = document.getElementById('p').value.toUpperCase().trim();
+  if (!USUARIOS[u] || USUARIOS[u] !== p) { alert('ACCESO DENEGADO'); return; }
+  try { localStorage.setItem('amherRol', JSON.stringify({u, t: Date.now()})); } catch(e) {}
+  entrar();
+}
+document.getElementById('p').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
+
+async function entrar(){
+  document.getElementById('login').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  try {
+    const qs = new URLSearchParams(location.search);
+    const d = qs.has('demo') ? DEMO : await (await fetch(API + '/api/cores-tablero')).json();
+    if (d.error) throw new Error(d.error);
+    DATA = d.filas || []; CORTE = d.corte || '';
+    llenarFiltros();
+    if (qs.get('vendedor')) document.getElementById('f-vend').value = qs.get('vendedor');
+    render();
+  } catch(e) {
+    document.getElementById('sub').innerHTML = `<span style="color:var(--bad)">❌ No se pudo cargar: ${esc(e.message)}</span>`;
+  }
+}
+
+function llenarFiltros(){
+  const sucs = [...new Set(DATA.map(r=>r.Sucursal))].sort();
+  const vends = [...new Set(DATA.map(r=>r.Vendedor))].sort();
+  document.getElementById('f-suc').innerHTML = '<option value="">Todas las sucursales</option>' + sucs.map(s=>`<option>${esc(s)}</option>`).join('');
+  document.getElementById('f-vend').innerHTML = '<option value="">Todos los asesores</option>' + vends.map(s=>`<option value="${esc(s)}">${esc(nom(s))}</option>`).join('');
+}
+
+function filtrar(ignorarEdad){
+  const suc = document.getElementById('f-suc').value;
+  const ven = document.getElementById('f-vend').value;
+  const ed  = document.getElementById('f-edad').value;
+  const txt = document.getElementById('f-txt').value.trim().toUpperCase();
+  return DATA.filter(r =>
+    (!suc || r.Sucursal === suc) &&
+    (!ven || r.Vendedor === ven) &&
+    (ignorarEdad || !ed || edad(r.Dias) === ed) &&
+    (!txt || [r.Cliente, r.Codigo, r.Remision, r.Referencia, r.Articulo, r.Descripcion].join(' ').toUpperCase().includes(txt))
+  );
+}
+
+function agrupar(rows, key){
+  const m = {};
+  rows.forEach(r => {
+    const k = r[key]; const g = m[k] || (m[k] = {k, imp:0, pzs:0, venc:0, rem:new Set(), dmax:0, vend:new Set()});
+    g.imp += r.Importe; g.pzs += r.Pendientes; if (r.Dias >= 21) g.venc += r.Importe;
+    g.rem.add(r.Referencia); g.dmax = Math.max(g.dmax, r.Dias); g.vend.add(r.Vendedor); g.cod = r.Codigo;
+  });
+  return Object.values(m).sort((a,b) => b.imp - a.imp);
+}
+
+function render(){
+  const rows = filtrar(false);
+  const rowsAging = filtrar(true);
+  const tot = rows.reduce((s,r)=>s+r.Importe,0);
+  const pzs = rows.reduce((s,r)=>s+r.Pendientes,0);
+  const venc = rows.filter(r=>r.Dias>=21).reduce((s,r)=>s+r.Importe,0);
+  const clientes = new Set(rows.map(r=>r.Codigo)).size;
+  const rems = new Set(rows.map(r=>r.Referencia)).size;
+  const old = rows.reduce((a,r)=> !a || r.Dias > a.Dias ? r : a, null);
+
+  document.getElementById('sub').textContent = `Cores pendientes de devolver por el cliente · datos al ${fD(CORTE)} (carga nocturna de Quiter)`;
+  document.getElementById('k-imp').textContent = fM(tot);
+  document.getElementById('k-imp-s').textContent = `${fN(rems)} remisiones`;
+  document.getElementById('k-pzs').textContent = fN(pzs);
+  document.getElementById('k-pzs-s').textContent = 'piezas sin devolver';
+  document.getElementById('k-cli').textContent = fN(clientes);
+  document.getElementById('k-cli-s').textContent = 'con cores pendientes';
+  document.getElementById('k-venc').textContent = fM(venc);
+  document.getElementById('k-venc-s').textContent = tot ? `${Math.round(venc/tot*100)}% del pendiente` : '—';
+  document.getElementById('k-old').textContent = old ? `${old.Dias} días` : '—';
+  document.getElementById('k-old-s').textContent = old ? `${old.Remision} · ${nom(old.Cliente)}` : '';
+
+  // Antigüedad
+  const totA = rowsAging.reduce((s,r)=>s+r.Importe,0) || 1;
+  const sel = document.getElementById('f-edad').value;
+  const ag = ['verde','ambar','rojo'].map(k => {
+    const rr = rowsAging.filter(r=>edad(r.Dias)===k);
+    return {k, imp: rr.reduce((s,r)=>s+r.Importe,0), pzs: rr.reduce((s,r)=>s+r.Pendientes,0)};
+  });
+  document.getElementById('aging-bar').innerHTML = ag.filter(a=>a.imp>0).map(a =>
+    `<div style="width:${a.imp/totA*100}%;background:${EDADES[a.k].c}">${Math.round(a.imp/totA*100)}%</div>`).join('');
+  document.getElementById('aging-legend').innerHTML = ag.map(a => `
+    <button class="${sel===a.k?'on':''}" onclick="toggleEdad('${a.k}')">
+      <div class="t"><span class="dot" style="background:${EDADES[a.k].c}"></span>${EDADES[a.k].t}</div>
+      <div class="v">${fM(a.imp)}</div><div class="p">${fN(a.pzs)} piezas</div>
+    </button>`).join('');
+
+  // Por sucursal / asesor
+  const suc = document.getElementById('f-suc').value, ven = document.getElementById('f-vend').value;
+  const tablaGrupo = (id, grupos, campo, actual, label) => {
+    const max = Math.max(...grupos.map(g=>g.imp), 1);
+    document.getElementById(id).innerHTML = grupos.map(g => `
+      <tr class="click ${actual===g.k?'sel':''}" onclick="filtroGrupo('${campo}', ${JSON.stringify(g.k).replace(/"/g,'&quot;')})">
+        <td>${esc(label(g.k))}</td>
+        <td class="num">${fN(g.pzs)}</td>
+        <td class="num" style="color:${g.venc?'var(--bad)':'var(--subtle)'}">${g.venc?fM(g.venc):'—'}</td>
+        <td class="bar-cell"><span class="bg" style="width:calc(${g.imp/max*100}% - 16px)"></span><span class="val">${fM(g.imp)}</span></td>
+      </tr>`).join('') || '<tr><td colspan="4" class="empty">Sin datos</td></tr>';
+  };
+  tablaGrupo('t-suc', agrupar(rows,'Sucursal'), 'f-suc', suc, s=>s);
+  tablaGrupo('t-vend', agrupar(rows,'Vendedor'), 'f-vend', ven, nom);
+
+  // Clientes
+  const cl = agrupar(rows,'Cliente');
+  document.getElementById('cli-count').textContent = `${cl.length} clientes`;
+  document.getElementById('t-cli').innerHTML = cl.slice(0,15).map(g => `
+    <tr class="click" onclick="buscar(${JSON.stringify(g.k).replace(/"/g,'&quot;')})">
+      <td><b style="font-weight:600">${esc(g.k)}</b><div class="muted sm">${esc(g.cod)}</div></td>
+      <td class="hide-m muted sm">${esc([...g.vend].map(nom).join(', '))}</td>
+      <td class="num">${g.rem.size}</td><td class="num">${fN(g.pzs)}</td>
+      <td class="num"><span class="pill ${EDADES[edad(g.dmax)].cls}">${g.dmax} d</span></td>
+      <td class="num"><b style="font-weight:600">${fM(g.imp)}</b></td>
+    </tr>`).join('') || '<tr><td colspan="6" class="empty">✅ Sin cores pendientes</td></tr>';
+
+  // Detalle
+  const det = [...rows].sort((a,b) => {
+    const x=a[sortK], y=b[sortK];
+    return (typeof x==='number' ? x-y : String(x).localeCompare(String(y))) * sortDir;
+  });
+  document.getElementById('det-count').textContent = `${det.length} líneas`;
+  document.getElementById('t-det').innerHTML = det.map(r => `
+    <tr>
+      <td class="sm" style="white-space:nowrap">${fD(r.Fecha)}</td>
+      <td style="white-space:nowrap">${esc(r.Remision)}<div class="muted sm">${esc(r.Referencia)}</div></td>
+      <td>${esc(r.Cliente)}<div class="muted sm">${esc(r.Codigo)}</div></td>
+      <td class="hide-m sm muted">${esc(nom(r.Vendedor))}</td>
+      <td>${esc(r.Descripcion)}<div class="muted sm">${esc(r.Articulo)}</div></td>
+      <td class="num">${fN(r.Pendientes)}</td>
+      <td class="num">${fM(r.Importe)}</td>
+      <td class="num"><span class="pill ${EDADES[edad(r.Dias)].cls}">${r.Dias} d</span></td>
+    </tr>`).join('') || '<tr><td colspan="8" class="empty">✅ Sin cores pendientes con estos filtros</td></tr>';
+
+  // Chips de filtros activos
+  const chips = [];
+  if (suc) chips.push(['f-suc', suc]);
+  if (ven) chips.push(['f-vend', nom(ven)]);
+  if (sel) chips.push(['f-edad', EDADES[sel].t]);
+  const txt = document.getElementById('f-txt').value.trim(); if (txt) chips.push(['f-txt', `“${txt}”`]);
+  document.getElementById('chips').innerHTML = chips.map(([id,t]) => `<span class="chip" onclick="limpiar('${id}')">${esc(t)} ✕</span>`).join('');
+}
+
+function toggleEdad(k){ const s=document.getElementById('f-edad'); s.value = s.value===k ? '' : k; render(); }
+function filtroGrupo(id, v){ const s=document.getElementById(id); s.value = s.value===v ? '' : v; render(); }
+function buscar(t){ document.getElementById('f-txt').value = t; render(); document.getElementById('t-det').scrollIntoView({behavior:'smooth', block:'start'}); }
+function limpiar(id){ document.getElementById(id).value = ''; render(); }
+document.querySelectorAll('th[data-k]').forEach(th => th.onclick = () => {
+  const k = th.dataset.k; sortDir = sortK===k ? -sortDir : (k==='Dias'||k==='Importe'||k==='Pendientes' ? -1 : 1); sortK = k; render();
+});
+
+function descargarCSV(){
+  const cols = ['Fecha','Sucursal','Remision','Referencia','Codigo','Cliente','Vendedor','Articulo','Descripcion','Pendientes','PVP','Importe','Dias'];
+  const q = v => `"${String(v??'').replace(/"/g,'""')}"`;
+  const csv = '﻿' + [cols.join(','), ...filtrar(false).map(r => cols.map(c=>q(r[c])).join(','))].join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8'}));
+  a.download = `cores-pendientes-${CORTE||'hoy'}.csv`; a.click();
+}
+
+// ── Datos de prueba (?demo=1): las 14 remisiones reales de Victor del 5-nov ──
+const DEMO = (() => {
+  const hoy = '2026-11-05', V = 'VICTOR EDUARDO CASTILLO GARCIA';
+  const N = {'2154':'CONSOLIDAMEX','2182':'DISTRIBUIDORA DE COMBUSTIBLES LAGUNA','2753':'TRANSPORTES VILLARREAL BERLANGA','2755':'FRESCOS LOGISTICS'};
+  const r = [
+    ['2026-08-06','254031','V101 303','2154','0/5012212R1CPO','CUERPO CONTROL VIDRIOS Y SEGURO PUERTA',1,1822.24],
+    ['2026-09-02','300292','V101 354','2154','0/2611199C91CPO','CUERPO KIT.SWITCH VOLANTE',1,1827.88],
+    ['2026-10-23','386298','V101 464','2154','0/5462439CPO','CUERPO SENSOR OXIGENO EURO IV',1,3623.18],
+    ['2026-10-28','394607','V101 473','2154','0/5579415CPO','CUERPO INYECTOR ISX EURO IV',4,5330.97],
+    ['2026-10-28','394678','V101 474','2154','0/5473365CPO','CUERPO BOMBA DE AGUA MOTOR ISX',2,1598.39],
+    ['2026-11-03','402528','V101 485','2154','0/5680039CPO','CUERPO BOMBA DE ACEITE',1,2384.24],
+    ['2026-10-22','385520','V101 459','2182','0/ZLTL31P900ARCPO','CUERPO ACUMULADOR',2,816.67],
+    ['2026-10-22','385524','V101 460','2182','0/ZLTL31T900ARCPO','CORE ACUMULADOR',2,816.67],
+    ['2026-10-22','385528','V101 461','2182','0/ZLTL31T900ARCPO','CORE ACUMULADOR',2,816.67],
+    ['2026-10-31','400309','V101 480','2508','0/ZLTL31T900ARCPO','CORE ACUMULADOR',1,816.67],
+    ['2026-10-29','397235','V101 476','2753','0/5273337CPO','CUERPO BOMBA DOSIFICADORA UREA JAC',1,4000],
+    ['2026-11-03','402134','V101 483','2753','0/5273337CPO','CUERPO BOMBA DOSIFICADORA UREA JAC',2,4262.5],
+    ['2026-11-02','401470','V101 482','2755','0/5273337CPO','CUERPO BOMBA DOSIFICADORA UREA JAC',2,4262.5],
+    ['2026-10-21','383354','V101 456','2758','0/5579415CPO','CUERPO INYECTOR ISX EURO IV',1,5330.97],
+  ];
+  return { corte: hoy, filas: r.map(([f,ref,rem,cod,art,des,p,pvp]) => ({
+    Fecha:f, Sucursal:'TORREON', Referencia:ref, Remision:rem, Codigo:cod, Cliente:N[cod]||cod,
+    Vendedor:V, Articulo:art, Descripcion:des, Pendientes:p, PVP:pvp, Importe:p*pvp,
+    Dias: Math.round((new Date(hoy)-new Date(f))/864e5) })) };
+})();
+
+try { const r = JSON.parse(localStorage.getItem('amherRol')||'null'); if (r && Date.now() - r.t < 12*3600*1000) entrar(); } catch(e) {}
+</script>
+</body>
+</html>
