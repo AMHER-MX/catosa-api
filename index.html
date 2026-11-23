@@ -1247,6 +1247,8 @@
             <li><b>Encuesta QR</b> (MOSTRADOR): ${R.ENCUESTA_SEMANA} pts por semana con ${R.ENCUESTA_MIN}+ escaneos.</li>
             <li><b>Fleetrite</b>: números de parte distintos vendidos en el mes → ${R.FLEETRITE.slice().reverse().map(t => `${t.min}+ NPs = ${t.pts} pts`).join(' · ')}.</li>
             <li><b>🪣 Cubetas Fleetrite</b> (noviembre): ${R.CUBETA_FLEETRITE || 10} pts por cada cubeta Fleetrite vendida (aceites, anticongelante y grasas en cubeta).</li>
+            ${(R.META_NIVELES_MESES || []).length ? `<li><b>🏆 Gran cierre</b> (solo noviembre): bono según tu % de meta mensual de noviembre → ${(R.META_NIVELES || []).slice().reverse().map(n => `${n.nombre} ${n.pct}% = +${n.pts} pts`).join(' · ')}.</li>` : ''}
+            ${(R.PROMOS_NP || []).map(p => `<li><b>🔧 ${p.nombre}</b>: ${p.pts} pts por cada kit vendido del ${+p.ini.slice(8)} al ${+p.fin.slice(8)} de noviembre.</li>`).join('')}
             <li><b>🎁 Bonos especiales</b>: puntos extra que se anuncian por flyer (p. ej. 200 pts por alcanzar la meta de NPs Fleetrite en octubre).</li>
             <li>Podio final al 30 de noviembre con los puntos acumulados de los 3 meses: Oro, Plata, Bronce, 4to y 5to lugar.</li>`;
 
@@ -1294,6 +1296,17 @@
                 <div class="r-top"><span>🪣 Cubetas Fleetrite</span><span class="r-pts">+${a.cubetas.pts}</span></div>
                 <div class="r-val">${a.cubetas.cubetas} cubeta${a.cubetas.cubetas === 1 ? '' : 's'}</div>
                 <div class="r-sub">¡Cada cubeta cuenta! ${R.CUBETA_FLEETRITE || 10} pts por cubeta vendida este mes</div>${bar(a.cubetas.cubetas, Math.max(10, a.cubetas.cubetas))}</div>` : ''}
+            ${a.nivelMeta && a.nivelMeta.activo ? (() => { const n = a.nivelMeta, sig = n.siguiente;
+                return `
+            <div class="reto ${n.pts > 0 ? 'ok' : ''}">
+                <div class="r-top"><span>🏆 Gran cierre · meta nov</span><span class="r-pts">+${n.pts}</span></div>
+                <div class="r-val">${n.nivel ? n.nivel.toUpperCase() : 'Sin categoría'} · ${a.Pct}%</div>
+                <div class="r-sub">${sig ? `Llega a ${sig.pct}% para ${sig.nombre} (+${sig.pts} pts)` : '¡Categoría máxima!'} · se define al cierre del 30 de nov</div>${bar(a.Pct, sig ? sig.pct : 120)}</div>`; })() : ''}
+            ${a.promos && a.promos.lista.length ? a.promos.lista.map(pr => `
+            <div class="reto ${pr.piezas > 0 ? 'ok' : ''}">
+                <div class="r-top"><span>🔧 Kit media reparación</span><span class="r-pts">+${pr.pts}</span></div>
+                <div class="r-val">${pr.piezas} kit${pr.piezas === 1 ? '' : 's'}</div>
+                <div class="r-sub">NP ${pr.np} · ${pr.ptsPieza} pts por kit · válido del ${+pr.ini.slice(8)} al ${+pr.fin.slice(8)} de nov</div>${bar(pr.piezas, Math.max(1, pr.piezas))}</div>`).join('') : ''}
             ${yo && yo.bonos && yo.bonos.length ? yo.bonos.map(b => `
             <div class="reto ok">
                 <div class="r-top"><span>🎁 Bono especial</span><span class="r-pts">+${b.pts}</span></div>
